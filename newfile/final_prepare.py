@@ -278,7 +278,7 @@ def main():
 
 		t += 1
 		print(t)
-		if t==50:
+		if t==200:
 
 			img_b,img_g,img_r = divide_color(images)
 
@@ -291,19 +291,34 @@ def main():
 			img_b = create_sphere(img_b,rotated_grid)
 			img_g = create_sphere(img_g,rotated_grid)
 			img_r = create_sphere(img_r,rotated_grid)
-
+			
 			for i in range(images.shape[0]):
 				#print(i)
 				image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
-
-			cv2.imwrite(image_name[i],image_sample.T)
-			cv2.waitKey(0) & 0xFF
+			#pdb.set_trace()
+				#cv2.imwrite(image_name[i],image_sample.T)
+				cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
+			#cv2.waitKey(0)
 			image_sample = []
 			images=np.array([])
 			image_name=np.array([])
 			t=0
+	img_b,img_g,img_r=divide_color(images)
+	grid = get_projection_grid(b=args.bandwidth)
+	rot = rand_rotation_matrix(deflection=args.noise)
+	rotated_grid=rotate_grid(rot,grid)
 
+	img_b = create_sphere(img_b,rotated_grid)
+	img_g = create_sphere(img_g,rotated_grid)
+	img_r = create_sphere(img_r,rotated_grid)
+	
+	for i in range(images.shape):
+		print(i)
+		image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
+		image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
+		cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
+			
 
 
 if __name__ == '__main__':
