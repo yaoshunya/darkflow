@@ -145,8 +145,13 @@ def sample_within_bounds(signal, x, y, bounds):
 	return sample
 
 def sample_bilinear(signal, rx, ry):
-	signal_dim_x = signal.shape[1]
-	signal_dim_y = signal.shape[2]
+	#pdb.set_trace()
+	if len(signal.shape) > 2:
+		signal_dim_x = signal.shape[1]
+		signal_dim_y = signal.shape[2]
+	else:
+		signal_dim_x = signal.shape[0]
+		signal_dim_y = signal.shape[1]
 	rx *= signal_dim_x
 	ry *= signal_dim_y
 
@@ -191,10 +196,15 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 	#pdb.set_trace()
 
 	sample *= (grid[2] <= 1).astype(np.float64)
-	sample_min = sample.min(axis=(1, 2)).reshape(-1, 1, 1)
-	sample_max = sample.max(axis=(1, 2)).reshape(-1, 1, 1)
-
-	sample = (sample - sample_min) / (sample_max - sample_min)
+	if len(sample.shape) > 2:
+		sample_min = sample.min(axis=(1, 2)).reshape(-1, 1, 1)
+		sample_max = sample.max(axis=(1, 2)).reshape(-1, 1, 1)
+		sample = (sample - sample_min) / (sample_max - sample_min)
+	else:
+		sample_min = sample.min(axis=(0,1))
+		sample_max = sample.max(axis=(0,1))
+		sample = (sample - sample_min) / (sample_max - sample_min)
+	#pdb.set_trace()
 	sample *= 255
 	sample = sample.astype(np.uint8)
 
@@ -225,7 +235,7 @@ def create_sphere(data,grid):
 		(signals.shape[0],2*args.bandwidth,2*args.bandwidth),dtype=np.uint8
 	)
 	current = 0
-	#pdb.set_trace()
+	pdb.set_trace()
 	while current < n_signals:
 		idxs = np.arange(current,min(n_signals,current+args.chunk_size))
 		chunk = signals[idxs]
@@ -291,7 +301,7 @@ def main():
 			img_b = create_sphere(img_b,rotated_grid)
 			img_g = create_sphere(img_g,rotated_grid)
 			img_r = create_sphere(img_r,rotated_grid)
-			
+
 			for i in range(images.shape[0]):
 				#print(i)
 				image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
@@ -312,13 +322,13 @@ def main():
 	img_b = create_sphere(img_b,rotated_grid)
 	img_g = create_sphere(img_g,rotated_grid)
 	img_r = create_sphere(img_r,rotated_grid)
-	
+
 	for i in range(images.shape):
 		print(i)
 		image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 		image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
 		cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
-			
+
 
 
 if __name__ == '__main__':
