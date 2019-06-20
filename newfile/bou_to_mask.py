@@ -123,12 +123,12 @@ def main():
 				s_split = np.array(s_numpy[0].split())[np.newaxis]
 			s_all.append(s_split)
 		count += 1
-		if count == 50:
+		if count == 30:
 			#pdb.set_trace()
 			break;
 
 	mask_list = make_mask(s_all) #作成されたマスク配列（numpy）をlistにしたものが返ってくる
-	#pdb.set_trace()
+
 	grid = fi.get_projection_grid(b=args.bandwidth)
 	rot = fi.rand_rotation_matrix(deflection=args.noise)
 	rotated_grid = fi.rotate_grid(rot,grid)
@@ -138,10 +138,11 @@ def main():
 	for i in range(len(mask)):
 		if len(mask[i]) > 1:
 			for t in range(len(mask[i])):
-				cv2.imwrite('out/{}_{}.png'.format(str(i).zfill(6),str(t).zfill(2)),mask[i][t].T)
+				#pdb.set_trace()
+				cv2.imwrite('out/{}_{}_{}.png'.format(str(i).zfill(6),str(t).zfill(2),s_all[i][t][0]),mask[i][t].T)
 				cv2.waitKey(0) & 0xFF
 		else:
-			cv2.imwrite('out/{}_00.png'.format(str(i).zfill(6)),mask[i][0].T)
+			cv2.imwrite('out/{}_00_{}.png'.format(str(i).zfill(6),s_all[i][0][0]),mask[i][0].T)
 			cv2.waitKey(0) & 0xFF
 	#pdb.set_trace()
 
