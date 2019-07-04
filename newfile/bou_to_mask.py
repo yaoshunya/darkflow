@@ -123,7 +123,7 @@ def main():
 				s_split = np.array(s_numpy[0].split())[np.newaxis]
 			s_all.append(s_split)
 		count += 1
-		if count == 30:
+		if count == 10:
 			#pdb.set_trace()
 			break;
 
@@ -138,7 +138,7 @@ def main():
 	for i in range(len(mask)):
 		if len(mask[i]) > 1:
 			for t in range(len(mask[i])):
-				#pdb.set_trace()
+				pdb.set_trace()
 				cv2.imwrite('out/{}_{}_{}.png'.format(str(i).zfill(6),str(t).zfill(2),s_all[i][t][0]),mask[i][t].T)
 				cv2.waitKey(0) & 0xFF
 		else:
