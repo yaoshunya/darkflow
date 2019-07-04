@@ -4,6 +4,7 @@ from ..utils import loader
 import warnings
 import time
 import os
+import pdb
 
 class Darknet(object):
 
@@ -16,10 +17,10 @@ class Darknet(object):
         print('Parsing {}'.format(self.src_cfg))
         src_parsed = self.parse_cfg(self.src_cfg, FLAGS)
         self.src_meta, self.src_layers = src_parsed
-        
+
         if self.src_cfg == FLAGS.model:
             self.meta, self.layers = src_parsed
-        else: 
+        else:
         	print('Parsing {}'.format(FLAGS.model))
         	des_parsed = self.parse_cfg(FLAGS.model, FLAGS)
         	self.meta, self.layers = des_parsed
@@ -28,7 +29,7 @@ class Darknet(object):
 
     def get_weight_src(self, FLAGS):
         """
-        analyse FLAGS.load to know where is the 
+        analyse FLAGS.load to know where is the
         source binary and what is its config.
         can be: None, FLAGS.model, or some other
         """
@@ -69,6 +70,7 @@ class Darknet(object):
             if i == 0: meta = info; continue
             else: new = create_darkop(*info)
             layers.append(new)
+        #pdb.set_trace()
         return meta, layers
 
     def load_weights(self):
@@ -81,6 +83,6 @@ class Darknet(object):
         args = [self.src_bin, self.src_layers]
         wgts_loader = loader.create_loader(*args)
         for layer in self.layers: layer.load(wgts_loader)
-        
+        #pdb.set_trace()
         stop = time.time()
         print('Finished in {}s'.format(stop - start))

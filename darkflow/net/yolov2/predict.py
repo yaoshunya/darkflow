@@ -8,6 +8,7 @@ import json
 #from utils.box import prob_compare2, box_intersection
 from ...utils.box import BoundBox
 from ...cython_utils.cy_yolo2_findboxes import box_constructor
+import pdb
 
 def expit(x):
 	return 1. / (1. + np.exp(-x))
@@ -22,6 +23,7 @@ def findboxes(self, net_out):
 	meta = self.meta
 	boxes = list()
 	boxes=box_constructor(meta,net_out)
+	#pdb.set_trace()
 	return boxes
 
 def postprocess(self, net_out, im, save = True):
@@ -39,13 +41,14 @@ def postprocess(self, net_out, im, save = True):
 		imgcv = cv2.imread(im)
 	else: imgcv = im
 	h, w, _ = imgcv.shape
-	
+
 	resultsForJSON = []
 	for b in boxes:
 		boxResults = self.process_box(b, h, w, threshold)
 		if boxResults is None:
 			continue
 		left, right, top, bot, mess, max_indx, confidence = boxResults
+		#pdb.set_trace()
 		thick = int((h + w) // 300)
 		if self.FLAGS.json:
 			resultsForJSON.append({"label": mess, "confidence": float('%.2f' % confidence), "topleft": {"x": left, "y": top}, "bottomright": {"x": right, "y": bot}})
