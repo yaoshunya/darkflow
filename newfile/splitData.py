@@ -4,14 +4,14 @@ import shutil
 import os
 import pdb
 
-dfTrain = pd.read_csv('ImageSets/Main/trainval.txt',header=None)
+dfTrain = pd.read_csv('../data/ImageSets/Main/trainval.txt',header=None)
 dfTest = pd.read_csv('ImageSets/Main/test.txt',header=None)
-imgDir = 'PNGImages'
-trainImgDir = 'PNGImagesTrain'
-testImgDir = 'PNGImagesTest'
-annoDir = 'Annotations'
-trainAnnoDir = 'AnnotationsTrain'
-testAnnoDir = 'AnnotationsTest'
+imgDir = '../data/PNGImages'
+trainImgDir = '../data/PNGImagesTrain'
+testImgDir = '../data/PNGImagesTest'
+annoDir = '../data/Annotations'
+trainAnnoDir = '../data/AnnotationsTrain'
+testAnnoDir = '../data/AnnotationsTest'
 
 # Train data
 for ind in np.arange(len(dfTrain)):
