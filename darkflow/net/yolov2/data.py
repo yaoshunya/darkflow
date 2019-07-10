@@ -80,5 +80,5 @@ def _batch(self, chunk):
         'areas': areas, 'upleft': upleft,
         'botright': botright
     }
-    pdb.set_trace()
+    #pdb.set_trace()
     return inp_feed_val, loss_feed_val

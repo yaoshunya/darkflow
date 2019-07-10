@@ -4,12 +4,12 @@ import shutil
 import os
 import pdb
 
-dfTrain = pd.read_csv('../data/ImageSets/Main/trainval.txt',header=None)
-dfTest = pd.read_csv('ImageSets/Main/test.txt',header=None)
-imgDir = '../data/PNGImages'
+dfTrain = pd.read_csv('../../data/data_voc/VOC2012/ImageSets/Main/trainval.txt',header=None)
+dfTest = pd.read_csv('../../data/data_voc/VOC2012/ImageSets/Main/test.txt',header=None)
+imgDir = '../../data/data_voc/VOC2012/JPEGImages'
 trainImgDir = '../data/PNGImagesTrain'
 testImgDir = '../data/PNGImagesTest'
-annoDir = '../data/Annotations'
+annoDir = '../../data/data_voc/VOC2012/Annotations'
 trainAnnoDir = '../data/AnnotationsTrain'
 testAnnoDir = '../data/AnnotationsTest'
 
