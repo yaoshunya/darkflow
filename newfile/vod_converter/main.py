@@ -39,7 +39,7 @@ def main(*, from_path, from_key, to_path, to_key, select_only_known_labels, filt
                                      select_only_known_labels=select_only_known_labels,
                                      filter_images_without_labels=filter_images_without_labels)
     if success:
-        print("Successfully converted from {from_key} to {to_key}.")
+        print(f"Successfully converted from {from_key} to {to_key}.")
     else:
         print(f"Failed to convert from {from_key} to {to_key}: {msg}")
         return 1

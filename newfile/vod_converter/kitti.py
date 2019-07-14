@@ -26,6 +26,21 @@ each row corresponds to one object. The 15 columns represent:
    1    rotation_y   Rotation ry around Y-axis in camera coordinates [-pi..pi]
    1    score        Only for results: Float, indicating confidence in
                      detection, needed for p/r curves, higher is better.
+0：物体の種類（Car, Van, Truck, Pedestrian, Person_sitting, Cyclist）
+1：物体の画像からはみ出している割合（0は完全に見えている、1は完全にはみ出している）
+2：オクルージョン状態（0：完全に見える、1：部分的に隠れている、2：大部分が隠れている、3：不明）
+3：カメラから見た物体の向きα[-pi, pi]
+4：2D bounding boxのminx
+5：2D bounding boxのminy
+6：2D bounding boxのmaxx
+7：2D bounding boxのmaxy
+8：3D object dimensionsの高さ（height）
+9：3D object dimensionsの幅（width）
+10：3D object dimensionsの奥行き（length）
+11：3D 物体のx座標
+12：3D 物体のy座標
+13：3D 物体のz座標
+14：カメラ座標系での物体の向きrotation_y [-pi..pi]
 
 
 """
@@ -34,15 +49,15 @@ import csv
 import os
 from PIL import Image
 import shutil
-
+import pdb
 from converter import Ingestor, Egestor
 
 
 class KITTIIngestor(Ingestor):
     def validate(self, path):
         expected_dirs = [
-            'images',
-            'label_2'
+            'training/image_2',
+            'training/label_2'
         ]
         for subdir in expected_dirs:
             if not os.path.isdir(f"{path}/{subdir}"):
@@ -61,7 +76,7 @@ class KITTIIngestor(Ingestor):
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
-            if os.path.exists(f"{root}/images/{image_id}.{image_ext}"):
+            if os.path.exists(f"{root}/training/image_2/{image_id}.{image_ext}"):
                 return image_ext
         raise Exception(f"could not find jpg or png for {image_id} at {root}/training/image_2")
 
@@ -71,10 +86,10 @@ class KITTIIngestor(Ingestor):
             return f.read().strip().split('\n')
 
     def _get_image_detection(self, root, image_id, *, image_ext='png'):
-        detections_fpath = f"{root}/label_2/{image_id}.txt"
+        detections_fpath = f"{root}/training/label_2/{image_id}.txt"
         detections = self._get_detections(detections_fpath)
         detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
-        image_path = f"{root}/images/{image_id}.{image_ext}"
+        image_path = f"{root}/training/image_2/{image_id}.{image_ext}"
         image_width, image_height = _image_dimensions(image_path)
         return {
             'image': {
@@ -92,22 +107,15 @@ class KITTIIngestor(Ingestor):
         with open(detections_fpath) as f:
             f_csv = csv.reader(f, delimiter=' ')
             for row in f_csv:
-                alpha, x1, y1, x2, y2, height, width, length, X, Y, Z, rotation_y  = map(float, row[3:15])
+                x1, y1, x2, y2, height, width, length, X, Y, Z, rotation_y = map(float, row[4:15])
                 label = row[0]
+                #pdb.set_trace()
                 detections.append({
-                    'alpha': alpha,
                     'label': label,
                     'left': x1,
                     'right': x2,
                     'top': y1,
-                    'bottom': y2,
-                    'height': height,
-                    'width': width,
-                    'length': length,
-                    'X': X,
-                    'Y': Y,
-                    'Z': Z,
-                    'rotation_y': rotation_y
+                    'bottom': y2
                 })
         return detections
 
@@ -134,9 +142,9 @@ class KITTIEgestor(Egestor):
         }
 
     def egest(self, *, image_detections, root):
-        images_dir = f"{root}/iamges"
+        images_dir = f"{root}/training/image_2"
         os.makedirs(images_dir, exist_ok=True)
-        labels_dir = f"{root}/label_2"
+        labels_dir = f"{root}/training/label_2"
         os.makedirs(labels_dir, exist_ok=True)
 
         id_file = f"{root}/train.txt"
@@ -164,7 +172,5 @@ class KITTIEgestor(Egestor):
                     y1 = detection['top']
                     y2 = detection['bottom']
                     kitti_row[4:8] = x1, y1, x2, y2
+                    pdb.set_trace()
                     csvwriter.writerow(kitti_row)
-
-
-

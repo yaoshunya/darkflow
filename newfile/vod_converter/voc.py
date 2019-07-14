@@ -8,15 +8,13 @@ import os
 import shutil
 
 from converter import Ingestor, Egestor
-#import xml.etree.ElementTree as ET
-from lxml import etree as ET
+import xml.etree.ElementTree as ET
 
 
 class VOCIngestor(Ingestor):
     def validate(self, root):
         path = f"{root}/VOC2012"
-        #for subdir in ["ImageSets", "JPEGImages", "Annotations"]:
-        for subdir in ["ImageSets", "PNGImages", "Annotations"]:
+        for subdir in ["ImageSets", "JPEGImages", "Annotations"]:
             if not os.path.isdir(f"{path}/{subdir}"):
                 return False, f"Expected subdirectory {subdir} within {path}"
             if not os.path.isfile(f"{path}/ImageSets/Main/trainval.txt"):
@@ -42,8 +40,7 @@ class VOCIngestor(Ingestor):
 
     def _get_image_detection(self, root, image_id):
         path = f"{root}/VOC2012"
-        #image_path = f"{path}/JPEGImages/{image_id}.jpg"
-        image_path = f"{path}/PNGImages/{image_id}.png"
+        image_path = f"{path}/JPEGImages/{image_id}.jpg"
         if not os.path.isfile(image_path):
             raise Exception(f"Expected {image_path} to exist.")
         annotation_path = f"{path}/Annotations/{image_id}.xml"
@@ -86,16 +83,31 @@ class VOCEgestor(Egestor):
 
     def expected_labels(self):
         return {
+            'aeroplane': [],
+            'bicycle': [],
+            'bird': [],
+            'boat': [],
+            'bottle': [],
             'bus': [],
-	    'Truck': [],
-	    'Car' : [],
-            'car': []
+            'car': [],
+            'cat': [],
+            'chair': [],
+            'cow': [],
+            'diningtable': [],
+            'dog': [],
+            'horse': [],
+            'motorbike': [],
+            'person': ['pedestrian'],
+            'pottedplant': [],
+            'sheep': [],
+            'sofa': [],
+            'train': [],
+            'tvmonitor': []
         }
 
     def egest(self, *, image_detections, root):
         image_sets_path = f"{root}/VOC2012/ImageSets/Main"
-        #images_path = f"{root}/VOC2012/JPEGImages"
-        images_path = f"{root}/VOC2012/PNGImages"
+        images_path = f"{root}/VOC2012/JPEGImages"
         annotations_path = f"{root}/VOC2012/Annotations"
         segmentations_path = f"{root}/VOC2012/SegmentationObject"
         segmentations_dir_created = False
@@ -135,38 +147,21 @@ class VOCEgestor(Egestor):
             })
 
             for detection in image_detection['detections']:
-                if detection['label']=='car' or detection['label']=='Truck'or detection['label']=='Car':
-                        x_object = add_sub_node(xml_root, 'object', {
-                            'name': detection['label'],
-                            'difficult': 0,
-                            'occluded': 0,
-                            'truncated': 0,
-                            'pose': 'Unspecified'
-                        })
-                        add_sub_node(x_object, 'bndbox', { # 2D bounding box of object in the image (0-based index)
-                            'xmin': detection['left'] + 1,
-                            'xmax': detection['right'] + 1,
-                            'ymin': detection['top'] + 1,
-                            'ymax': detection['bottom'] + 1
-                        })
-                        add_sub_node(x_object, 'position', { # 3D object location x,y,z in camera coordinates (in meters), named location in KITTI
-                            'x': detection['X'],
-                            'y': detection['Y'],
-                            'z': detection['Z']
-                        })
-                        add_sub_node(x_object, 'rotation', { 
-                            'object_angle': detection['alpha'],  # Observation angle of object, ranging [-pi..pi]
-                            'camera_y': detection['rotation_y'], # Rotation ry around Y-axis in camera coordinates [-pi..pi]
-                        })
-                        add_sub_node(x_object, 'dimensions', { # 3D object dimensions: height, width, length (in meters)
-                            'height': detection['height'],
-                            'width': detection['width'],
-                            'length': detection['length']
-                        })
-                else:
-                        pass
+                x_object = add_sub_node(xml_root, 'object', {
+                    'name': detection['label'],
+                    'difficult': 0,
+                    'occluded': 0,
+                    'truncated': 0,
+                    'pose': 'Unspecified'
+                })
+                add_sub_node(x_object, 'bndbox', {
+                    'xmin': detection['left'] + 1,
+                    'xmax': detection['right'] + 1,
+                    'ymin': detection['top'] + 1,
+                    'ymax': detection['bottom'] + 1
+                })
 
-            ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml",pretty_print=True)
+            ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml")
 
 
 def add_sub_node(node, name, kvs):
