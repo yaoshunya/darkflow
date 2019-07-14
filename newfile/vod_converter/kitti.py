@@ -92,9 +92,10 @@ class KITTIIngestor(Ingestor):
     def _get_image_detection(self, root, image_id, *, image_ext='png'):
         detections_fpath = f"{root}/training/label_2/{image_id}.txt"
         detections = self._get_detections(detections_fpath)
-        detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
+        #detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
         image_path = f"{root}/training/image_2/{image_id}.{image_ext}"
         image_width, image_height = _image_dimensions(image_path)
+        #pdb.set_trace()
         return {
             'image': {
                 'id': image_id,
