@@ -130,7 +130,7 @@ class KITTIIngestor(Ingestor):
                 rot = fi.rand_rotation_matrix(deflection=1.0)
                 grid = fi.rotate_grid(rot,grid)
                 mask_parts = fi.project_2d_on_sphere(mask_prepare,grid)
-                pdb.set_trace()
+                #pdb.set_trace()
                 detections.append({
                     'label': label,
                     #'left': x1,
