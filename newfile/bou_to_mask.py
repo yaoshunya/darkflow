@@ -59,6 +59,24 @@ def create_sphere(data,grid): #data:list grid:tuple
 def prepare_mask():
 	return np.zeros((375,1242),dtype=int)
 
+def make_mask_from_BB(minx,miny,maxx,maxy):
+	minx=int(mnix)
+	miny=int(miny)
+	maxx=int(maxx)
+	maxy=int(maxy)
+	mask_prepare = prepare_mask()
+
+	mask_prepare[miny:maxy,minx:maxx]=255
+	mask_parts = np.array([])
+	grid = fi.get_projection_grid(b=args.bandwidth)
+	rot = fi.rand_rotation_matrix(deflection=args.noise)
+	grid = fi.rotate_grid(rot,grid)
+	mask_parts = fi.project_2d_on_sphere(mask_prepare,grid)
+
+	return mask_parts
+
+
+
 def make_mask(label_all):
 	mask_all=[]
 	for i in range(len(label_all)):
@@ -138,7 +156,7 @@ def main():
 	for i in range(len(mask)):
 		if len(mask[i]) > 1:
 			for t in range(len(mask[i])):
-				pdb.set_trace()
+				#pdb.set_trace()
 				cv2.imwrite('out/{}_{}_{}.png'.format(str(i).zfill(6),str(t).zfill(2),s_all[i][t][0]),mask[i][t].T)
 				cv2.waitKey(0) & 0xFF
 		else:

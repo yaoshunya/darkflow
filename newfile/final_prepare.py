@@ -22,24 +22,6 @@ len_images = len(files) #フォルダ内の画像の数
 os.chdir('../../../code')
 """
 
-NORTHPOLE_EPSILON = 1e-3
-parser = argparse.ArgumentParser()
-parser.add_argument("--bandwidth",
-					help="the bandwidth of the S2 signal",
-					type=int,
-					default=500,
-					required=False)
-parser.add_argument("--chunk_size",
-					help="size of image chunk with same rotation",
-					type=int,
-					default=5,
-					required=False)
-parser.add_argument("--noise",
-					help="the rotational noise applied on the sphere",
-					type=float,
-					default=1.0,
-					required=False)
-args = parser.parse_args()
 
 
 
@@ -186,7 +168,7 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 
 
 	if projection_origin is None:
-		projection_origin = (0, 0, 2 + NORTHPOLE_EPSILON)
+		projection_origin = (0, 0, 2 + 1e-3)
 	#pdb.set_trace()
 	#projection=np.array(projection_origin)[:,np.newaxis]
 	#plot_sphere(projection)
@@ -232,15 +214,15 @@ def create_sphere(data,grid):
 	signals = data.reshape(-1,data.shape[1],data.shape[2]).astype(np.float64)
 	n_signals = signals.shape[0]
 	projections = np.ndarray(
-		(signals.shape[0],2*args.bandwidth,2*args.bandwidth),dtype=np.uint8
+		(signals.shape[0],2*50,2*50),dtype=np.uint8
 	)
 	current = 0
 	#pdb.set_trace()
 	while current < n_signals:
-		idxs = np.arange(current,min(n_signals,current+args.chunk_size))
+		idxs = np.arange(current,min(n_signals,current+5))
 		chunk = signals[idxs]
 		projections[idxs] = project_2d_on_sphere(chunk,grid)
-		current += args.chunk_size
+		current += 5
 		print(current)
 
 	return projections
@@ -292,9 +274,9 @@ def main():
 
 			img_b,img_g,img_r = divide_color(images)
 
-			grid = get_projection_grid(b=args.bandwidth)
+			grid = get_projection_grid(b=50)
 
-			rot = rand_rotation_matrix(deflection=args.noise)
+			rot = rand_rotation_matrix(deflection=1.0)
 
 			rotated_grid = rotate_grid(rot,grid)
 
@@ -315,8 +297,8 @@ def main():
 			image_name=np.array([])
 			t=0
 	img_b,img_g,img_r=divide_color(images)
-	grid = get_projection_grid(b=args.bandwidth)
-	rot = rand_rotation_matrix(deflection=args.noise)
+	grid = get_projection_grid(b=50)
+	rot = rand_rotation_matrix(deflection=1.0)
 	rotated_grid=rotate_grid(rot,grid)
 
 	img_b = create_sphere(img_b,rotated_grid)

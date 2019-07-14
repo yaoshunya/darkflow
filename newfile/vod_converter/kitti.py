@@ -51,6 +51,10 @@ from PIL import Image
 import shutil
 import pdb
 from converter import Ingestor, Egestor
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/..')
+import final_prepare as fi
+import numpy as np
 
 
 class KITTIIngestor(Ingestor):
@@ -102,6 +106,12 @@ class KITTIIngestor(Ingestor):
             'detections': detections
         }
 
+    def prepare_mask():
+    	return np.zeros((375,1242),dtype=int)
+
+
+
+
     def _get_detections(self, detections_fpath):
         detections = []
         with open(detections_fpath) as f:
@@ -109,13 +119,25 @@ class KITTIIngestor(Ingestor):
             for row in f_csv:
                 x1, y1, x2, y2, height, width, length, X, Y, Z, rotation_y = map(float, row[4:15])
                 label = row[0]
-                #pdb.set_trace()
+                minx=int(x1)
+                miny=int(x2)
+                maxx=int(y1)
+                maxy=int(y2)
+                mask_prepare = np.zeros((375,1242),dtype=int)
+                mask_prepare[miny:maxy,minx:maxx]=255
+                mask_parts = np.array([])
+                grid = fi.get_projection_grid(b=500)
+                rot = fi.rand_rotation_matrix(deflection=1.0)
+                grid = fi.rotate_grid(rot,grid)
+                mask_parts = fi.project_2d_on_sphere(mask_prepare,grid)
+                pdb.set_trace()
                 detections.append({
                     'label': label,
-                    'left': x1,
-                    'right': x2,
-                    'top': y1,
-                    'bottom': y2
+                    #'left': x1,
+                    #'right': x2,
+                    #'top': y1,
+                    #'bottom': y2
+                    'mask':mask_parts
                 })
         return detections
 
@@ -172,5 +194,5 @@ class KITTIEgestor(Egestor):
                     y1 = detection['top']
                     y2 = detection['bottom']
                     kitti_row[4:8] = x1, y1, x2, y2
-                    pdb.set_trace()
+                    #pdb.set_trace()
                     csvwriter.writerow(kitti_row)
