@@ -4,9 +4,30 @@ import numpy as np
 import matplotlib.pylab as plt
 import pdb
 import glob
+import final_prepare as fi
+import argparse
+
+NORTHPOLE_EPSILON = 1e-3
+parser = argparse.ArgumentParser()
+parser.add_argument("--bandwidth",
+					help="the bandwidth of the S2 signal",
+					type=int,
+					default=500,
+					required=False)
+parser.add_argument("--chunk_size",
+					help="size of image chunk with same rotation",
+					type=int,
+					default=5,
+					required=False)
+parser.add_argument("--noise",
+					help="the rotational noise applied on the sphere",
+					type=float,
+					default=1.0,
+					required=False)
+args = parser.parse_args()
 
 def mask_processing(img):
-    files = glob.glob("bb/*")
+    files = glob.glob("bb_rotated/*")
 
     for i in files:
         mask = cv2.imread(i)
@@ -18,7 +39,7 @@ def mask_processing(img):
 
 
 def main():
-    img = cv2.imread("../../kitti/data/train/000008.png")
+    img = cv2.imread("../../kitti/data/train/sphere_data/000008.png")
     #pdb.set_trace()
     img_x=img.shape[0]  #1000
     img_y=img.shape[1]  #1000
@@ -47,10 +68,10 @@ def main():
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
-                side = int(step_size/w_)
-                ver = int(step_size/h_)
+                side = int(w_*500/39)
+                ver = int(h_*200/13)
 
-                pdb.set_trace()
+                #pdb.set_trace()
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -75,7 +96,11 @@ def main():
                 #mask = np.append(np.append(mask_base,mask_base,axis=0),mask_base,axis=0)
                 #pdb.set_trace()
                 #image = cv2.bitwise_and(img,mask_base)
-                cv2.imwrite('bb/grid_{0}{1}_{2}.png'.format(i,t,l),mask_base)
+                grid = fi.get_projection_grid(b=args.bandwidth)
+                rot = fi.rand_rotation_matrix(deflection=args.noise)
+                rotated_grid = fi.rotate_grid(rot,grid)
+                mask_base = fi.project_2d_on_sphere(mask_base,rotated_grid)
+                cv2.imwrite('bb_rotated/grid_{0}{1}_{2}.png'.format(i,t,l),mask_base.T)
                 cv2.waitKey(0) & 0xFF
                 #pdb.set_trace()
             step_x += step_size

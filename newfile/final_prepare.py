@@ -235,7 +235,7 @@ def create_sphere(data,grid):
 		(signals.shape[0],2*args.bandwidth,2*args.bandwidth),dtype=np.uint8
 	)
 	current = 0
-	pdb.set_trace()
+	#pdb.set_trace()
 	while current < n_signals:
 		idxs = np.arange(current,min(n_signals,current+args.chunk_size))
 		chunk = signals[idxs]
@@ -262,7 +262,7 @@ def plot_sphere(grid):
 def main():
 
 
-	os.chdir('../data/train')
+	os.chdir('../../kitti/data/train/')
 	files = glob.glob("images/*")
 
 	#images = []
@@ -288,7 +288,7 @@ def main():
 
 		t += 1
 		print(t)
-		if t==200:
+		if t==10:
 
 			img_b,img_g,img_r = divide_color(images)
 
