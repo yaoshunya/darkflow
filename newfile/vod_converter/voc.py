@@ -83,26 +83,10 @@ class VOCEgestor(Egestor):
 
     def expected_labels(self):
         return {
-            'aeroplane': [],
-            'bicycle': [],
-            'bird': [],
-            'boat': [],
-            'bottle': [],
-            'bus': [],
-            'car': [],
-            'cat': [],
-            'chair': [],
-            'cow': [],
-            'diningtable': [],
-            'dog': [],
-            'horse': [],
-            'motorbike': [],
-            'person': ['pedestrian'],
-            'pottedplant': [],
-            'sheep': [],
-            'sofa': [],
-            'train': [],
-            'tvmonitor': []
+            'bus':[],
+            'Truck':[],
+            'Car':[],
+            'car':[]
         }
 
     def egest(self, *, image_detections, root):
@@ -155,10 +139,7 @@ class VOCEgestor(Egestor):
                     'pose': 'Unspecified'
                 })
                 add_sub_node(x_object, 'bndbox', {
-                    'xmin': detection['left'] + 1,
-                    'xmax': detection['right'] + 1,
-                    'ymin': detection['top'] + 1,
-                    'ymax': detection['bottom'] + 1
+                    'mask':detection['mask']
                 })
 
             ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml")

@@ -49,11 +49,8 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
                         continue
 
                 xmlbox = obj.find('bndbox')
-                xn = int(float(xmlbox.find('xmin').text))
-                xx = int(float(xmlbox.find('xmax').text))
-                yn = int(float(xmlbox.find('ymin').text))
-                yx = int(float(xmlbox.find('ymax').text))
-                current = [name,xn,yn,xx,yx]
+                mask = float(xmlbox.find('mask').text)
+                current = [name,mask]
                 all += [current]
 
         add = [[jpg, [w, h, all]]]
