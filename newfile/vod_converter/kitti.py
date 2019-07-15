@@ -121,8 +121,8 @@ class KITTIIngestor(Ingestor):
                 x1, y1, x2, y2, height, width, length, X, Y, Z, rotation_y = map(float, row[4:15])
                 label = row[0]
                 minx=int(x1)
-                miny=int(x2)
-                maxx=int(y1)
+                maxx=int(x2)
+                miny=int(y1)
                 maxy=int(y2)
                 mask_prepare = np.zeros((375,1242),dtype=int)
                 mask_prepare[miny:maxy,minx:maxx]=255
@@ -130,6 +130,7 @@ class KITTIIngestor(Ingestor):
                 grid = fi.get_projection_grid(b=500)
                 rot = fi.rand_rotation_matrix(deflection=1.0)
                 grid = fi.rotate_grid(rot,grid)
+                #pdb.set_trace()
                 mask_parts = fi.project_2d_on_sphere(mask_prepare,grid)
                 #pdb.set_trace()
                 detections.append({

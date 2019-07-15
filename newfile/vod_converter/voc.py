@@ -9,6 +9,7 @@ import shutil
 
 from converter import Ingestor, Egestor
 import xml.etree.ElementTree as ET
+import pdb
 
 
 class VOCIngestor(Ingestor):
@@ -141,7 +142,8 @@ class VOCEgestor(Egestor):
                 add_sub_node(x_object, 'bndbox', {
                     'mask':detection['mask']
                 })
-
+                print(detection)
+            pdb.set_trace()
             ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml")
 
 
@@ -156,10 +158,3 @@ def add_text_node(node, name, text):
     subnode = ET.SubElement(node, name)
     subnode.text = f"{text}"
     return subnode
-
-
-
-
-
-
-

@@ -178,6 +178,7 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 	#pdb.set_trace()
 
 	sample *= (grid[2] <= 1).astype(np.float64)
+	#pdb.set_trace()
 	if len(sample.shape) > 2:
 		sample_min = sample.min(axis=(1, 2)).reshape(-1, 1, 1)
 		sample_max = sample.max(axis=(1, 2)).reshape(-1, 1, 1)
@@ -193,7 +194,9 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 	return sample
 
 def divide_color(image):
-
+	image_b = np.array([])
+	image_r = np.array([])
+	image_g = np.array([])
 
 	for i in range(image.shape[0]):
 		if i ==0 :
@@ -205,12 +208,10 @@ def divide_color(image):
 			image_g = np.append(image_g,image[i].T[1].T[np.newaxis],axis=0)
 			image_r = np.append(image_r,image[i].T[2].T[np.newaxis],axis=0)
 		print(i)
-
-
 	return image_b,image_g,image_r
 
 def create_sphere(data,grid):
-
+	#pdb.set_trace()
 	signals = data.reshape(-1,data.shape[1],data.shape[2]).astype(np.float64)
 	n_signals = signals.shape[0]
 	projections = np.ndarray(
@@ -244,8 +245,8 @@ def plot_sphere(grid):
 def main():
 
 
-	os.chdir('../../kitti/data/train/')
-	files = glob.glob("images/*")
+	os.chdir('../../kitti/data/training/')
+	files = glob.glob("image_2/*")
 
 	#images = []
 	images = np.array([])
