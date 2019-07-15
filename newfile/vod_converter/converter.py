@@ -44,12 +44,9 @@ DETECTION_SCHEMA = {
     'type': 'object',
     'properties': {
         'label': {'type': 'string'},
-        'top': {'type': 'number', 'minimum': 0},
-        'left': {'type': 'number', 'minimum': 0},
-        'right': {'type': 'number', 'minimum': 0},
-        'bottom': {'type': 'number', 'minimum': 0}
+        'mask':{'type':'integer'}
     },
-    'required': ['top', 'left', 'right', 'bottom']
+    'required': ['mask']
 }
 
 IMAGE_DETECTION_SCHEMA = {
