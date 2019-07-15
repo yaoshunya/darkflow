@@ -141,6 +141,7 @@ class KITTIIngestor(Ingestor):
                     #'bottom': y2
                     'mask':mask_parts
                 })
+                print(detections_fpath)
         return detections
 
 
