@@ -76,7 +76,7 @@ class KITTIIngestor(Ingestor):
         if len(image_ids):
             first_image_id = image_ids[0]
             image_ext = self.find_image_ext(path, first_image_id)
-        return [self._get_image_detection(path, image_name, image_ext=image_ext) for image_name in image_ids[:10]]
+        return [self._get_image_detection(path, image_name, image_ext=image_ext) for image_name in image_ids[]]
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
@@ -120,6 +120,7 @@ class KITTIIngestor(Ingestor):
             for row in f_csv:
                 x1, y1, x2, y2, height, width, length, X, Y, Z, rotation_y = map(float, row[4:15])
                 label = row[0]
+                """
                 minx=int(x1)
                 maxx=int(x2)
                 miny=int(y1)
@@ -133,13 +134,14 @@ class KITTIIngestor(Ingestor):
                 #pdb.set_trace()
                 mask_parts = fi.project_2d_on_sphere(mask_prepare,grid)
                 #pdb.set_trace()
+                """
                 detections.append({
                     'label': label,
-                    #'left': x1,
-                    #'right': x2,
-                    #'top': y1,
-                    #'bottom': y2
-                    'mask':mask_parts
+                    'left': x1,
+                    'right': x2,
+                    'top': y1,
+                    'bottom': y2,
+                    #'mask':mask_parts
                 })
                 print(detections_fpath)
         return detections

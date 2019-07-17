@@ -140,10 +140,13 @@ class VOCEgestor(Egestor):
                     'pose': 'Unspecified'
                 })
                 add_sub_node(x_object, 'bndbox', {
-                    'mask':detection['mask']
+                    'xmin': detection['left'] + 1,
+                    'xmax': detection['right'] + 1,
+                    'ymin': detection['top'] + 1,
+                    'ymax': detection['bottom'] + 1
                 })
                 print(detection)
-            pdb.set_trace()
+            #pdb.set_trace()
             ET.ElementTree(xml_root).write(f"{annotations_path}/{image_id}.xml")
 
 

@@ -19,7 +19,7 @@ def validate_schema(data, schema):
 
     https://github.com/Julian/jsonschema/issues/148
     """
-    pdb.set_trace()
+    #pdb.set_trace()
     return raw_validate(data, schema, types={"array": (list, tuple)})
 
 
@@ -40,14 +40,25 @@ IMAGE_SCHEMA = {
     'required': ['id', 'path', 'segmented_path', 'width', 'height']
 }
 
-
+"""
 DETECTION_SCHEMA = {
     'type': 'object',
     'properties': {
         'label': {'type': 'string'},
         'mask':{'type':'ndarray'}
     },
-    'required': ['label','mask']
+    'required': ['mask']
+}"""
+DETECTION_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'label': {'type': 'string'},
+        'top': {'type': 'number', 'minimum': 0},
+        'left': {'type': 'number', 'minimum': 0},
+        'right': {'type': 'number', 'minimum': 0},
+        'bottom': {'type': 'number', 'minimum': 0}
+    },
+    'required': ['top', 'left', 'right', 'bottom']
 }
 
 IMAGE_DETECTION_SCHEMA = {
@@ -179,6 +190,3 @@ def convert_labels(*, image_detections, expected_labels,
             final_image_detections.append(image_detection)
 
     return final_image_detections
-
-
-
