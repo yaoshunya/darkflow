@@ -19,7 +19,6 @@ def validate_schema(data, schema):
 
     https://github.com/Julian/jsonschema/issues/148
     """
-    pdb.set_trace()
     return raw_validate(data, schema, types={"array": (list, tuple)})
 
 
@@ -45,9 +44,9 @@ DETECTION_SCHEMA = {
     'type': 'object',
     'properties': {
         'label': {'type': 'string'},
-        'mask':{'type':'ndarray'}
+        'mask':{'type':'integer'}
     },
-    'required': ['label','mask']
+    'required': ['mask']
 }
 
 IMAGE_DETECTION_SCHEMA = {
@@ -141,7 +140,7 @@ def convert(*, from_path, ingestor, to_path, egestor, select_only_known_labels, 
 
 def validate_image_detections(image_detections):
     for i, image_detection in enumerate(image_detections):
-        #pdb.set_trace()
+        pdb.set_trace()
         try:
             validate_schema(image_detection, IMAGE_DETECTION_SCHEMA)
         except SchemaError as se:
