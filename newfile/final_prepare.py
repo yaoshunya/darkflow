@@ -245,7 +245,7 @@ def plot_sphere(grid):
 def main():
 
 
-	os.chdir('../../data/training')
+	os.chdir('../../kitti/data/training')
 	files = glob.glob("image_2/*")
 
 	#images = []
@@ -267,10 +267,10 @@ def main():
 			images = np.append(images,img[np.newaxis],axis=0)
 
 		print(i)
-		image_name = np.append(image_name,i[7:])
+		image_name = np.append(image_name,i[8:])
 
 		t += 1
-		print(t)
+		#print(t)
 		if t==10:
 
 			img_b,img_g,img_r = divide_color(images)
@@ -291,12 +291,16 @@ def main():
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
                                 #ipdb.set_trace()
 				#cv2.imwrite(image_name[i],image_sample.T)
+
 				cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
-			#cv2.waitKey(0)
+				#cv2.waitKey(0)
+			#pdb.set_trace()
 			image_sample = []
 			images=np.array([])
 			image_name=np.array([])
 			t=0
+
+
 	img_b,img_g,img_r=divide_color(images)
 	grid = get_projection_grid(b=50)
 	rot = rand_rotation_matrix(deflection=1.0)
@@ -305,7 +309,7 @@ def main():
 	img_b = create_sphere(img_b,rotated_grid)
 	img_g = create_sphere(img_g,rotated_grid)
 	img_r = create_sphere(img_r,rotated_grid)
-        
+
 
 	for i in range(images.shape[0]):
 		print(i)
