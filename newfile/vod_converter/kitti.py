@@ -60,7 +60,7 @@ import numpy as np
 class KITTIIngestor(Ingestor):
     def validate(self, path):
         expected_dirs = [
-            'training/image_2',
+            'training/sphere_data',
             'training/label_2'
         ]
         for subdir in expected_dirs:

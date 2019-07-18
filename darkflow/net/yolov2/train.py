@@ -5,7 +5,7 @@ from ..yolo.misc import show
 import numpy as np
 import os
 import math
-
+import pdb
 def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
@@ -51,9 +51,9 @@ def loss(self, net_out):
         'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
         'areas':_areas, 'upleft':_upleft, 'botright':_botright
     }
-
+    #pdb.set_trace()
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C)])
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 1 + C)])
     coords = net_out_reshape[:, :, :, :, :4]
     coords = tf.reshape(coords, [-1, H*W, B, 4])
     adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])

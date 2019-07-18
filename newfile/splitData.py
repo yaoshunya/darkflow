@@ -4,14 +4,14 @@ import shutil
 import os
 import pdb
 
-dfTrain = pd.read_csv('../../data/data_voc/VOC2012/ImageSets/Main/trainval.txt',header=None)
-dfTest = pd.read_csv('../../data/data_voc/VOC2012/ImageSets/Main/test.txt',header=None)
-imgDir = '../../data/data_voc/VOC2012/JPEGImages'
-trainImgDir = '../data/PNGImagesTrain'
-testImgDir = '../data/PNGImagesTest'
-annoDir = '../../data/data_voc/VOC2012/Annotations'
-trainAnnoDir = '../data/AnnotationsTrain'
-testAnnoDir = '../data/AnnotationsTest'
+dfTrain = pd.read_csv('../data/VOC2012/ImageSets/Main/trainval.txt',header=None)
+dfTest = pd.read_csv('../data/VOC2012/ImageSets/Main/test.txt',header=None)
+imgDir = '../data/VOC2012/JPEGImages'
+trainImgDir = '../data/VOC2012/PNGImagesTrain'
+testImgDir = '../data/VOC2012/PNGImagesTest'
+annoDir = '../data/VOC2012/Annotations'
+trainAnnoDir = '../data/VOC2012/AnnotationsTrain'
+testAnnoDir = '../data/VOC2012/AnnotationsTest'
 
 # Train data
 for ind in np.arange(len(dfTrain)):

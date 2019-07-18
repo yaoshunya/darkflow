@@ -245,7 +245,7 @@ def plot_sphere(grid):
 def main():
 
 
-	os.chdir('../../kitti/data/training')
+	os.chdir('../../data/training')
 	files = glob.glob("image_2/*")
 
 	#images = []
