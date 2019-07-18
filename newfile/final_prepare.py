@@ -245,7 +245,7 @@ def plot_sphere(grid):
 def main():
 
 
-	os.chdir('../../kitti/data/training/')
+	os.chdir('../../data/training')
 	files = glob.glob("image_2/*")
 
 	#images = []
@@ -289,7 +289,7 @@ def main():
 				#print(i)
 				image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
-			#pdb.set_trace()
+                                #ipdb.set_trace()
 				#cv2.imwrite(image_name[i],image_sample.T)
 				cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
 			#cv2.waitKey(0)
@@ -305,8 +305,9 @@ def main():
 	img_b = create_sphere(img_b,rotated_grid)
 	img_g = create_sphere(img_g,rotated_grid)
 	img_r = create_sphere(img_r,rotated_grid)
+        
 
-	for i in range(images.shape):
+	for i in range(images.shape[0]):
 		print(i)
 		image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 		image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
