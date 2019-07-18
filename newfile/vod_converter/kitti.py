@@ -76,7 +76,7 @@ class KITTIIngestor(Ingestor):
         if len(image_ids):
             first_image_id = image_ids[0]
             image_ext = self.find_image_ext(path, first_image_id)
-        return [self._get_image_detection(path, image_name, image_ext=image_ext) for image_name in image_ids[]]
+        return [self._get_image_detection(path, image_name, image_ext=image_ext) for image_name in image_ids[:]]
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
