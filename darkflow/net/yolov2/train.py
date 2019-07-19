@@ -35,7 +35,7 @@ def loss(self, net_out):
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
-
+    #pdb.set_trace()
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
     _confs = tf.placeholder(tf.float32, size2)
@@ -52,40 +52,55 @@ def loss(self, net_out):
         'areas':_areas, 'upleft':_upleft, 'botright':_botright
     }
     #pdb.set_trace()
+
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 1 + C)])
-    coords = net_out_reshape[:, :, :, :, :4]
-    coords = tf.reshape(coords, [-1, H*W, B, 4])
-    adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])
-    adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
-    coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 1 + C)]) #mask+信頼度+クラス
 
-    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
+    #pdb.set_trace()
+    coords = net_out_reshape[:, :, :, :, :1]
+    coords = tf.reshape(coords, [-1, H*W, B, 1])
+    #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])
+    #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
+    #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)
+    #pdb.set_trace()
+    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 1])
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
+    pdb.set_trace()
+	#####################################################################
+	#####################################################################
+	###########ここからlossの設計とIOUの設定###############################
+	#####################################################################
+	#####################################################################
 
-    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
-    adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
+    #adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
+    #adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
 
-    adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3)
+    #adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3)
 
-    wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2])
-    area_pred = wh[:,:,:,0] * wh[:,:,:,1]
-    centers = coords[:,:,:,0:2]
-    floor = centers - (wh * .5)
-    ceil  = centers + (wh * .5)
+    #wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2])
+    #area_pred = wh[:,:,:,0] * wh[:,:,:,1]
+    #centers = coords[:,:,:,0:2]
+    #floor = centers - (wh * .5)
+    #ceil  = centers + (wh * .5)
 
     # calculate the intersection areas
+	# 交差面積の計算
+    """
     intersect_upleft   = tf.maximum(floor, _upleft)
     intersect_botright = tf.minimum(ceil , _botright)
     intersect_wh = intersect_botright - intersect_upleft
     intersect_wh = tf.maximum(intersect_wh, 0.0)
     intersect = tf.multiply(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1])
+    """
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
-    iou = tf.truediv(intersect, _areas + area_pred - intersect)
-    best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
+	# bestのIOUを計算し、一番悪いボックスには信頼度0.0を設定
+    """
+    iou = tf.truediv(intersect, _areas + area_pred - intersect)　#tf.truediv:割算 intersect/(_areas + area_pred - intersect)
+    best_box = tf.equal(iou, tf.reduce_max(iou, [2], True)) #tf.reduce_max:Tensorの要素の最大を計算
     best_box = tf.to_float(best_box)
     confs = tf.multiply(best_box, _confs)
+    """
 
     # take care of the weight terms
     conid = snoob * (1. - confs) + sconf * confs
