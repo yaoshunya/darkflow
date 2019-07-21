@@ -9,6 +9,77 @@ import pdb
 def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
+def mask_anchor(anchor,H):
+    img_x = 1000
+    img_y = 1000
+
+    step_x=0
+    step_y=0
+    S = H
+    anchor = np.reshape(anchor,(5,2))
+    anchor_size = anchor.shape[0]
+    step_size = int(img_x/S)
+
+    #pdb.set_trace()
+
+    mask = np.array([])
+
+    for i in range(S):
+        for t in range(S):
+            if t==0:
+                step_x = 0
+            center_x = int((step_x + (step_x + step_size))/2)
+            center_y = int((step_y + (step_y + step_size))/2)
+            for l in range(anchor_size):
+                w_ = anchor[l][0]
+                h_ = anchor[l][0]
+
+                mask_base = np.zeros((img_x,img_y),dtype=int)
+
+                side = int(w_*500/39)
+                ver = int(h_*200/13)
+
+                #pdb.set_trace()
+
+                side_min = center_x - side
+                side_max = center_x + side
+                ver_min = center_y - ver
+                ver_max = center_y + ver
+
+                if side_min < 0:
+                    side_min = 0
+                if side_max > img_x:
+                    side_max = img_x
+                if ver_min < 0:
+                    ver_min = 0
+                if ver_max > img_y:
+                    ver_max = img_y
+
+
+                mask_base[ver_min:ver_max,side_min:side_max] = 255
+                resize_mask = np.resize(mask_base,(19,19))
+                if l == 0:
+                    mask = resize_mask[np.newaxis]
+                else:
+                    mask = np.append(mask,resize_mask[np.newaxis],axis=0)
+                print(l)
+                #pdb.set_trace()
+
+            step_x += step_size
+            #pdb.set_trace()
+            if t == 0:
+                mask_ = mask[np.newaxis]
+            else:
+                mask_ = np.append(mask_,mask[np.newaxis],axis=0)
+
+        step_y += step_size
+        if i == 0:
+            mask_fi = mask_[np.newaxis]
+        else:
+             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+
+    return mask_fi
+
 def loss(self, net_out):
     """
     Takes net.out and placeholders value
@@ -26,6 +97,7 @@ def loss(self, net_out):
     HW = H * W # number of grid cells
     anchors = m['anchors']
 
+    anchor = mask_anchor(anchors,H)
     print('{} loss hyper-parameters:'.format(m['model']))
     print('\tH       = {}'.format(H))
     print('\tW       = {}'.format(W))
@@ -62,7 +134,7 @@ def loss(self, net_out):
     #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])
     #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)
-    #pdb.set_trace()
+    pdb.set_trace()
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 1])
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_2:0' shape=(?, 361, 5, 1) dtype=float32>
     #pdb.set_trace()
