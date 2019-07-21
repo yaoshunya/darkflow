@@ -58,24 +58,41 @@ def loss(self, net_out):
 
     #pdb.set_trace()
     coords = net_out_reshape[:, :, :, :, :1]
-    coords = tf.reshape(coords, [-1, H*W, B, 1])
+    coords = tf.reshape(coords, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_1:0' shape=(?, 361, 5, 1) dtype=float32>
     #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2])
     #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2]))
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)
     #pdb.set_trace()
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 1])
-    adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
-    pdb.set_trace()
+    adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_2:0' shape=(?, 361, 5, 1) dtype=float32>
+    #pdb.set_trace()
 	#####################################################################
 	#####################################################################
 	###########ここからlossの設計とIOUの設定###############################
 	#####################################################################
 	#####################################################################
 
-    #adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
-    #adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
+    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 2:])
+    adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C]) #<tf.Tensor 'Reshape_3:0' shape=(?, 361, 5, 2) dtype=float32>
 
-    #adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3)
+    adjusted_net_out = tf.concat([coords, adjusted_c, adjusted_prob], 3) #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
+
+    area_pred_mask = coords
+    #pdb.set_trace()
+    _areas = tf.reshape(_areas,[-1,H*W,B,1])
+    sum_pred_true = tf.add(_areas,area_pred_mask)
+    threshold_tensor = tf.ones_like(area_pred_mask)*300
+    zeros_tensor = tf.zeros_like(area_pred_mask)
+    intersect = tf.subtract(sum_pred_true,threshold_tensor)
+    intersect = tf.maximum(intersect,zeros_tensor)
+    intersect = tf.math.divide(tf.subtract(intersect,tf.reduce_min(intersect)),tf.subtract(tf.reduce_max(intersect),tf.reduce_min(intersect)))*255
+    intersect = intersect[:,:,:,0]
+    area_pred_mask = area_pred_mask[:,:,:,0]
+    #pdb.set_trace()
+	#sample = (sample - sample_min) / (sample_max - sample_min)
+	#min = tf.reduce_min
+
+
 
     #wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2])
     #area_pred = wh[:,:,:,0] * wh[:,:,:,1]
@@ -102,6 +119,8 @@ def loss(self, net_out):
     confs = tf.multiply(best_box, _confs)
     """
 
+    iou =  tf.truediv(intersect, _areas[:,:,:,0] + area_pred_mask - intersect)
+    pdb.set_trace()
     # take care of the weight terms
     conid = snoob * (1. - confs) + sconf * confs
     weight_coo = tf.concat(4 * [tf.expand_dims(confs, -1)], 3)
