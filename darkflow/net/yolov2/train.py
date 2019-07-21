@@ -39,7 +39,7 @@ def loss(self, net_out):
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
     _confs = tf.placeholder(tf.float32, size2)
-    _coord = tf.placeholder(tf.float32, size2 + [4])
+    _coord = tf.placeholder(tf.float32, size2 + [1])
     # weights term for L2 loss
     _proid = tf.placeholder(tf.float32, size1)
     # material calculating IOU
@@ -88,6 +88,7 @@ def loss(self, net_out):
     intersect = tf.math.divide(tf.subtract(intersect,tf.reduce_min(intersect)),tf.subtract(tf.reduce_max(intersect),tf.reduce_min(intersect)))*255
     intersect = intersect[:,:,:,0]
     area_pred_mask = area_pred_mask[:,:,:,0]
+    _areas = _areas[:,:,:,0]
     #pdb.set_trace()
 	#sample = (sample - sample_min) / (sample_max - sample_min)
 	#min = tf.reduce_min
@@ -119,8 +120,11 @@ def loss(self, net_out):
     confs = tf.multiply(best_box, _confs)
     """
 
-    iou =  tf.truediv(intersect, _areas[:,:,:,0] + area_pred_mask - intersect)
-    pdb.set_trace()
+    iou =  tf.truediv(intersect, _areas + area_pred_mask - intersect)
+    best_box = tf.equal(iou,tf.reduce_max(iou,[2],True))
+    best_box = tf.to_float(best_box)
+    confs = tf.multiply(best_box,_confs)
+
     # take care of the weight terms
     conid = snoob * (1. - confs) + sconf * confs
     weight_coo = tf.concat(4 * [tf.expand_dims(confs, -1)], 3)
@@ -132,10 +136,22 @@ def loss(self, net_out):
     true = tf.concat([_coord, tf.expand_dims(confs, 3), _probs ], 3)
     wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3)
 
+    #pdb.set_trace()
+
     print('Building {} loss'.format(m['model']))
+    """
     loss = tf.pow(adjusted_net_out - true, 2)
     loss = tf.multiply(loss, wght)
     loss = tf.reshape(loss, [-1, H*W*B*(4 + 1 + C)])
     loss = tf.reduce_sum(loss, 1)
+    """
+    smooth = 1
+    y_pred = tf.reshape(area_pred_mask,[-1])/255
+    y_true = tf.reshape(_areas,[-1])/255
+    intersection = tf.reduce_sum(y_pred*y_true)
+    loss = (2. * intersection + smooth) / (tf.reduce_sum(y_true) + tf.reduce_sum(y_pred) + smooth)
+    #loss = tf.nn.sigmoid_cross_entropy_with_logits(y_true, y_pred) + loss
+    pdb.set_trace()
     self.loss = .5 * tf.reduce_mean(loss)
+
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
