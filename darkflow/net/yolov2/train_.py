@@ -126,7 +126,7 @@ def loss(self, net_out):
     #pdb.set_trace()
 
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 1 + C)]) #mask+信頼度+クラス
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (HW + 1 + C)]) #mask+信頼度+クラス
 
     #pdb.set_trace()
     coords = net_out_reshape[:, :, :, :, :1]
