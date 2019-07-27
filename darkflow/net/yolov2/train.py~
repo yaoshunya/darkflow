@@ -6,7 +6,6 @@ import numpy as np
 import os
 import math
 import pdb
-import cv2
 
 def mask_anchor(anchor,H):
     img_x = 1000
@@ -75,84 +74,13 @@ def mask_anchor(anchor,H):
         if i == 0:
             mask_fi = mask_[np.newaxis]
         else:
-        	mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
 
     return mask_fi
 
-
 def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
-"""
-def shift_x_y(image, shift_x,shift_y):
-    pdb.set_trace()
-    h, w = image.shape[:2]
-    anchor_size = image.shape[2]
-    src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
-    dest = src.copy()
-    dest[:,0] += shift_x #横シフトするピクセル値
-    dest[:,1] += shift_y #縦シフトするピクセル値
-    affine = cv2.getAffineTransform(src, dest)
 
-    for i in range(h):
-        for j in range(w):
-            for k in range(anchor_size):
-                im_anchor_parts = image[i][j][k]
-                im_anchor_parts = cv2.warpAffine(im_anchor_parts, affine, (w, h))
-                if k == 0:
-                    im_anchor = im_anchor_parts[np.newaxis]
-                else:
-                    #pdb.set_trace()
-                    im_anchor = np.append(im_anchor,im_anchor_parts[np.newaxis],axis=0)
-
-            if j == 0:
-                im_ = im_anchor[np.newaxis]
-            else:
-                im_ = np.append(im_,im_anchor[np.newaxis],axis=0)
-        if i == 0:
-            im = im_[np.newaxis]
-        else:
-            im = np.append(im,im_[np.newaxis],axis=0)
-    #pdb.set_trace()
-    return im
-"""
-def shift_x_y(coords,H,W,B,image):
-    x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])
-    y_shift = tf.reshape(coords[:,:,:,1],[-1,H,W,B])
-    mag = tf.reshape(coords[:,:,:,2],[-1,H,W,B])
-
-    for h in range(H):
-        for w in range(W):
-            x_ = x_shift[:,h,w,:] #<tf.Tensor 'strided_slice_4:0' shape=(?, 5) dtype=float32>
-            y_ = y_shift[:,h,w,:] #<tf.Tensor 'strided_slice_5:0' shape=(?, 5) dtype=float32>
-            mag_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
-
-            new = tf.zeros([361],tf.int32)
-            for i in range(H):
-                for j in range(W):
-                    new_x = mag_*i + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
-                    new_y = mag_*j + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
-                    #pdb.set_trace()
-                    for k in range(B):
-                        #new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = tf.cond(tf.transpose(new_x)[k]>W,lambda:)
-                        """
-                        if tf.transpose(new_x)[k] > W:
-                            pass
-                        elif tf.transpose(newy)[k] > H:
-                            pass
-                        else:
-                            new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = image[h][w][k][i][j]
-                        """
-                        x = tf.cast(tf.transpose(new_x)[k],tf.int32)
-                        y = tf.cast(tf.transpose(new_y)[k],tf.int32)
-                        pdb.set_trace()
-                        try:
-                            print("success {0}".format(k))
-                        except:
-                            pass
-                        pdb.set_trace()
-
-
-    return 0
 
 
 def loss(self, net_out):
@@ -171,15 +99,12 @@ def loss(self, net_out):
     B, C = m['num'], m['classes']
     HW = H * W # number of grid cells
     anchors = m['anchors']
-    anchors = mask_anchor(anchors,H)
-    anchors=anchors.astype(np.float32)
-    #pdb.set_trace()
 
 
 
     print('{} loss hyper-parameters:'.format(m['model']))
-    print('\tH	     = {}'.format(H))
-    print('\tW	     = {}'.format(W))
+    print('\tH       = {}'.format(H))
+    print('\tW       = {}'.format(W))
     print('\tbox     = {}'.format(m['num']))
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
@@ -199,20 +124,16 @@ def loss(self, net_out):
     _botright = tf.placeholder(tf.float32, size2 + [2])
 
     self.placeholders = {
-	'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
-	'areas':_areas, 'upleft':_upleft, 'botright':_botright
+        'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
+        'areas':_areas, 'upleft':_upleft, 'botright':_botright
     }
 
     # Extract the coordinate prediction from net.out
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
     coords = net_out_reshape[:, :, :, :, :4]
     coords = tf.reshape(coords, [-1, H*W, B, 4])
-    #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2]) #<tf.Tensor 'truediv:0' shape=(?, 361, 5, 2) dtype=float32>
-    #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
-    #adjusted_coords_x =
-    #pdb.set_trace()
-    anchors_ = shift_x_y(coords,H,W,B,anchors)
-    pdb.set_trace()
+    adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2]) #<tf.Tensor 'truediv:0' shape=(?, 361, 5, 2) dtype=float32>
+    adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
     coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     pdb.set_trace()
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])

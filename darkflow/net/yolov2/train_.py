@@ -76,7 +76,7 @@ def mask_anchor(anchor,H):
         if i == 0:
             mask_fi = mask_[np.newaxis]
         else:
-             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+        	mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
 
     return mask_fi
 
