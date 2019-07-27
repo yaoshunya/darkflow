@@ -126,7 +126,7 @@ def shift_x_y(coords,H,W,B,image):
             y_ = y_shift[:,h,w,:] #<tf.Tensor 'strided_slice_5:0' shape=(?, 5) dtype=float32>
             mag_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
 
-            new = tf.zeros([361],tf.int32)
+            new = tf.Variable(tf.zeros([361],tf.int32))
             for i in range(H):
                 for j in range(W):
                     new_x = mag_*i + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
