@@ -142,8 +142,9 @@ def shift_x_y(coords,H,W,B,image):
                 im_w=im_k
             else:
                 im_w=tf.concat([im_w,im_k],0)
-            print(""+str(h)+str(w))
-            pdb.set_trace()
+                print(h)
+            
+            #pdb.set_trace()
 
     return im_w
 """
