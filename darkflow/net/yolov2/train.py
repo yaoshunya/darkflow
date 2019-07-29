@@ -138,13 +138,11 @@ def shift_x_y(coords,H,W,B,image):
                 else:
                     im_k = tf.concat([im_k,im],0)
             im_k = tf.expand_dims(im_k,0)
-            if h==0:
+            if h == 0 and w == 0:
                 im_w=im_k
             else:
                 im_w=tf.concat([im_w,im_k],0)
                 print(h)
-            
-            #pdb.set_trace()
 
     return im_w
 """
