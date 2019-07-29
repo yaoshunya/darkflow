@@ -116,7 +116,7 @@ def shift_x_y(image, shift_x,shift_y):
     return im
 """
 def shift_x_y(coords,H,W,B,image):
-    x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])
+    x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])#<tf.Tensor 'Reshape_2:0' shape=(?, 19, 19, 5) dtype=float32>
     y_shift = tf.reshape(coords[:,:,:,1],[-1,H,W,B])
     mag = tf.reshape(coords[:,:,:,2],[-1,H,W,B])
 
@@ -125,36 +125,27 @@ def shift_x_y(coords,H,W,B,image):
             x_ = x_shift[:,h,w,:] #<tf.Tensor 'strided_slice_4:0' shape=(?, 5) dtype=float32>
             y_ = y_shift[:,h,w,:] #<tf.Tensor 'strided_slice_5:0' shape=(?, 5) dtype=float32>
             mag_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
+            new_x = mag_*h + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
+            new_y = mag_*w + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
+            for k in range(B):
+                x = tf.cast(tf.transpose(new_x)[k],tf.float32)
+                y = tf.cast(tf.transpose(new_y)[k],tf.float32)
+                imgs = image[h][w][k]
+                im = tf.cast(my_img_translate(imgs, x,y),tf.int32)
+                im = tf.expand_dims(tf.reshape(im,[19,19]),0)
+                if k == 0:
+                    im_k = im
+                else:
+                    im_k = tf.concat([im_k,im],0)
+            im_k = tf.expand_dims(im_k,0)
+            if h==0:
+                im_w=im_k
+            else:
+                im_w=tf.concat([im_w,im_k],0)
+            print(""+str(h)+str(w))
+            pdb.set_trace()
 
-            new = tf.Variable(tf.zeros([361],tf.int32))
-            for i in range(H):
-                for j in range(W):
-                    new_x = mag_*i + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
-                    new_y = mag_*j + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
-                    for k in range(B):
-                        #new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = tf.cond(tf.transpose(new_x)[k]>W,lambda:)
-                        """
-                        if tf.transpose(new_x)[k] > W:
-                            pass
-                        elif tf.transpose(newy)[k] > H:
-                            pass
-                        else:
-                            new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = image[h][w][k][i][j]
-                        """
-                        x = tf.cast(tf.transpose(new_x)[k],tf.float32)
-                        y = tf.cast(tf.transpose(new_y)[k],tf.float32)
-                        imgs = image[h][w][k]
-                        im = my_img_translate(imgs, x,y)
-                        #im=transform_perspective(image[h][w][k])
-                        pdb.set_trace()
-                        try:
-                            print("success {0}".format(k))
-                        except:
-                            pass
-                        pdb.set_trace()
-
-
-    return 0
+    return im_w
 """
 #https://stackoverflow.com/questions/42252040/how-to-translateor-shift-images-in-tensorflow
 # Tensorflow image translation op
@@ -209,9 +200,9 @@ def my_img_translate(imgs, x,y):
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
-    pdb.set_trace()
+    #pdb.set_trace()
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
-    pdb.set_trace()
+    #pdb.set_trace()
     def grad(img_translated_grads):
         translates_x = translates[:, 0] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice:0' shape=(?,) dtype=float32>
         translates_y = translates[:, 1] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice_1:0' shape=(?,) dtype=float32>
@@ -237,7 +228,7 @@ def my_img_translate(imgs, x,y):
         # Complete gradient
         translates_grad = tf.stack([translates_x_grad, translates_y_grad], axis=1) #<tf.Tensor 'gradients/IdentityN_grad/stack_2:0' shape=(?, 2) dtype=float32>
         return None, translates_grad
-    return imgs_translated, grad
+    return imgs_translated
 
 
 def loss(self, net_out):
