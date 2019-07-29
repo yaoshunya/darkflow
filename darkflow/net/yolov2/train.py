@@ -131,7 +131,6 @@ def shift_x_y(coords,H,W,B,image):
                 for j in range(W):
                     new_x = mag_*i + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
                     new_y = mag_*j + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
-                    #pdb.set_trace()
                     for k in range(B):
                         #new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = tf.cond(tf.transpose(new_x)[k]>W,lambda:)
                         """
@@ -142,8 +141,11 @@ def shift_x_y(coords,H,W,B,image):
                         else:
                             new[tf.transpose(new_x)[k]][tf.transpose(new_y)[k]] = image[h][w][k][i][j]
                         """
-                        x = tf.cast(tf.transpose(new_x)[k],tf.int32)
-                        y = tf.cast(tf.transpose(new_y)[k],tf.int32)
+                        x = tf.cast(tf.transpose(new_x)[k],tf.float32)
+                        y = tf.cast(tf.transpose(new_y)[k],tf.float32)
+                        imgs = image[h][w][k]
+                        im = my_img_translate(imgs, x,y)
+                        #im=transform_perspective(image[h][w][k])
                         pdb.set_trace()
                         try:
                             print("success {0}".format(k))
@@ -153,6 +155,89 @@ def shift_x_y(coords,H,W,B,image):
 
 
     return 0
+"""
+#https://stackoverflow.com/questions/42252040/how-to-translateor-shift-images-in-tensorflow
+# Tensorflow image translation op
+# images:        A tensor of shape (num_images, num_rows, num_columns, num_channels) (NHWC),
+#                (num_rows, num_columns, num_channels) (HWC), or (num_rows, num_columns) (HW).
+# tx:            The translation in the x direction.
+# ty:            The translation in the y direction.
+# interpolation: If x or y are not integers, interpolation comes into play. Options are 'NEAREST' or 'BILINEAR'
+def tf_image_translate(images, tx, ty, interpolation='NEAREST'):
+    # got these parameters from solving the equations for pixel translations
+    # on https://www.tensorflow.org/api_docs/python/tf/contrib/image/transform
+    transforms = [1, 0, -tx, 0, 1, -ty, 0, 0]
+    return tf.contrib.image.transform(images, transforms, interpolation)
+
+#https://zhengtq.github.io/2018/12/20/tf-tur-perspective-transform/
+def transform_perspective(image):
+    def x_y_1():
+        x = tf.random_uniform([], minval=-0.3, maxval=-0.15)
+        y = tf.random_uniform([], minval=-0.3, maxval=-0.15)
+        return x, y
+
+    def x_y_2():
+        x = tf.random_uniform([], minval=0.15, maxval=0.3)
+        y = tf.random_uniform([], minval=0.15, maxval=0.3)
+        return x, y
+
+    def trans(image):
+        ran = tf.random_uniform([])
+        x = tf.random_uniform([], minval=-0.3, maxval=0.3)
+        x_com = tf.random_uniform([], minval=1-x-0.1, maxval=1-x+0.1)
+
+        y = tf.random_uniform([], minval=-0.3, maxval=0.3)
+        y_com = tf.random_uniform([], minval=1-y-0.1, maxval=1-y+0.1)
+
+        transforms =  [x_com, x,0,y,y_com,0,0.00,0]
+        pdb.set_trace()
+        ran = tf.random_uniform([])
+        image = tf.cond(ran<0.5, lambda:tf.contrib.image.transform(image,transforms,interpolation='NEAREST', name=None),
+                lambda:tf.contrib.image.transform(image,transforms,interpolation='BILINEAR', name=None))
+        return image
+
+    ran = tf.random_uniform([])
+    image = tf.cond(ran<1, lambda: trans(image), lambda:image)
+
+    return image
+"""
+def my_img_translate(imgs, x,y):
+    # Interpolation model has to be fixed due to limitations of tf.custom_gradient
+    interpolation = 'NEAREST'
+    imgs = imgs[np.newaxis,:,:,np.newaxis]
+    imgs = tf.convert_to_tensor(imgs,dtype=tf.float32)
+    x=tf.expand_dims(x,1)
+    y=tf.expand_dims(y,1)
+    translates = tf.concat([x,y],1)
+    pdb.set_trace()
+    imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
+    pdb.set_trace()
+    def grad(img_translated_grads):
+        translates_x = translates[:, 0] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice:0' shape=(?,) dtype=float32>
+        translates_y = translates[:, 1] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice_1:0' shape=(?,) dtype=float32>
+        translates_zero = tf.zeros_like(translates_x) #<tf.Tensor 'gradients/IdentityN_grad/zeros_like:0' shape=(?,) dtype=float32>
+        # X gradients
+        imgs_x_grad = (imgs[:, :, :-2] - imgs[:, :, 2:]) / 2 #<tf.Tensor 'gradients/IdentityN_grad/truediv:0' shape=(?, ?, ?, ?) dtype=float32>
+        imgs_x_grad = tf.concat([(imgs[:, :, :1] - imgs[:, :, 1:2]),
+                                 imgs_x_grad,
+                                 (imgs[:, :, -2:-1] - imgs[:, :, -1:])], axis=2) #<tf.Tensor 'gradients/IdentityN_grad/truediv:0' shape=(?, ?, ?, ?) dtype=float32>
+        imgs_x_grad_translated = tf.contrib.image.translate(
+            imgs_x_grad, tf.stack([translates_x, translates_zero], axis=1),
+            interpolation=interpolation)
+        translates_x_grad = tf.reduce_sum(img_translated_grads * imgs_x_grad_translated, axis=(1, 2, 3)) #
+        # Y gradients
+        imgs_y_grad = (imgs[:, :-2] - imgs[:, 2:]) / 2
+        imgs_y_grad = tf.concat([(imgs[:, :1] - imgs[:, 1:2]),
+                                 imgs_y_grad,
+                                 (imgs[:, -2:-1] - imgs[:, -1:])], axis=1)
+        imgs_y_grad_translated = tf.contrib.image.translate(
+            imgs_y_grad, tf.stack([translates_zero, translates_y], axis=1),
+            interpolation=interpolation)
+        translates_y_grad = tf.reduce_sum(img_translated_grads * imgs_y_grad_translated, axis=(1, 2, 3))
+        # Complete gradient
+        translates_grad = tf.stack([translates_x_grad, translates_y_grad], axis=1) #<tf.Tensor 'gradients/IdentityN_grad/stack_2:0' shape=(?, 2) dtype=float32>
+        return None, translates_grad
+    return imgs_translated, grad
 
 
 def loss(self, net_out):
