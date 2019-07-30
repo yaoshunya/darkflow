@@ -288,8 +288,8 @@ def loss(self, net_out):
     #pdb.set_trace()
     area_pred = shift_x_y(coords,H,W,B,anchors)
     area_pred = tf.transpose(area_pred,(0,2,3,1))
-    max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3)),[1,1,1,5]),tf.int32)
-    min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3)),[1,1,1,5]),tf.int32)
+    max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
+    min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
     area_pred = tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min))
     pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
