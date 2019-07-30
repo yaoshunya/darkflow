@@ -118,13 +118,13 @@ def shift_x_y(image, shift_x,shift_y):
 def shift_x_y(coords,H,W,B,image):
     x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])#<tf.Tensor 'Reshape_2:0' shape=(?, 19, 19, 5) dtype=float32>
     y_shift = tf.reshape(coords[:,:,:,1],[-1,H,W,B])
-    mag = tf.reshape(coords[:,:,:,2],[-1,H,W,B])
+    theta = tf.reshape(coords[:,:,:,2],[-1,H,W,B])
 
     for h in range(H):
         for w in range(W):
             x_ = x_shift[:,h,w,:] #<tf.Tensor 'strided_slice_4:0' shape=(?, 5) dtype=float32>
             y_ = y_shift[:,h,w,:] #<tf.Tensor 'strided_slice_5:0' shape=(?, 5) dtype=float32>
-            mag_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
+            theta_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
             new_x = mag_*h + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
             new_y = mag_*w + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
             for k in range(B):
@@ -261,7 +261,7 @@ def loss(self, net_out):
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
-
+    size3 = [None, HW, B, H, W]
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
     _confs = tf.placeholder(tf.float32, size2)
@@ -269,64 +269,64 @@ def loss(self, net_out):
     # weights term for L2 loss
     _proid = tf.placeholder(tf.float32, size1)
     # material calculating IOU
-    _areas = tf.placeholder(tf.float32, size2)
-    _upleft = tf.placeholder(tf.float32, size2 + [2])
-    _botright = tf.placeholder(tf.float32, size2 + [2])
+    _areas = tf.placeholder(tf.float32, size3)
+    #_upleft = tf.placeholder(tf.float32, size2 + [2])
+    #_botright = tf.placeholder(tf.float32, size2 + [2])
 
     self.placeholders = {
 	'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
-	'areas':_areas, 'upleft':_upleft, 'botright':_botright
+	'areas':_areas, """'upleft':_upleft, 'botright':_botright"""
     }
 
     # Extract the coordinate prediction from net.out
-    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (4 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
-    coords = net_out_reshape[:, :, :, :, :4]
-    coords = tf.reshape(coords, [-1, H*W, B, 4])
+    net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (3 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
+    coords = net_out_reshape[:, :, :, :, :3]
+    coords = tf.reshape(coords, [-1, H*W, B, 3])
     #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2]) #<tf.Tensor 'truediv:0' shape=(?, 361, 5, 2) dtype=float32>
     #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
     #adjusted_coords_x =
     #pdb.set_trace()
     anchors_ = shift_x_y(coords,H,W,B,anchors)
     pdb.set_trace()
-    coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
-    pdb.set_trace()
-    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
-    adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_2:0' shape=(?, 361, 5, 1) dtype=float32>
+    #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
+    #pdb.set_trace()
+    #adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
+    #adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_2:0' shape=(?, 361, 5, 1) dtype=float32>
 
-    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
-    adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C]) #<tf.Tensor 'Reshape_3:0' shape=(?, 361, 5, 80) dtype=float32>
+    #adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
+    #adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C]) #<tf.Tensor 'Reshape_3:0' shape=(?, 361, 5, 80) dtype=float32>
 
-    adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3) #<tf.Tensor 'concat_3:0' shape=(?, 361, 5, 85) dtype=float32>
+    #adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3) #<tf.Tensor 'concat_3:0' shape=(?, 361, 5, 85) dtype=float32>
 
-    wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2]) #<tf.Tensor 'mul_23:0' shape=(?, 361, 5, 2) dtype=float32>
-    area_pred = wh[:,:,:,0] * wh[:,:,:,1] #<tf.Tensor 'mul_24:0' shape=(?, 361, 5) dtype=float32>
-    centers = coords[:,:,:,0:2] #<tf.Tensor 'strided_slice_8:0' shape=(?, 361, 5, 2) dtype=float32>
-    floor = centers - (wh * .5) #<tf.Tensor 'sub:0' shape=(?, 361, 5, 2) dtype=float32>
-    ceil  = centers + (wh * .5) #<tf.Tensor 'add_2:0' shape=(?, 361, 5, 2) dtype=float32>
+    #wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2]) #<tf.Tensor 'mul_23:0' shape=(?, 361, 5, 2) dtype=float32>
+    #area_pred = wh[:,:,:,0] * wh[:,:,:,1] #<tf.Tensor 'mul_24:0' shape=(?, 361, 5) dtype=float32>
+    #centers = coords[:,:,:,0:2] #<tf.Tensor 'strided_slice_8:0' shape=(?, 361, 5, 2) dtype=float32>
+    #floor = centers - (wh * .5) #<tf.Tensor 'sub:0' shape=(?, 361, 5, 2) dtype=float32>
+    #ceil  = centers + (wh * .5) #<tf.Tensor 'add_2:0' shape=(?, 361, 5, 2) dtype=float32>
 
     # calculate the intersection areas
-    intersect_upleft   = tf.maximum(floor, _upleft) #<tf.Tensor 'Maximum:0' shape=(?, 361, 5, 2) dtype=float32>
-    intersect_botright = tf.minimum(ceil , _botright) #<tf.Tensor 'Minimum:0' shape=(?, 361, 5, 2) dtype=float32>
-    intersect_wh = intersect_botright - intersect_upleft
-    intersect_wh = tf.maximum(intersect_wh, 0.0) #<tf.Tensor 'Maximum_1:0' shape=(?, 361, 5, 2) dtype=float32>
-    intersect = tf.multiply(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1]) #<tf.Tensor 'Mul_27:0' shape=(?, 361, 5) dtype=float32>
+    #intersect_upleft   = tf.maximum(floor, _upleft) #<tf.Tensor 'Maximum:0' shape=(?, 361, 5, 2) dtype=float32>
+    #intersect_botright = tf.minimum(ceil , _botright) #<tf.Tensor 'Minimum:0' shape=(?, 361, 5, 2) dtype=float32>
+    #intersect_wh = intersect_botright - intersect_upleft
+    #intersect_wh = tf.maximum(intersect_wh, 0.0) #<tf.Tensor 'Maximum_1:0' shape=(?, 361, 5, 2) dtype=float32>
+    #intersect = tf.multiply(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1]) #<tf.Tensor 'Mul_27:0' shape=(?, 361, 5) dtype=float32>
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
-    iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3:0' shape=(?, 361, 5) dtype=float32>
-    best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
-    best_box = tf.to_float(best_box) #<tf.Tensor 'ToFloat:0' shape=(?, 361, 5) dtype=float32>
-    confs = tf.multiply(best_box, _confs) #<tf.Tensor 'Mul_28:0' shape=(?, 361, 5) dtype=float32>
+    #iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3:0' shape=(?, 361, 5) dtype=float32>
+    #best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
+    #best_box = tf.to_float(best_box) #<tf.Tensor 'ToFloat:0' shape=(?, 361, 5) dtype=float32>
+    #confs = tf.multiply(best_box, _confs) #<tf.Tensor 'Mul_28:0' shape=(?, 361, 5) dtype=float32>
     #pdb.set_trace()
     # take care of the weight terms
-    conid = snoob * (1. - confs) + sconf * confs
-    weight_coo = tf.concat(4 * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_4:0' shape=(?, 361, 5, 4) dtype=float32>
-    cooid = scoor * weight_coo #<tf.Tensor 'add_4:0' shape=(?, 361, 5) dtype=float32>
-    weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_5:0' shape=(?, 361, 5, 80) dtype=float32>
-    proid = sprob * weight_pro #<tf.Tensor 'mul_32:0' shape=(?, 361, 5, 80) dtype=float32>
+    #conid = snoob * (1. - confs) + sconf * confs
+    #weight_coo = tf.concat(4 * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_4:0' shape=(?, 361, 5, 4) dtype=float32>
+    #cooid = scoor * weight_coo #<tf.Tensor 'add_4:0' shape=(?, 361, 5) dtype=float32>
+    #weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_5:0' shape=(?, 361, 5, 80) dtype=float32>
+    #proid = sprob * weight_pro #<tf.Tensor 'mul_32:0' shape=(?, 361, 5, 80) dtype=float32>
 
-    self.fetch += [_probs, confs, conid, cooid, proid]
-    true = tf.concat([_coord, tf.expand_dims(confs, 3), _probs ], 3) #<tf.Tensor 'concat_6:0' shape=(?, 361, 5, 85) dtype=float32>
-    wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3) #<tf.Tensor 'concat_7:0' shape=(?, 361, 5, 85) dtype=float32>
+    #self.fetch += [_probs, confs, conid, cooid, proid]
+    #true = tf.concat([_coord, tf.expand_dims(confs, 3), _probs ], 3) #<tf.Tensor 'concat_6:0' shape=(?, 361, 5, 85) dtype=float32>
+    #wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3) #<tf.Tensor 'concat_7:0' shape=(?, 361, 5, 85) dtype=float32>
 
     print('Building {} loss'.format(m['model']))
     loss = tf.pow(adjusted_net_out - true, 2)
