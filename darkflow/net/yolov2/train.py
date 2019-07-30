@@ -56,7 +56,7 @@ def mask_anchor(anchor,H):
 
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
-                resize_mask = np.resize(mask_base,(19,19))
+                resize_mask = np.resize(mask_base,(H,H))
                 if l == 0:
                     mask = resize_mask[np.newaxis]
                 else:
@@ -132,7 +132,7 @@ def shift_x_y(coords,H,W,B,image):
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
                 imgs = image[h][w][k]
                 im = tf.cast(my_img_translate(imgs, x,y),tf.int32)
-                im = tf.expand_dims(tf.reshape(im,[19,19]),0)
+                im = tf.expand_dims(tf.reshape(im,[H,W]),0)
                 if k == 0:
                     im_k = im
                 else:
@@ -275,7 +275,7 @@ def loss(self, net_out):
 
     self.placeholders = {
 	'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
-	'areas':_areas 
+	'areas':_areas
     }
 
     # Extract the coordinate prediction from net.out
@@ -286,7 +286,11 @@ def loss(self, net_out):
     #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
     #adjusted_coords_x =
     #pdb.set_trace()
-    anchors_ = shift_x_y(coords,H,W,B,anchors)
+    area_pred = shift_x_y(coords,H,W,B,anchors)
+    area_pred = tf.transpose(area_pred,(0,2,3,1))
+    max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3)),[1,1,1,5]),tf.int32)
+    min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3)),[1,1,1,5]),tf.int32)
+    area_pred = tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min))
     pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     #pdb.set_trace()
