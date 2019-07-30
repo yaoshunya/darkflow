@@ -75,7 +75,7 @@ def mask_anchor(anchor,H):
         if i == 0:
             mask_fi = mask_[np.newaxis]
         else:
-        	mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+            mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
 
     return mask_fi
 
@@ -124,9 +124,9 @@ def shift_x_y(coords,H,W,B,image):
         for w in range(W):
             x_ = x_shift[:,h,w,:] #<tf.Tensor 'strided_slice_4:0' shape=(?, 5) dtype=float32>
             y_ = y_shift[:,h,w,:] #<tf.Tensor 'strided_slice_5:0' shape=(?, 5) dtype=float32>
-            theta_ = mag[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
-            new_x = mag_*h + x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
-            new_y = mag_*w + y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
+            theta_ = theta[:,h,w,:] #<tf.Tensor 'strided_slice_6:0' shape=(?, 5) dtype=float32>
+            new_x = tf.math.cos(theta_)*h-tf.math.sin(theta_)*h+x_ #<tf.Tensor 'add:0' shape=(?, 5) dtype=float32>
+            new_y = tf.math.sin(theta_)*w-tf.math.cos(theta_)*w+y_ #<tf.Tensor 'add_1:0' shape=(?, 5) dtype=float32>
             for k in range(B):
                 x = tf.cast(tf.transpose(new_x)[k],tf.float32)
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
@@ -275,7 +275,7 @@ def loss(self, net_out):
 
     self.placeholders = {
 	'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
-	'areas':_areas, """'upleft':_upleft, 'botright':_botright"""
+	'areas':_areas 
     }
 
     # Extract the coordinate prediction from net.out
