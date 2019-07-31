@@ -290,7 +290,12 @@ def loss(self, net_out):
     area_pred = tf.transpose(area_pred,(0,2,3,1))
     max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
     min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
-    area_pred = tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min))
+    area_pred = tf.reshape(tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min)),[-1,HW,H,W,B])
+    _areas = tf.transpose(_areas,(0,1,3,4,2))
+    intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
+    area_pred = tf.cast(area_pred,tf.float32)
+    intersect = tf.cast(intersect,tf.float32)
+    iou = tf.truediv(intersect, _areas + area_pred - intersect)
     pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     #pdb.set_trace()
