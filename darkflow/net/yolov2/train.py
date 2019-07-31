@@ -131,7 +131,9 @@ def shift_x_y(coords,H,W,B,image):
                 x = tf.cast(tf.transpose(new_x)[k],tf.float32)
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
                 imgs = image[h][w][k]
-                im = tf.cast(my_img_translate(imgs, x,y),tf.int32)
+                im = my_img_translate(imgs, x,y)
+                pdb.set_trace()
+                im = tf.cast(im,tf.int32)
                 im = tf.expand_dims(tf.reshape(im,[H,W]),0)
                 if k == 0:
                     im_k = im
@@ -226,8 +228,10 @@ def my_img_translate(imgs, x,y):
         translates_y_grad = tf.reduce_sum(img_translated_grads * imgs_y_grad_translated, axis=(1, 2, 3))
         # Complete gradient
         translates_grad = tf.stack([translates_x_grad, translates_y_grad], axis=1) #<tf.Tensor 'gradients/IdentityN_grad/stack_2:0' shape=(?, 2) dtype=float32>
+
         return None, translates_grad
-    return imgs_translated
+    gr = grad(imgs_translated)
+    return imgs_translated,gr
 
 
 def loss(self, net_out):
@@ -297,7 +301,7 @@ def loss(self, net_out):
     intersect = tf.cast(intersect,tf.float32)
     iou = tf.truediv(intersect, _areas + area_pred - intersect)
     loss = 1-tf.reshape(iou,[-1])
-    #pdb.set_trace()
+    pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     #pdb.set_trace()
     #adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
