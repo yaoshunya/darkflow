@@ -132,18 +132,27 @@ def shift_x_y(coords,H,W,B,image):
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
                 imgs = image[h][w][k]
                 im = my_img_translate(imgs, x,y)
-                pdb.set_trace()
+                im_gra = im[1][1]
+                im = im[0]
+                #pdb.set_trace()
                 im = tf.cast(im,tf.int32)
                 im = tf.expand_dims(tf.reshape(im,[H,W]),0)
+                
+                im_gra = tf.expand_dims(im_gra,0)
                 if k == 0:
                     im_k = im
+                    im_gra_k = im_gra
                 else:
                     im_k = tf.concat([im_k,im],0)
+                    im_gra_k = tf.concat([im_gra_k,im_gra],0)
+            im_gra_k = tf.expand_dims(im_gra_k,0)
             im_k = tf.expand_dims(im_k,0)
             if h == 0 and w == 0:
                 im_w=im_k
+                im_gra_w=im_gra_k
             else:
                 im_w=tf.concat([im_w,im_k],0)
+                im_gra_w=tf.concat([im_gra_w,im_gra_k],0)
                 print(h)
 
     return im_w
