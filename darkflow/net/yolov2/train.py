@@ -264,7 +264,7 @@ def loss(self, net_out):
     size3 = [None, HW, B, H, W]
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
-    _confs = tf.placeholder(tf.float32, size2)
+    _confs = tf.placeholder(tf.float32, size3)
     _coord = tf.placeholder(tf.float32, size2 + [4])
     # weights term for L2 loss
     _proid = tf.placeholder(tf.float32, size1)
@@ -296,7 +296,8 @@ def loss(self, net_out):
     area_pred = tf.cast(area_pred,tf.float32)
     intersect = tf.cast(intersect,tf.float32)
     iou = tf.truediv(intersect, _areas + area_pred - intersect)
-    pdb.set_trace()
+    loss = 1-tf.reshape(iou,[-1])
+    #pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     #pdb.set_trace()
     #adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
@@ -322,9 +323,9 @@ def loss(self, net_out):
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
     #iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3:0' shape=(?, 361, 5) dtype=float32>
-    #best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
-    #best_box = tf.to_float(best_box) #<tf.Tensor 'ToFloat:0' shape=(?, 361, 5) dtype=float32>
-    #confs = tf.multiply(best_box, _confs) #<tf.Tensor 'Mul_28:0' shape=(?, 361, 5) dtype=float32>
+    #best_box = tf.equal(iou, tf.reduce_max(iou, [4], True))
+    #best_box = tf.cast(best_box,tf.float32) #<tf.Tensor 'ToFloat:0' shape=(?, 361, 5) dtype=float32>
+    #confs = tf.multiply(best_box, tf.transpose(_confs,[0,1,3,4,2])) #<tf.Tensor 'Mul_28:0' shape=(?, 361, 5) dtype=float32>
     #pdb.set_trace()
     # take care of the weight terms
     #conid = snoob * (1. - confs) + sconf * confs
@@ -338,14 +339,14 @@ def loss(self, net_out):
     #wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3) #<tf.Tensor 'concat_7:0' shape=(?, 361, 5, 85) dtype=float32>
 
     print('Building {} loss'.format(m['model']))
-    loss = tf.pow(adjusted_net_out - true, 2)
-    pdb.set_trace()
-    loss = tf.multiply(loss, wght) #<tf.Tensor 'Mul_34:0' shape=(?, 361, 5, 85) dtype=float32>
-    pdb.set_trace()
-    loss = tf.reshape(loss, [-1, H*W*B*(4 + 1 + C)]) #<tf.Tensor 'Reshape_4:0' shape=(?, 153425) dtype=float32>
-    pdb.set_trace()
-    loss = tf.reduce_sum(loss, 1) #<tf.Tensor 'Sum:0' shape=(?,) dtype=float32>
-    pdb.set_trace()
-    print(iou)
+    #loss = tf.pow(adjusted_net_out - true, 2)
+    #pdb.set_trace()
+    #loss = tf.multiply(loss, wght) #<tf.Tensor 'Mul_34:0' shape=(?, 361, 5, 85) dtype=float32>
+    #pdb.set_trace()
+    #loss = tf.reshape(loss, [-1, H*W*B*(4 + 1 + C)]) #<tf.Tensor 'Reshape_4:0' shape=(?, 153425) dtype=float32>
+    #pdb.set_trace()
+    #loss = tf.reduce_sum(loss, 1) #<tf.Tensor 'Sum:0' shape=(?,) dtype=float32>
+    #pdb.set_trace()
+    #print(iou)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
