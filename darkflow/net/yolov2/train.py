@@ -170,7 +170,7 @@ def my_img_translate(imgs, x,y):
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
-    pdb.set_trace()
+    #pdb.set_trace()
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
     #pdb.set_trace()
     def grad(img_translated_grads):
@@ -260,7 +260,7 @@ def loss(self, net_out):
     #adjusted_coords_x =
     #pdb.set_trace()
     area_pred,gr = shift_x_y(coords,H,W,B,anchors)
-    pdb.set_trace()
+    #pdb.set_trace()
     area_pred = tf.transpose(area_pred,(0,2,3,1))
     max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
     min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
@@ -270,6 +270,7 @@ def loss(self, net_out):
     area_pred = tf.cast(area_pred,tf.float32)
     intersect = tf.cast(intersect,tf.float32)
     iou = tf.truediv(intersect, _areas + area_pred - intersect)
+    pdb.set_trace()
     loss = 1-tf.reshape(iou,[-1])
     pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
