@@ -132,7 +132,7 @@ def shift_x_y(coords,H,W,B,image):
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
                 imgs = image[h][w][k]
                 im = my_img_translate(imgs, x,y)
-                im_gra = im[1][1]
+                im_gra = tf.reshape(im[1][1],[-1])
                 im = im[0]
                 #pdb.set_trace()
                 im = tf.cast(im,tf.int32)
@@ -143,65 +143,25 @@ def shift_x_y(coords,H,W,B,image):
                     im_k = im
                     im_gra_k = im_gra
                 else:
+                    #pdb.set_trace()
                     im_k = tf.concat([im_k,im],0)
                     im_gra_k = tf.concat([im_gra_k,im_gra],0)
+            #pdb.set_trace()
             im_gra_k = tf.expand_dims(im_gra_k,0)
             im_k = tf.expand_dims(im_k,0)
-            if h == 0 and w == 0:
+            if h==0 and w==0:
                 im_w=im_k
                 im_gra_w=im_gra_k
             else:
                 im_w=tf.concat([im_w,im_k],0)
                 im_gra_w=tf.concat([im_gra_w,im_gra_k],0)
                 print(h)
+    
+    return im_w,im_gra_w
 
-    return im_w
-"""
 #https://stackoverflow.com/questions/42252040/how-to-translateor-shift-images-in-tensorflow
-# Tensorflow image translation op
-# images:        A tensor of shape (num_images, num_rows, num_columns, num_channels) (NHWC),
-#                (num_rows, num_columns, num_channels) (HWC), or (num_rows, num_columns) (HW).
-# tx:            The translation in the x direction.
-# ty:            The translation in the y direction.
-# interpolation: If x or y are not integers, interpolation comes into play. Options are 'NEAREST' or 'BILINEAR'
-def tf_image_translate(images, tx, ty, interpolation='NEAREST'):
-    # got these parameters from solving the equations for pixel translations
-    # on https://www.tensorflow.org/api_docs/python/tf/contrib/image/transform
-    transforms = [1, 0, -tx, 0, 1, -ty, 0, 0]
-    return tf.contrib.image.transform(images, transforms, interpolation)
-
 #https://zhengtq.github.io/2018/12/20/tf-tur-perspective-transform/
-def transform_perspective(image):
-    def x_y_1():
-        x = tf.random_uniform([], minval=-0.3, maxval=-0.15)
-        y = tf.random_uniform([], minval=-0.3, maxval=-0.15)
-        return x, y
 
-    def x_y_2():
-        x = tf.random_uniform([], minval=0.15, maxval=0.3)
-        y = tf.random_uniform([], minval=0.15, maxval=0.3)
-        return x, y
-
-    def trans(image):
-        ran = tf.random_uniform([])
-        x = tf.random_uniform([], minval=-0.3, maxval=0.3)
-        x_com = tf.random_uniform([], minval=1-x-0.1, maxval=1-x+0.1)
-
-        y = tf.random_uniform([], minval=-0.3, maxval=0.3)
-        y_com = tf.random_uniform([], minval=1-y-0.1, maxval=1-y+0.1)
-
-        transforms =  [x_com, x,0,y,y_com,0,0.00,0]
-        pdb.set_trace()
-        ran = tf.random_uniform([])
-        image = tf.cond(ran<0.5, lambda:tf.contrib.image.transform(image,transforms,interpolation='NEAREST', name=None),
-                lambda:tf.contrib.image.transform(image,transforms,interpolation='BILINEAR', name=None))
-        return image
-
-    ran = tf.random_uniform([])
-    image = tf.cond(ran<1, lambda: trans(image), lambda:image)
-
-    return image
-"""
 def my_img_translate(imgs, x,y):
     # Interpolation model has to be fixed due to limitations of tf.custom_gradient
     interpolation = 'NEAREST'
@@ -210,7 +170,7 @@ def my_img_translate(imgs, x,y):
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
-    #pdb.set_trace()
+    pdb.set_trace()
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
     #pdb.set_trace()
     def grad(img_translated_grads):
@@ -299,7 +259,8 @@ def loss(self, net_out):
     #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
     #adjusted_coords_x =
     #pdb.set_trace()
-    area_pred = shift_x_y(coords,H,W,B,anchors)
+    area_pred,gr = shift_x_y(coords,H,W,B,anchors)
+    pdb.set_trace()
     area_pred = tf.transpose(area_pred,(0,2,3,1))
     max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
     min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
