@@ -82,39 +82,7 @@ def mask_anchor(anchor,H):
 
 def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
-"""
-def shift_x_y(image, shift_x,shift_y):
-    pdb.set_trace()
-    h, w = image.shape[:2]
-    anchor_size = image.shape[2]
-    src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
-    dest = src.copy()
-    dest[:,0] += shift_x #横シフトするピクセル値
-    dest[:,1] += shift_y #縦シフトするピクセル値
-    affine = cv2.getAffineTransform(src, dest)
 
-    for i in range(h):
-        for j in range(w):
-            for k in range(anchor_size):
-                im_anchor_parts = image[i][j][k]
-                im_anchor_parts = cv2.warpAffine(im_anchor_parts, affine, (w, h))
-                if k == 0:
-                    im_anchor = im_anchor_parts[np.newaxis]
-                else:
-                    #pdb.set_trace()
-                    im_anchor = np.append(im_anchor,im_anchor_parts[np.newaxis],axis=0)
-
-            if j == 0:
-                im_ = im_anchor[np.newaxis]
-            else:
-                im_ = np.append(im_,im_anchor[np.newaxis],axis=0)
-        if i == 0:
-            im = im_[np.newaxis]
-        else:
-            im = np.append(im,im_[np.newaxis],axis=0)
-    #pdb.set_trace()
-    return im
-"""
 def shift_x_y(coords,H,W,B,image):
     x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])#<tf.Tensor 'Reshape_2:0' shape=(?, 19, 19, 5) dtype=float32>
     y_shift = tf.reshape(coords[:,:,:,1],[-1,H,W,B])
@@ -132,7 +100,8 @@ def shift_x_y(coords,H,W,B,image):
                 y = tf.cast(tf.transpose(new_y)[k],tf.float32)
                 imgs = image[h][w][k]
                 im = my_img_translate(imgs, x,y)
-                im_gra = tf.reshape(im[1][1],[-1])
+                #pdb.set_trace()
+                im_gra = im[1][1]
                 im = im[0]
                 #pdb.set_trace()
                 im = tf.cast(im,tf.int32)
@@ -167,6 +136,8 @@ def my_img_translate(imgs, x,y):
     interpolation = 'NEAREST'
     imgs = imgs[np.newaxis,:,:,np.newaxis]
     imgs = tf.convert_to_tensor(imgs,dtype=tf.float32)
+    t = tf.placeholder(tf.float32,shape=[None,None,None,None])
+    imgs = t+imgs
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
@@ -174,6 +145,7 @@ def my_img_translate(imgs, x,y):
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
     #pdb.set_trace()
     def grad(img_translated_grads):
+        #pdb.set_trace()
         translates_x = translates[:, 0] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice:0' shape=(?,) dtype=float32>
         translates_y = translates[:, 1] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice_1:0' shape=(?,) dtype=float32>
         translates_zero = tf.zeros_like(translates_x) #<tf.Tensor 'gradients/IdentityN_grad/zeros_like:0' shape=(?,) dtype=float32>
@@ -199,11 +171,25 @@ def my_img_translate(imgs, x,y):
         translates_grad = tf.stack([translates_x_grad, translates_y_grad], axis=1) #<tf.Tensor 'gradients/IdentityN_grad/stack_2:0' shape=(?, 2) dtype=float32>
 
         return None, translates_grad
-    #gr = grad(imgs_translated)
-    return imgs_translated#,gr
+    gr = grad(imgs_translated)
+    return imgs_translated,gr
 
-def return_image_gra(imgs):
-    for 
+def return_image_gra(imgs,H,W):
+    for i in range(H*W):
+        
+        dy_parts,dx_parts = tf.image.image_gradients(tf.transpose(imgs,[1,0,2,3,4])[i])
+        #pdb.set_trace()
+        
+        dy_parts = tf.expand_dims(dy_parts,0)
+        dx_parts = tf.expand_dims(dx_parts,0)
+        
+        if i == 0:
+            dy = dy_parts
+            dx = dx_parts
+        else:
+            dy = tf.concat([dy,dy_parts],0)
+            dx = tf.concat([dx,dx_parts],0)
+    return tf.transpose(dy,[1,0,2,3,4]),tf.transpose(dx,[1,0,2,3,4])
 
 
 def loss(self, net_out):
@@ -263,7 +249,7 @@ def loss(self, net_out):
     #adjusted_coords_x =
     #pdb.set_trace()
     area_pred,gr = shift_x_y(coords,H,W,B,anchors)
-    #pdb.set_trace()
+    pdb.set_trace()
     area_pred = tf.transpose(area_pred,(0,2,3,1))
     max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
     min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
@@ -272,15 +258,17 @@ def loss(self, net_out):
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
     area_pred = tf.cast(area_pred,tf.float32)
     intersect = tf.cast(intersect,tf.float32)
-    iou = tf.truediv(intersect, _areas + area_pred - intersect)
-    t = tf.placeholder(tf.float32,shape=[None,None,None,None,None])
+    iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
 
-    dy_true,dx_true = return_image_gra(_areas)
-    dy_pre,dx_pre = return_image_gra(tf.add(t,area_pred))
+    #t = tf.placeholder(tf.float32,shape=[None,None,None,None,None])
+       
+    #dy_true,dx_true = return_image_gra(_areas,H,W)
+    #dy_pre,dx_pre = return_image_gra(tf.add(t,area_pred),H,W)
+    #loss=tf.reduce_mean(tf.reduce_mean(tf.math.abs(dy_pre-dy_true)+tf.math.abs(dx_pre-dx_true),axis=-1))
 
-    pdb.set_trace()
-    loss = 1-tf.reshape(iou,[-1])
-    pdb.set_trace()
+    #pdb.set_trace()
+    loss = 1-tf.reduce_mean(iou)
+    #pdb.set_trace()
     #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
     #pdb.set_trace()
     #adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
