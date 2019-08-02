@@ -84,6 +84,26 @@ def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
 def shift_x_y(coords,H,W,B,image):
+    image = tf.reshape(tf.convert_to_tensor(image,dtype=tf.float32),(H*W,B,H,W))
+    init_HW=(0,image)
+    shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
+def condition_HW(i,image):
+    return i < 361
+def body_HW(i,image):
+    init_B = (i,0,image)
+    return tf.while_loop(cond=condition_B,body=body_B,loop_vars=init_B)
+def condition_B(i,k,image):
+    return k < 5
+def body_B(i,k,image):
+    img_B = image[i][k]
+    x = tf.where(tf.equal(img_B,255))
+    pdb.set_trace()
+    return 0
+
+def condition(zero_matrix):
+    return tf.Variable(zero_matrix)
+
+def shift_x_y_(coords,H,W,B,image):
     x_shift = tf.reshape(coords[:,:,:,0],[-1,H,W,B])#<tf.Tensor 'Reshape_2:0' shape=(?, 19, 19, 5) dtype=float32>
     y_shift = tf.reshape(coords[:,:,:,1],[-1,H,W,B])
     theta = tf.reshape(coords[:,:,:,2],[-1,H,W,B])
@@ -128,6 +148,7 @@ def shift_x_y(coords,H,W,B,image):
 
     return im_w,im_gra_w
 
+
 #https://stackoverflow.com/questions/42252040/how-to-translateor-shift-images-in-tensorflow
 #https://zhengtq.github.io/2018/12/20/tf-tur-perspective-transform/
 
@@ -141,11 +162,11 @@ def my_img_translate(imgs, x,y):
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
-    #pdb.set_trace()
+    
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
-    #pdb.set_trace()
+    
     def grad(img_translated_grads):
-        #pdb.set_trace()
+        
         translates_x = translates[:, 0] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice:0' shape=(?,) dtype=float32>
         translates_y = translates[:, 1] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice_1:0' shape=(?,) dtype=float32>
         translates_zero = tf.zeros_like(translates_x) #<tf.Tensor 'gradients/IdentityN_grad/zeros_like:0' shape=(?,) dtype=float32>
@@ -221,9 +242,9 @@ def loss(self, net_out):
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
 
-    size1 = [None, HW, B, C]
-    size2 = [None, HW, B]
-    size3 = [None, HW, B, H, W]
+    size1 = [200, HW, B, C]
+    size2 = [200, HW, B]
+    size3 = [200, HW, B, H, W]
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
     _confs = tf.placeholder(tf.float32, size3)
