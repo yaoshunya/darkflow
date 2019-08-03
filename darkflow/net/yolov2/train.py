@@ -84,6 +84,7 @@ def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
 def shift_x_y(coords,H,W,B,image):
+    
     image = tf.reshape(tf.convert_to_tensor(image,dtype=tf.float32),(H*W,B,H,W))
     init_HW=(0,image)
     shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
