@@ -84,8 +84,17 @@ def expit_tensor(x):
 	return 1. / (1. + tf.exp(-x))
 
 def shift_x_y(coords,H,W,B,image):
-    
+
     image = tf.reshape(tf.convert_to_tensor(image,dtype=tf.float32),(H*W,B,H,W))
+    n_fc = 6
+
+    initial = np.array([[1., 0, 0], [0, 1., 0]])
+    initial = initial.astype('float32').flatten()
+    W_fc1 = tf.Variable(tf.zeros([H*W*(H*W), n_fc]), name='W_fc1')
+    b_fc1 = tf.Variable(initial_value=initial, name='b_fc1')
+    h_fc1 = tf.matmul(tf.zeros([B, H*W*(H*W)]), W_fc1) + b_fc1
+    h_trans = transformer(x, h_fc1)
+    pdb.set_trace()
     init_HW=(0,image)
     shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
 def condition_HW(i,image):
@@ -163,11 +172,11 @@ def my_img_translate(imgs, x,y):
     x=tf.expand_dims(x,1)
     y=tf.expand_dims(y,1)
     translates = tf.concat([x,y],1)
-    
+
     imgs_translated = tf.contrib.image.translate(imgs, translates, interpolation=interpolation)
-    
+
     def grad(img_translated_grads):
-        
+
         translates_x = translates[:, 0] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice:0' shape=(?,) dtype=float32>
         translates_y = translates[:, 1] #<tf.Tensor 'gradients/IdentityN_grad/strided_slice_1:0' shape=(?,) dtype=float32>
         translates_zero = tf.zeros_like(translates_x) #<tf.Tensor 'gradients/IdentityN_grad/zeros_like:0' shape=(?,) dtype=float32>
@@ -198,13 +207,13 @@ def my_img_translate(imgs, x,y):
 
 def return_image_gra(imgs,H,W):
     for i in range(H*W):
-        
+
         dy_parts,dx_parts = tf.image.image_gradients(tf.transpose(imgs,[1,0,2,3,4])[i])
         #pdb.set_trace()
-        
+
         dy_parts = tf.expand_dims(dy_parts,0)
         dx_parts = tf.expand_dims(dx_parts,0)
-        
+
         if i == 0:
             dy = dy_parts
             dx = dx_parts
@@ -283,7 +292,7 @@ def loss(self, net_out):
     iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
 
     #t = tf.placeholder(tf.float32,shape=[None,None,None,None,None])
-       
+
     #dy_true,dx_true = return_image_gra(_areas,H,W)
     #dy_pre,dx_pre = return_image_gra(tf.add(t,area_pred),H,W)
     #loss=tf.reduce_mean(tf.reduce_mean(tf.math.abs(dy_pre-dy_true)+tf.math.abs(dx_pre-dx_true),axis=-1))
