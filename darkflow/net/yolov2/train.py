@@ -7,7 +7,6 @@ import os
 import math
 import pdb
 import cv2
-from stn import spatial_transformer_network as transformer
 
 def mask_anchor(anchor,H):
     img_x = 1000
@@ -94,7 +93,7 @@ def shift_x_y(coords,H,W,B,image):
     W_fc1 = tf.Variable(tf.zeros([H*W*(H*W), n_fc]), name='W_fc1')
     b_fc1 = tf.Variable(initial_value=initial, name='b_fc1')
     h_fc1 = tf.matmul(tf.zeros([B, H*W*(H*W)]), W_fc1) + b_fc1
-    h_trans = transformer(image, coords)
+    h_trans = spatial_transformer_network(image, coords)
     pdb.set_trace()
     init_HW=(0,image)
     shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
@@ -205,7 +204,7 @@ def my_img_translate(imgs, x,y):
         return None, translates_grad
     gr = grad(imgs_translated)
     return imgs_translated,gr
-
+"""
 def return_image_gra(imgs,H,W):
     for i in range(H*W):
 
@@ -222,6 +221,141 @@ def return_image_gra(imgs,H,W):
             dy = tf.concat([dy,dy_parts],0)
             dx = tf.concat([dx,dx_parts],0)
     return tf.transpose(dy,[1,0,2,3,4]),tf.transpose(dx,[1,0,2,3,4])
+"""
+
+def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
+
+    pdb.set_trace()
+    # grab input dimensions
+    B = tf.shape(input_fmap)[0]
+    H = tf.shape(input_fmap)[1]
+    W = tf.shape(input_fmap)[2]
+    #pdb.set_trace()
+
+    # reshape theta to (B, 2, 3)
+    theta = tf.reshape(theta, [B, 2, 3])
+
+    # generate grids of same size or upsample/downsample if specified
+    if out_dims:
+        out_H = out_dims[0]
+        out_W = out_dims[1]
+        batch_grids = affine_grid_generator(out_H, out_W, theta)
+    else:
+        batch_grids = affine_grid_generator(H, W, theta)
+
+    x_s = batch_grids[:, 0, :, :]
+    y_s = batch_grids[:, 1, :, :]
+
+    # sample input with grid to get output
+    out_fmap = bilinear_sampler(input_fmap, x_s, y_s)
+
+    return out_fmap
+
+
+def get_pixel_value(img, x, y):
+    shape = tf.shape(x)
+    batch_size = shape[0]
+    height = shape[1]
+    width = shape[2]
+
+    batch_idx = tf.range(0, batch_size)
+    batch_idx = tf.reshape(batch_idx, (batch_size, 1, 1))
+    b = tf.tile(batch_idx, (1, height, width))
+
+    indices = tf.stack([b, y, x], 3)
+
+    return tf.gather_nd(img, indices)
+
+
+def affine_grid_generator(height, width, theta):
+
+    num_batch = tf.shape(theta)[0]
+
+    # create normalized 2D grid
+    x = tf.linspace(-1.0, 1.0, width)
+    y = tf.linspace(-1.0, 1.0, height)
+    x_t, y_t = tf.meshgrid(x, y)
+
+    # flatten
+    x_t_flat = tf.reshape(x_t, [-1])
+    y_t_flat = tf.reshape(y_t, [-1])
+
+    # reshape to [x_t, y_t , 1] - (homogeneous form)
+    ones = tf.ones_like(x_t_flat)
+    sampling_grid = tf.stack([x_t_flat, y_t_flat, ones])
+
+    # repeat grid num_batch times
+    sampling_grid = tf.expand_dims(sampling_grid, axis=0)
+    sampling_grid = tf.tile(sampling_grid, tf.stack([num_batch, 1, 1]))
+
+    # cast to float32 (required for matmul)
+    theta = tf.cast(theta, 'float32')
+    sampling_grid = tf.cast(sampling_grid, 'float32')
+
+    # transform the sampling grid - batch multiply
+    batch_grids = tf.matmul(theta, sampling_grid)
+    # batch grid has shape (num_batch, 2, H*W)
+
+    # reshape to (num_batch, H, W, 2)
+    batch_grids = tf.reshape(batch_grids, [num_batch, 2, height, width])
+
+    return batch_grids
+
+
+def bilinear_sampler(img, x, y):
+
+    H = tf.shape(img)[1]
+    W = tf.shape(img)[2]
+    max_y = tf.cast(H - 1, 'int32')
+    max_x = tf.cast(W - 1, 'int32')
+    zero = tf.zeros([], dtype='int32')
+
+    # rescale x and y to [0, W-1/H-1]
+    x = tf.cast(x, 'float32')
+    y = tf.cast(y, 'float32')
+    x = 0.5 * ((x + 1.0) * tf.cast(max_x-1, 'float32'))
+    y = 0.5 * ((y + 1.0) * tf.cast(max_y-1, 'float32'))
+
+    # grab 4 nearest corner points for each (x_i, y_i)
+    x0 = tf.cast(tf.floor(x), 'int32')
+    x1 = x0 + 1
+    y0 = tf.cast(tf.floor(y), 'int32')
+    y1 = y0 + 1
+
+    # clip to range [0, H-1/W-1] to not violate img boundaries
+    x0 = tf.clip_by_value(x0, zero, max_x)
+    x1 = tf.clip_by_value(x1, zero, max_x)
+    y0 = tf.clip_by_value(y0, zero, max_y)
+    y1 = tf.clip_by_value(y1, zero, max_y)
+
+    # get pixel value at corner coords
+    Ia = get_pixel_value(img, x0, y0)
+    Ib = get_pixel_value(img, x0, y1)
+    Ic = get_pixel_value(img, x1, y0)
+    Id = get_pixel_value(img, x1, y1)
+
+    # recast as float for delta calculation
+    x0 = tf.cast(x0, 'float32')
+    x1 = tf.cast(x1, 'float32')
+    y0 = tf.cast(y0, 'float32')
+    y1 = tf.cast(y1, 'float32')
+
+    # calculate deltas
+    wa = (x1-x) * (y1-y)
+    wb = (x1-x) * (y-y0)
+    wc = (x-x0) * (y1-y)
+    wd = (x-x0) * (y-y0)
+
+    # add dimension for addition
+    wa = tf.expand_dims(wa, axis=3)
+    wb = tf.expand_dims(wb, axis=3)
+    wc = tf.expand_dims(wc, axis=3)
+    wd = tf.expand_dims(wd, axis=3)
+
+    # compute output
+    out = tf.add_n([wa*Ia, wb*Ib, wc*Ic, wd*Id])
+
+    return out
 
 
 def loss(self, net_out):
@@ -276,10 +410,7 @@ def loss(self, net_out):
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (3 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
     coords = net_out_reshape[:, :, :, :, :3]
     coords = tf.reshape(coords, [-1, H*W, B, 3])
-    #adjusted_coords_xy = expit_tensor(coords[:,:,:,0:2]) #<tf.Tensor 'truediv:0' shape=(?, 361, 5, 2) dtype=float32>
-    #adjusted_coords_wh = tf.sqrt(tf.exp(coords[:,:,:,2:4]) * np.reshape(anchors, [1, 1, B, 2]) / np.reshape([W, H], [1, 1, 1, 2])) #<tf.Tensor 'Sqrt:0' shape=(?, 361, 5, 2) dtype=float32>
-    #adjusted_coords_x =
-    #pdb.set_trace()
+
     area_pred,gr = shift_x_y(coords,H,W,B,anchors)
     pdb.set_trace()
     area_pred = tf.transpose(area_pred,(0,2,3,1))
@@ -292,64 +423,8 @@ def loss(self, net_out):
     intersect = tf.cast(intersect,tf.float32)
     iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
 
-    #t = tf.placeholder(tf.float32,shape=[None,None,None,None,None])
-
-    #dy_true,dx_true = return_image_gra(_areas,H,W)
-    #dy_pre,dx_pre = return_image_gra(tf.add(t,area_pred),H,W)
-    #loss=tf.reduce_mean(tf.reduce_mean(tf.math.abs(dy_pre-dy_true)+tf.math.abs(dx_pre-dx_true),axis=-1))
-
-    #pdb.set_trace()
-    loss = 1-tf.reduce_mean(iou)
-    #pdb.set_trace()
-    #coords = tf.concat([adjusted_coords_xy, adjusted_coords_wh], 3)  #<tf.Tensor 'concat_2:0' shape=(?, 361, 5, 4) dtype=float32>
-    #pdb.set_trace()
-    #adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 4])
-    #adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1]) #<tf.Tensor 'Reshape_2:0' shape=(?, 361, 5, 1) dtype=float32>
-
-    #adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 5:])
-    #adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C]) #<tf.Tensor 'Reshape_3:0' shape=(?, 361, 5, 80) dtype=float32>
-
-    #adjusted_net_out = tf.concat([adjusted_coords_xy, adjusted_coords_wh, adjusted_c, adjusted_prob], 3) #<tf.Tensor 'concat_3:0' shape=(?, 361, 5, 85) dtype=float32>
-
-    #wh = tf.pow(coords[:,:,:,2:4], 2) * np.reshape([W, H], [1, 1, 1, 2]) #<tf.Tensor 'mul_23:0' shape=(?, 361, 5, 2) dtype=float32>
-    #area_pred = wh[:,:,:,0] * wh[:,:,:,1] #<tf.Tensor 'mul_24:0' shape=(?, 361, 5) dtype=float32>
-    #centers = coords[:,:,:,0:2] #<tf.Tensor 'strided_slice_8:0' shape=(?, 361, 5, 2) dtype=float32>
-    #floor = centers - (wh * .5) #<tf.Tensor 'sub:0' shape=(?, 361, 5, 2) dtype=float32>
-    #ceil  = centers + (wh * .5) #<tf.Tensor 'add_2:0' shape=(?, 361, 5, 2) dtype=float32>
-
-    # calculate the intersection areas
-    #intersect_upleft   = tf.maximum(floor, _upleft) #<tf.Tensor 'Maximum:0' shape=(?, 361, 5, 2) dtype=float32>
-    #intersect_botright = tf.minimum(ceil , _botright) #<tf.Tensor 'Minimum:0' shape=(?, 361, 5, 2) dtype=float32>
-    #intersect_wh = intersect_botright - intersect_upleft
-    #intersect_wh = tf.maximum(intersect_wh, 0.0) #<tf.Tensor 'Maximum_1:0' shape=(?, 361, 5, 2) dtype=float32>
-    #intersect = tf.multiply(intersect_wh[:,:,:,0], intersect_wh[:,:,:,1]) #<tf.Tensor 'Mul_27:0' shape=(?, 361, 5) dtype=float32>
-
-    # calculate the best IOU, set 0.0 confidence for worse boxes
-    #iou = tf.truediv(intersect, _areas + area_pred - intersect) #<tf.Tensor 'truediv_3:0' shape=(?, 361, 5) dtype=float32>
-    #best_box = tf.equal(iou, tf.reduce_max(iou, [4], True))
-    #best_box = tf.cast(best_box,tf.float32) #<tf.Tensor 'ToFloat:0' shape=(?, 361, 5) dtype=float32>
-    #confs = tf.multiply(best_box, tf.transpose(_confs,[0,1,3,4,2])) #<tf.Tensor 'Mul_28:0' shape=(?, 361, 5) dtype=float32>
-    #pdb.set_trace()
-    # take care of the weight terms
-    #conid = snoob * (1. - confs) + sconf * confs
-    #weight_coo = tf.concat(4 * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_4:0' shape=(?, 361, 5, 4) dtype=float32>
-    #cooid = scoor * weight_coo #<tf.Tensor 'add_4:0' shape=(?, 361, 5) dtype=float32>
-    #weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3) #<tf.Tensor 'concat_5:0' shape=(?, 361, 5, 80) dtype=float32>
-    #proid = sprob * weight_pro #<tf.Tensor 'mul_32:0' shape=(?, 361, 5, 80) dtype=float32>
-
-    #self.fetch += [_probs, confs, conid, cooid, proid]
-    #true = tf.concat([_coord, tf.expand_dims(confs, 3), _probs ], 3) #<tf.Tensor 'concat_6:0' shape=(?, 361, 5, 85) dtype=float32>
-    #wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3) #<tf.Tensor 'concat_7:0' shape=(?, 361, 5, 85) dtype=float32>
 
     print('Building {} loss'.format(m['model']))
-    #loss = tf.pow(adjusted_net_out - true, 2)
-    #pdb.set_trace()
-    #loss = tf.multiply(loss, wght) #<tf.Tensor 'Mul_34:0' shape=(?, 361, 5, 85) dtype=float32>
-    #pdb.set_trace()
-    #loss = tf.reshape(loss, [-1, H*W*B*(4 + 1 + C)]) #<tf.Tensor 'Reshape_4:0' shape=(?, 153425) dtype=float32>
-    #pdb.set_trace()
-    #loss = tf.reduce_sum(loss, 1) #<tf.Tensor 'Sum:0' shape=(?,) dtype=float32>
-    #pdb.set_trace()
-    #print(iou)
+
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
