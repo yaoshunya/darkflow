@@ -7,6 +7,7 @@ import os
 import math
 import pdb
 import cv2
+from stn import spatial_transformer_network as transformer
 
 def mask_anchor(anchor,H):
     img_x = 1000
@@ -93,7 +94,7 @@ def shift_x_y(coords,H,W,B,image):
     W_fc1 = tf.Variable(tf.zeros([H*W*(H*W), n_fc]), name='W_fc1')
     b_fc1 = tf.Variable(initial_value=initial, name='b_fc1')
     h_fc1 = tf.matmul(tf.zeros([B, H*W*(H*W)]), W_fc1) + b_fc1
-    h_trans = transformer(x, h_fc1)
+    h_trans = transformer(image, coords)
     pdb.set_trace()
     init_HW=(0,image)
     shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
