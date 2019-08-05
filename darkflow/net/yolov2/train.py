@@ -19,7 +19,6 @@ def mask_anchor(anchor,H):
     anchor_size = anchor.shape[0]
     step_size = int(img_x/S)
 
-    #pdb.set_trace()
 
     mask = np.array([])
 
@@ -37,8 +36,6 @@ def mask_anchor(anchor,H):
 
                 side = int(w_*500/39)
                 ver = int(h_*200/13)
-
-                #pdb.set_trace()
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -62,10 +59,8 @@ def mask_anchor(anchor,H):
                 else:
                     mask = np.append(mask,resize_mask[np.newaxis],axis=0)
                 print(l)
-                #pdb.set_trace()
 
             step_x += step_size
-            #pdb.set_trace()
             if t == 0:
                 mask_ = mask[np.newaxis]
             else:
@@ -94,20 +89,19 @@ def shift_x_y(coords,H,W,B,image):
     b_fc1 = tf.Variable(initial_value=initial, name='b_fc1')
     h_fc1 = tf.matmul(tf.zeros([B, H*W*(H*W)]), W_fc1) + b_fc1
     h_trans = spatial_transformer_network(image, coords)
-    pdb.set_trace()
-    init_HW=(0,image)
+"""
+    init_HW=(0,image,shift_image)
     shift_image = tf.while_loop(cond=condition_HW,body=body_HW,loop_vars=init_HW)
-def condition_HW(i,image):
+def condition_HW(i,image,shift_image):
     return i < 361
-def body_HW(i,image):
-    init_B = (i,0,image)
+def body_HW(i,image,shift_image):
+    init_B = (i,0,image,shift_image)
     return tf.while_loop(cond=condition_B,body=body_B,loop_vars=init_B)
-def condition_B(i,k,image):
+def condition_B(i,k,image,shift_image):
     return k < 5
-def body_B(i,k,image):
+def body_B(i,k,image,shift_image):
     img_B = image[i][k]
     x = tf.where(tf.equal(img_B,255))
-    pdb.set_trace()
     return 0
 
 def condition(zero_matrix):
@@ -205,11 +199,12 @@ def my_img_translate(imgs, x,y):
     gr = grad(imgs_translated)
     return imgs_translated,gr
 """
+"""
 def return_image_gra(imgs,H,W):
     for i in range(H*W):
 
         dy_parts,dx_parts = tf.image.image_gradients(tf.transpose(imgs,[1,0,2,3,4])[i])
-        #pdb.set_trace()
+
 
         dy_parts = tf.expand_dims(dy_parts,0)
         dx_parts = tf.expand_dims(dx_parts,0)
@@ -222,6 +217,7 @@ def return_image_gra(imgs,H,W):
             dx = tf.concat([dx,dx_parts],0)
     return tf.transpose(dy,[1,0,2,3,4]),tf.transpose(dx,[1,0,2,3,4])
 """
+
 
 def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
 
@@ -376,8 +372,6 @@ def loss(self, net_out):
     anchors = m['anchors']
     anchors = mask_anchor(anchors,H)
     anchors=anchors.astype(np.float32)
-    #pdb.set_trace()
-
 
 
     print('{} loss hyper-parameters:'.format(m['model']))
@@ -412,7 +406,7 @@ def loss(self, net_out):
     coords = tf.reshape(coords, [-1, H*W, B, 3])
 
     area_pred,gr = shift_x_y(coords,H,W,B,anchors)
-    pdb.set_trace()
+
     area_pred = tf.transpose(area_pred,(0,2,3,1))
     max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
     min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
