@@ -217,11 +217,33 @@ def return_image_gra(imgs,H,W):
             dx = tf.concat([dx,dx_parts],0)
     return tf.transpose(dy,[1,0,2,3,4]),tf.transpose(dx,[1,0,2,3,4])
 """
+def condition(i,N,theta,input_fmap):
+    return i < N
+
+def update(i,N,theta,input_fmap):
+    batch_grids = affine_grid_generator(19, 19, theta[i])
+
+    x_s = batch_grids[:, 0, :, :]
+    y_s = batch_grids[:, 1, :, :]
+    #pdb.set_trace()
+    out_fmap = bilinear_sampler(input_fmap, x_s, y_s)
+    pdb.set_trace()
+    return 0
+
+
 
 
 def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
 
-    pdb.set_trace()
+    x_shift = tf.transpose(theta)[0]
+    y_shift = tf.transpose(theta)[1]
+    z_rotate = tf.transpose(theta)[2]
+    sin = tf.math.sin(z_rotate)
+    cos = tf.math.cos(z_rotate)
+
+    new_theta=tf.transpose(tf.stack([cos,tf.math.negative(sin),x_shift,sin,cos,y_shift]))
+    new_theta = tf.reshape(new_theta,[200,361,5,2,3])
+    #pdb.set_trace()
     # grab input dimensions
     B = tf.shape(input_fmap)[0]
     H = tf.shape(input_fmap)[1]
@@ -229,8 +251,11 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     #pdb.set_trace()
 
     # reshape theta to (B, 2, 3)
-    theta = tf.reshape(theta, [B, 2, 3])
-
+    #theta = tf.reshape(theta, [B, 2, 3])
+    init_val = (0,200,theta,input_fmap)
+    out_fmap = tf.while_loop(cond=condition,body=update,loop_vars=init_val)
+    return out_fmap
+"""
     # generate grids of same size or upsample/downsample if specified
     if out_dims:
         out_H = out_dims[0]
@@ -239,13 +264,14 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     else:
         batch_grids = affine_grid_generator(H, W, theta)
 
+
     x_s = batch_grids[:, 0, :, :]
     y_s = batch_grids[:, 1, :, :]
 
     # sample input with grid to get output
     out_fmap = bilinear_sampler(input_fmap, x_s, y_s)
+"""
 
-    return out_fmap
 
 
 def get_pixel_value(img, x, y):
@@ -289,17 +315,18 @@ def affine_grid_generator(height, width, theta):
     sampling_grid = tf.cast(sampling_grid, 'float32')
 
     # transform the sampling grid - batch multiply
+    #pdb.set_trace()
     batch_grids = tf.matmul(theta, sampling_grid)
     # batch grid has shape (num_batch, 2, H*W)
 
     # reshape to (num_batch, H, W, 2)
-    batch_grids = tf.reshape(batch_grids, [num_batch, 2, height, width])
+    batch_grids = tf.reshape(batch_grids, [num_batch, 5, height, width])
 
     return batch_grids
 
 
 def bilinear_sampler(img, x, y):
-
+    pdb.set_trace()
     H = tf.shape(img)[1]
     W = tf.shape(img)[2]
     max_y = tf.cast(H - 1, 'int32')
