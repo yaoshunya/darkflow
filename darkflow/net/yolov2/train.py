@@ -322,7 +322,7 @@ def loss(self, net_out):
 
     iou = tf.math.divide(intersect,tf.cast(_areas+area_pred,tf.float64)-intersect)
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
     """
     intersect_num = tf.math.count_nonzero(tf.reshape(intersect,(200,361,361,5)),2)
@@ -330,13 +330,13 @@ def loss(self, net_out):
     _areas_num = tf.math.count_nonzero(tf.reshape(_areas,(200,361,361,5)),2)
     """
     #iou = tf.truediv(intersect_num, _areas_num + area_pred_num - intersect_num) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
-    pdb.set_trace()
+    #pdb.set_trace()
     iou = tf.reshape(iou,[-1,H*W*B])
     loss = tf.reduce_sum(iou,1)
 
     print('Building {} loss'.format(m['model']))
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
