@@ -157,13 +157,8 @@ def validate_image_detections(image_detections):
             validate_schema(image_detection, IMAGE_DETECTION_SCHEMA)
         except SchemaError as se:
             raise Exception(f"at index {i}") from se
-        image = image_detection['image']
-        for detection in image_detection['detections']:
-            if detection['right'] >= image['width'] or detection['bottom'] >= image['height']:
-                raise ValueError(f"Image {image} has out of bounds bounding box {detection}")
-            if detection['right'] <= detection['left'] or detection['bottom'] <= detection['top']:
-                raise ValueError(f"Image {image} has zero dimension bbox {detection}")
-
+        
+        
 
 def convert_labels(*, image_detections, expected_labels,
                    select_only_known_labels, filter_images_without_labels):

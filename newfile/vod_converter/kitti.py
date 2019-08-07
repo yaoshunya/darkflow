@@ -53,15 +53,15 @@ import pdb
 from converter import Ingestor, Egestor
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/..')
-import final_prepare as fi
+#import final_prepare as fi
 import numpy as np
 
 
 class KITTIIngestor(Ingestor):
     def validate(self, path):
         expected_dirs = [
-            'training/sphere_data',
-            'training/label_2'
+            'image_2',
+            'label_2'
         ]
         for subdir in expected_dirs:
             if not os.path.isdir(f"{path}/{subdir}"):
@@ -80,7 +80,7 @@ class KITTIIngestor(Ingestor):
 
     def find_image_ext(self, root, image_id):
         for image_ext in ['png', 'jpg']:
-            if os.path.exists(f"{root}/training/image_2/{image_id}.{image_ext}"):
+            if os.path.exists(f"{root}/image_2/{image_id}.{image_ext}"):
                 return image_ext
         raise Exception(f"could not find jpg or png for {image_id} at {root}/training/image_2")
 
@@ -90,10 +90,10 @@ class KITTIIngestor(Ingestor):
             return f.read().strip().split('\n')
 
     def _get_image_detection(self, root, image_id, *, image_ext='png'):
-        detections_fpath = f"{root}/training/label_2/{image_id}.txt"
+        detections_fpath = f"{root}/label_2/{image_id}.txt"
         detections = self._get_detections(detections_fpath)
         #detections = [det for det in detections if det['left'] < det['right'] and det['top'] < det['bottom']]
-        image_path = f"{root}/training/image_2/{image_id}.{image_ext}"
+        image_path = f"{root}/image_2/{image_id}.{image_ext}"
         image_width, image_height = _image_dimensions(image_path)
         #pdb.set_trace()
         return {
