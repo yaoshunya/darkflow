@@ -89,7 +89,7 @@ def _batch(self, chunk):
         'areas': areas, 'upleft': upleft, 
         'botright': botright
     }
-
+    #pdb.set_trace()
     return inp_feed_val, loss_feed_val
 
 def shuffle(self):
@@ -104,26 +104,23 @@ def shuffle(self):
 
     for i in range(self.FLAGS.epoch):
         shuffle_idx = perm(np.arange(size))
-        print("i:{0}".format(i))
         #pdb.set_trace()
         for b_ in range(batch_per_epoch):
             # yield these
             x_batch = list()
             feed_batch = dict()
             k = 0
-            print("b:{0}".format(b_))
             #pdb.set_trace()
             for j_ in range(b_*batch, b_*batch+batch):
-                print(j_)
                 train_instance = data[shuffle_idx[j_]]
-                try:
+                try: 
                     inp, new_feed = self._batch(train_instance)
                 except ZeroDivisionError:
                     print("This image's width or height are zeros: ", train_instance[0])
                     print('train_instance:', train_instance)
                     print('Please remove or fix it then try again.')
                     raise
-                if inp is None: pass#pdb.set_trace()
+                if inp is None: continue
                 x_batch += [np.expand_dims(inp, 0)]
                 #pdb.set_trace()
                 for key in new_feed:
@@ -137,8 +134,8 @@ def shuffle(self):
                     #pdb.set_trace()      
                 #print(k)
                 #print(x_batch) 
-            pdb.set_trace()
             x_batch = np.concatenate(x_batch, 0)
+            #pdb.set_trace()
             yield x_batch, feed_batch
         
         print('Finish {} epoch(es)'.format(i + 1))

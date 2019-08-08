@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 import os
 import pdb
-
+import cv2
 def _batch(self, chunk):
     """
     Takes a chunk of parsed annotations
@@ -29,23 +29,21 @@ def _batch(self, chunk):
     path = os.path.join(self.FLAGS.dataset, jpg)
     #pdb.set_trace()
     img = self.preprocess(path, allobj)
-    i = 0
-    
-    #pdb.set_trace()
-    
-
+    #img = cv2.imread(path)
+    #img = slef.
+    #i = 0
     # Calculate regression target
     
-    cellx = 1. * w / W
-    celly = 1. * h / H
+    cellx = 1. * 1000 / W
+    celly = 1. * 1000 / H
     for obj in allobj:
         centerx = .5*(obj[1]+obj[3]) #xmin, xmax
         centery = .5*(obj[2]+obj[4]) #ymin, ymax
         cx = centerx / cellx
         cy = centery / celly
         if cx >= W or cy >= H: return None, None
-        obj[3] = float(obj[3]-obj[1]) / w
-        obj[4] = float(obj[4]-obj[2]) / h
+        obj[3] = float(obj[3]-obj[1]) / 1000
+        obj[4] = float(obj[4]-obj[2]) / 1000
         obj[3] = np.sqrt(obj[3])
         obj[4] = np.sqrt(obj[4])
         obj[1] = cx - np.floor(cx) # centerx
@@ -99,6 +97,7 @@ def _batch(self, chunk):
     """
     areas = np.tile(prear[np.newaxis].T,(1,1,5))
     #pdb.set_trace()
+    areas = np.reshape(areas,(361,5,19,19))
     # value for placeholder at input layer
     inp_feed_val = img
     # value for placeholder at loss layer
@@ -108,5 +107,4 @@ def _batch(self, chunk):
         'areas': areas
     }
     #pdb.set_trace()
-    if int_feed_val is None: pdb.set_trace()
     return inp_feed_val, loss_feed_val

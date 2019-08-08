@@ -2,6 +2,7 @@ from . import yolo
 from . import yolov2
 from . import vanilla
 from os.path import basename
+import pdb
 
 class framework(object):
     constructor = vanilla.constructor
@@ -32,11 +33,14 @@ class YOLO(framework):
     process_box = yolo.predict.process_box
 
 class YOLOv2(framework):
+    #pdb.set_trace()
     constructor = yolo.constructor
     parse = yolo.data.parse
     shuffle = yolov2.data.shuffle
     preprocess = yolo.predict.preprocess
     loss = yolov2.train.loss
+    #area_pred = yolov2.train.area_pred
+    #intersect = yolov2.train.intersect
     is_inp = yolo.misc.is_inp
     postprocess = yolov2.predict.postprocess
     _batch = yolov2.data._batch

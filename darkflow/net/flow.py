@@ -4,6 +4,8 @@ import numpy as np
 import tensorflow as tf
 import pickle
 from multiprocessing.pool import ThreadPool
+from tensorflow .python import debug as tf_debug
+import pdb
 
 train_stats = (
     'Training statistics: \n'
@@ -31,6 +33,7 @@ def _save_ckpt(self, step, loss_profile):
 
 def train(self):
     loss_ph = self.framework.placeholders
+    #pdb.set_trace()
     loss_mva = None; profile = list()
 
     batches = self.framework.shuffle()
@@ -52,8 +55,9 @@ def train(self):
 
         if self.FLAGS.summary:
             fetches.append(self.summary_op)
-
+        #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
         fetched = self.sess.run(fetches, feed_dict)
+        
         loss = fetched[1]
 
         if loss_mva is None: loss_mva = loss
@@ -62,7 +66,7 @@ def train(self):
 
         if self.FLAGS.summary:
             self.writer.add_summary(fetched[2], step_now)
-
+        #pdb.set_trace()
         form = 'step {} - loss {} - moving ave loss {}'
         self.say(form.format(step_now, loss, loss_mva))
         profile += [(loss, loss_mva)]

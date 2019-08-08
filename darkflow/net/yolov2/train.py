@@ -8,6 +8,7 @@ import math
 import pdb
 import cv2
 from tensorflow.python.ops import tensor_array_ops
+from tensorflow .python import debug as tf_debug
 
 def mask_anchor(anchor,H):
     img_x = 1000
@@ -95,6 +96,7 @@ def condition(i,N,theta,input_fmap,l_):
     return i < N
 
 def update(i,N,theta,input_fmap,l_):
+    #pdb.set_trace()
     batch_grids = affine_grid_generator(19, 19, theta[i])
 
     x_s = batch_grids[:, 0, :, :]
@@ -111,9 +113,9 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     z_rotate = tf.transpose(theta)[2]
     sin = tf.math.sin(z_rotate)
     cos = tf.math.cos(z_rotate)
-
+    batch_size = tf.shape(theta)[0]
     new_theta=tf.transpose(tf.stack([cos,tf.math.negative(sin),x_shift,sin,cos,y_shift]))
-    new_theta = tf.reshape(new_theta,[10,361,5,2,3])
+    new_theta = tf.reshape(new_theta,[batch_size,361,5,2,3])
     #pdb.set_trace()
     # grab input dimensions
     B = tf.shape(input_fmap)[0]
@@ -124,7 +126,7 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     # reshape theta to (B, 2, 3)
     #theta = tf.reshape(theta, [B, 2, 3])
     out_list = tensor_array_ops.TensorArray(tf.float32, size=1, dynamic_size=True)
-    init_val = (0,200,theta,input_fmap,out_list)
+    init_val = (0,batch_size,theta,input_fmap,out_list)
     #pdb.set_trace()
 
     out_fmap = tf.while_loop(cond=condition,body=update,loop_vars=init_val)
@@ -147,9 +149,9 @@ def get_pixel_value(img, x, y):
 
 
 def affine_grid_generator(height, width, theta):
-
+    
     num_batch = tf.shape(theta)[0]
-
+    
     # create normalized 2D grid
     x = tf.linspace(-1.0, 1.0, width)
     y = tf.linspace(-1.0, 1.0, height)
@@ -178,7 +180,7 @@ def affine_grid_generator(height, width, theta):
 
     # reshape to (num_batch, H, W, 2)
     batch_grids = tf.reshape(batch_grids, [num_batch, 5, height, width])
-
+    #pdb.set_trace()
     return batch_grids
 
 
@@ -274,13 +276,13 @@ def loss(self, net_out):
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
 
-    size1 = [10, HW, B, C]
-    size2 = [10, HW, B]
-    size3 = [10, HW, B, H, W]
+    size1 = [None, HW, B, C]
+    size2 = [None, HW, B]
+    size3 = [None, HW, B, H, W]
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
     #pdb.set_trace()
-    _confs = tf.placeholder(tf.float32, size3)
+    _confs = tf.placeholder(tf.float32, size2)
     _coord = tf.placeholder(tf.float32, size2 + [4])
     # weights term for L2 loss
     _proid = tf.placeholder(tf.float32, size1)
@@ -293,8 +295,9 @@ def loss(self, net_out):
 	'probs':_probs, 'confs':_confs, 'coord':_coord, 'proid':_proid,
 	'areas':_areas
     }
-
+    #pdb.set_trace()
     # Extract the coordinate prediction from net.out
+    #pdb.set_trace()
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (3 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
     coords = net_out_reshape[:, :, :, :, :3]
     coords = tf.reshape(coords, [-1, H*W, B, 3])
@@ -306,11 +309,12 @@ def loss(self, net_out):
     #area_pred = tf.reshape(tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min)),[-1,HW,H,W,B])
     _areas = tf.transpose(_areas,(0,1,3,4,2))
     #pdb.set_trace()
+    batch_size = tf.shape(coords)[0]
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
-
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(10,361,361,5))),2)
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(10,361,361,5))),2)
-    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(10,361,361,5))),2)
+    #pdb.set_trace()
+    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,361,5))),2)
+    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,361,5))),2)
+    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,361,5))),2)
 
     #x_max = tf.tile(tf.expand_dims(tf.argmax(intersect,2),2),[1,1,361,1])
     #x_min = tf.tile(tf.expand_dims(tf.argmin(intersect,2),2),[1,1,361,1])
@@ -321,7 +325,7 @@ def loss(self, net_out):
     #area_pred = tf.reduce_sum(normalize_(area_pred),2)
 
 
-    iou = tf.math.divide(intersect,tf.cast(_areas+area_pred,tf.float64)-intersect)
+    iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10)
 
     #pdb.set_trace()
 
@@ -333,11 +337,12 @@ def loss(self, net_out):
     #iou = tf.truediv(intersect_num, _areas_num + area_pred_num - intersect_num) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
     #pdb.set_trace()
     iou = tf.reshape(iou,[-1,H*W*B])
-    loss = tf.reduce_sum(iou,1)
+    loss = 1-tf.reduce_sum(iou,1)
 
     print('Building {} loss'.format(m['model']))
-
+    
     #pdb.set_trace()
-
+    #self.intersect = intersect
+    #self.area_pred = area_pred
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
