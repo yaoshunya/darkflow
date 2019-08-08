@@ -28,17 +28,7 @@ os.chdir('../../../code')
 def rand_rotation_matrix(deflection=1.0,randnums=None):
 	if randnums is None:
 		randnums = np.random.uniform(size=(3,))
-	#theta,phi,z=randnums
-	#theta,phi,z=(2.83,4.98,0.90)
-	#theta = theta * 2.0*deflection*np.pi
-	#phi = phi * 2.0*np.pi
-	#z = z * 2.0*deflection
 
-	#theta,phi,z=(2.83,4.98,0.90)
-
-	#theta,phi,z=(np.pi,2*np.pi/2,0.9)
-	#theta,phi,z=(np.pi*0.68,np.pi,0.9)
-	#theta,phi,z=(3.0,4.7,0)
 	theta,phi,z=(np.pi/2,np.pi,1)
 	#theta,phi,z=(np.pi,np.pi/2,1)
 
@@ -243,7 +233,7 @@ def plot_sphere(grid):
 	plt.show()
 
 def meshgrid(b, grid_type='Driscoll-Healy'):
-    
+
     return np.meshgrid(*linspace(b, grid_type), indexing='ij')
 
 
@@ -278,8 +268,8 @@ def linspace(b, grid_type='Driscoll-Healy'):
 
 def main():
 
-	os.chdir('../../data/training')
-	files = glob.glob("image_2/*")
+	os.chdir('../data/VOC2012')
+	files = glob.glob("JPEGLite/*")
 
 	#images = []
 	images = np.array([])
@@ -317,6 +307,7 @@ def main():
 			img_b = create_sphere(img_b,rotated_grid)
 			img_g = create_sphere(img_g,rotated_grid)
 			img_r = create_sphere(img_r,rotated_grid)
+			os.chdir('sphere_data')
 
 			for i in range(images.shape[0]):
 				#print(i)
@@ -324,10 +315,11 @@ def main():
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
                                 #ipdb.set_trace()
 				#cv2.imwrite(image_name[i],image_sample.T)
-
-				cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
+				#pdb.set_trace()
+				cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
-			pdb.set_trace()
+			#pdb.set_trace()
+			os.chdir('../')
 			image_sample = []
 			images=np.array([])
 			image_name=np.array([])
