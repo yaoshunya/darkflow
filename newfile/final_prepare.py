@@ -7,8 +7,8 @@ import pdb
 import glob
 import pickle
 import argparse
-import lie_learn.spaces.S2 as S2
-from torchvision import datasets
+#import lie_learn.spaces.S2 as S2
+#from torchvision import datasets
 import matplotlib.pylab as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import sph_harm
@@ -77,7 +77,7 @@ def rotate_grid(rot,grid):
 	return x_r,y_r,z_r
 
 def get_projection_grid(b, grid_type="Driscoll-Healy"):
-	theta, phi = S2.meshgrid(b=b, grid_type=grid_type)
+	theta, phi = meshgrid(b=b, grid_type=grid_type)
 	x_ = np.sin(theta) * np.cos(phi)
 	y_ = np.sin(theta) * np.sin(phi)
 	z_ = np.cos(theta)
@@ -134,6 +134,7 @@ def sample_bilinear(signal, rx, ry):
 	else:
 		signal_dim_x = signal.shape[0]
 		signal_dim_y = signal.shape[1]
+
 	rx *= signal_dim_x
 	ry *= signal_dim_y
 
@@ -215,7 +216,7 @@ def create_sphere(data,grid):
 	signals = data.reshape(-1,data.shape[1],data.shape[2]).astype(np.float64)
 	n_signals = signals.shape[0]
 	projections = np.ndarray(
-		(signals.shape[0],2*50,2*50),dtype=np.uint8
+		(signals.shape[0],2*500,2*500),dtype=np.uint8
 	)
 	current = 0
 	#pdb.set_trace()
@@ -241,9 +242,41 @@ def plot_sphere(grid):
 	plt.savefig('sphere2.png')
 	plt.show()
 
+def meshgrid(b, grid_type='Driscoll-Healy'):
+    
+    return np.meshgrid(*linspace(b, grid_type), indexing='ij')
+
+
+def linspace(b, grid_type='Driscoll-Healy'):
+    if grid_type == 'Driscoll-Healy':
+        beta = np.arange(2 * b) * np.pi / (2. * b)
+        alpha = np.arange(2 * b) * np.pi / b
+    elif grid_type == 'SOFT':
+        beta = np.pi * (2 * np.arange(2 * b) + 1) / (4. * b)
+        alpha = np.arange(2 * b) * np.pi / b
+    elif grid_type == 'Clenshaw-Curtis':
+        # beta = np.arange(2 * b + 1) * np.pi / (2 * b)
+        # alpha = np.arange(2 * b + 2) * np.pi / (b + 1)
+        # Must use np.linspace to prevent numerical errors that cause beta > pi
+        beta = np.linspace(0, np.pi, 2 * b + 1)
+        alpha = np.linspace(0, 2 * np.pi, 2 * b + 2, endpoint=False)
+    elif grid_type == 'Gauss-Legendre':
+        x, _ = leggauss(b + 1)  # TODO: leggauss docs state that this may not be only stable for orders > 100
+        beta = np.arccos(x)
+        alpha = np.arange(2 * b + 2) * np.pi / (b + 1)
+    elif grid_type == 'HEALPix':
+        #TODO: implement this here so that we don't need the dependency on healpy / healpix_compat
+        from healpix_compat import healpy_sphere_meshgrid
+        return healpy_sphere_meshgrid(b)
+    elif grid_type == 'equidistribution':
+        raise NotImplementedError('Not implemented yet; see Fast evaluation of quadrature formulae on the sphere.')
+    else:
+        raise ValueError('Unknown grid_type:' + grid_type)
+    return beta, alpha
+
+
 
 def main():
-
 
 	os.chdir('../../data/training')
 	files = glob.glob("image_2/*")
@@ -275,7 +308,7 @@ def main():
 
 			img_b,img_g,img_r = divide_color(images)
 
-			grid = get_projection_grid(b=50)
+			grid = get_projection_grid(b=500)
 
 			rot = rand_rotation_matrix(deflection=1.0)
 
@@ -294,7 +327,7 @@ def main():
 
 				cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
 				#cv2.waitKey(0)
-			#pdb.set_trace()
+			pdb.set_trace()
 			image_sample = []
 			images=np.array([])
 			image_name=np.array([])
@@ -302,7 +335,7 @@ def main():
 
 
 	img_b,img_g,img_r=divide_color(images)
-	grid = get_projection_grid(b=50)
+	grid = get_projection_grid(b=500)
 	rot = rand_rotation_matrix(deflection=1.0)
 	rotated_grid=rotate_grid(rot,grid)
 

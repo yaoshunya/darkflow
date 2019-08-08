@@ -8,6 +8,7 @@ from ...cython_utils.cy_yolo_findboxes import yolo_box_constructor
 import pdb
 
 def _fix(obj, dims, scale, offs):
+	pdb.set_trace()
 	for i in range(1, 5):
 		dim = dims[(i + 1) % 2]
 		off = offs[(i + 1) % 2]
@@ -56,20 +57,23 @@ def preprocess(self, im, allobj = None):
 	using scale, translation, flipping and recolor. The accompanied
 	parsed annotation (allobj) will also be modified accordingly.
 	"""
+	#pdb.set_trace()
 	if type(im) is not np.ndarray:
 		im = cv2.imread(im)
 
 	if allobj is not None: # in training mode
+		#pdb.set_trace()
 		result = imcv2_affine_trans(im)
 		im, dims, trans_param = result
 		scale, offs, flip = trans_param
-		for obj in allobj:
-			_fix(obj, dims, scale, offs)
-			if not flip: continue
-			obj_1_ =  obj[1]
-			obj[1] = dims[0] - obj[3]
-			obj[3] = dims[0] - obj_1_
+		#for obj in allobj:
+		#	_fix(obj, dims, scale, offs)
+		#	if not flip: continue
+		#	obj_1_ =  obj[1]
+		#	obj[1] = dims[0] - obj[3]
+		#	obj[3] = dims[0] - obj_1_
 		im = imcv2_recolor(im)
+		#pdb.set_trace()
 
 	im = self.resize_input(im)
 	if allobj is None: return im

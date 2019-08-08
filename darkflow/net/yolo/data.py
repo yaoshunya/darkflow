@@ -6,7 +6,7 @@ from copy import deepcopy
 import pickle
 import numpy as np
 import os 
-
+import pdb
 def parse(self, exclusive = False):
     meta = self.meta
     ext = '.parsed'
@@ -25,10 +25,10 @@ def _batch(self, chunk):
     returns value for placeholders of net's 
     input & loss layer correspond to this chunk
     """
+    
     meta = self.meta
     S, B = meta['side'], meta['num']
     C, labels = meta['classes'], meta['labels']
-
     # preprocess
     jpg = chunk[0]; w, h, allobj_ = chunk[1]
     allobj = deepcopy(allobj_)
@@ -93,6 +93,7 @@ def _batch(self, chunk):
     return inp_feed_val, loss_feed_val
 
 def shuffle(self):
+    self.FLAGS.batch = 10
     batch = self.FLAGS.batch
     data = self.parse()
     size = len(data)
@@ -103,13 +104,18 @@ def shuffle(self):
 
     for i in range(self.FLAGS.epoch):
         shuffle_idx = perm(np.arange(size))
-        for b in range(batch_per_epoch):
+        print("i:{0}".format(i))
+        #pdb.set_trace()
+        for b_ in range(batch_per_epoch):
             # yield these
             x_batch = list()
             feed_batch = dict()
-
-            for j in range(b*batch, b*batch+batch):
-                train_instance = data[shuffle_idx[j]]
+            k = 0
+            print("b:{0}".format(b_))
+            #pdb.set_trace()
+            for j_ in range(b_*batch, b_*batch+batch):
+                print(j_)
+                train_instance = data[shuffle_idx[j_]]
                 try:
                     inp, new_feed = self._batch(train_instance)
                 except ZeroDivisionError:
@@ -117,20 +123,22 @@ def shuffle(self):
                     print('train_instance:', train_instance)
                     print('Please remove or fix it then try again.')
                     raise
-
-                if inp is None: continue
+                if inp is None: pass#pdb.set_trace()
                 x_batch += [np.expand_dims(inp, 0)]
-
+                #pdb.set_trace()
                 for key in new_feed:
                     new = new_feed[key]
                     old_feed = feed_batch.get(key, 
                         np.zeros((0,) + new.shape))
+                    #pdb.set_trace()
                     feed_batch[key] = np.concatenate([ 
                         old_feed, [new] 
-                    ])      
-            
+                    ])
+                    #pdb.set_trace()      
+                #print(k)
+                #print(x_batch) 
+            pdb.set_trace()
             x_batch = np.concatenate(x_batch, 0)
             yield x_batch, feed_batch
         
         print('Finish {} epoch(es)'.format(i + 1))
-

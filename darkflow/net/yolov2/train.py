@@ -113,7 +113,7 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     cos = tf.math.cos(z_rotate)
 
     new_theta=tf.transpose(tf.stack([cos,tf.math.negative(sin),x_shift,sin,cos,y_shift]))
-    new_theta = tf.reshape(new_theta,[200,361,5,2,3])
+    new_theta = tf.reshape(new_theta,[10,361,5,2,3])
     #pdb.set_trace()
     # grab input dimensions
     B = tf.shape(input_fmap)[0]
@@ -274,11 +274,12 @@ def loss(self, net_out):
     print('\tclasses = {}'.format(m['classes']))
     print('\tscales  = {}'.format([sprob, sconf, snoob, scoor]))
 
-    size1 = [200, HW, B, C]
-    size2 = [200, HW, B]
-    size3 = [200, HW, B, H, W]
+    size1 = [10, HW, B, C]
+    size2 = [10, HW, B]
+    size3 = [10, HW, B, H, W]
     # return the below placeholders
     _probs = tf.placeholder(tf.float32, size1)
+    #pdb.set_trace()
     _confs = tf.placeholder(tf.float32, size3)
     _coord = tf.placeholder(tf.float32, size2 + [4])
     # weights term for L2 loss
@@ -307,9 +308,9 @@ def loss(self, net_out):
     #pdb.set_trace()
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
 
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(200,361,361,5))),2)
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(200,361,361,5))),2)
-    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(200,361,361,5))),2)
+    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(10,361,361,5))),2)
+    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(10,361,361,5))),2)
+    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(10,361,361,5))),2)
 
     #x_max = tf.tile(tf.expand_dims(tf.argmax(intersect,2),2),[1,1,361,1])
     #x_min = tf.tile(tf.expand_dims(tf.argmin(intersect,2),2),[1,1,361,1])
