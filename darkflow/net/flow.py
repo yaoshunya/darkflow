@@ -55,7 +55,7 @@ def train(self):
 
         if self.FLAGS.summary:
             fetches.append(self.summary_op)
-        #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
+        self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
         fetched = self.sess.run(fetches, feed_dict)
         
         loss = fetched[1]
