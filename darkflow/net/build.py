@@ -9,6 +9,7 @@ from ..dark.darknet import Darknet
 import json
 import os
 import pdb
+from tensorflow .python import debug as tf_debug
 
 class TFNet(object):
 
@@ -142,8 +143,9 @@ class TFNet(object):
 		if self.FLAGS.summary:
 			self.summary_op = tf.summary.merge_all()
 			self.writer = tf.summary.FileWriter(self.FLAGS.summary + 'train')
-		
+		sess = tf.Session()
 		self.sess = tf.Session(config = tf.ConfigProto(**cfg))
+		#self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
 		self.sess.run(tf.global_variables_initializer())
 
 		if not self.ntrain: return

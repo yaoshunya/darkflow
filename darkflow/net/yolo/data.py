@@ -93,7 +93,6 @@ def _batch(self, chunk):
     return inp_feed_val, loss_feed_val
 
 def shuffle(self):
-    self.FLAGS.batch = 10
     batch = self.FLAGS.batch
     data = self.parse()
     size = len(data)

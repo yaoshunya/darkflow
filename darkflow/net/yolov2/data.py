@@ -57,7 +57,7 @@ def _batch(self, chunk):
     # Calculate placeholders' values
     probs = np.zeros([H*W,B,C])
     confs = np.zeros([H*W,B])
-    coord = np.zeros([H*W,B,4])
+    coord = np.zeros([H*W,B,3])
     proid = np.zeros([H*W,B,C])
     prear = np.zeros([H*W,H*W])
     
@@ -65,7 +65,7 @@ def _batch(self, chunk):
         probs[obj[6], :, :] = [[0.]*C] * B
         probs[obj[6], :, labels.index(obj[0])] = 1.
         proid[obj[6], :, :] = [[1.]*C] * B
-        coord[obj[6], :, :] = [obj[1:5]] * B
+        #coord[obj[6], :, :] = [obj[1:5]] * B
         prear[obj[6],:] = obj[5] # mask
         #prear[obj[5],1] = obj[2] - obj[4]**2 * .5 * H # yup
         #prear[obj[5],2] = obj[1] + obj[3]**2 * .5 * W # xright
@@ -103,7 +103,7 @@ def _batch(self, chunk):
     # value for placeholder at loss layer
     loss_feed_val = {
         'probs': probs, 'confs': confs,
-        'coord': coord, 'proid': proid,
+        'coord': coord,'proid': proid,
         'areas': areas
     }
     #pdb.set_trace()

@@ -283,7 +283,7 @@ def loss(self, net_out):
     _probs = tf.placeholder(tf.float32, size1)
     #pdb.set_trace()
     _confs = tf.placeholder(tf.float32, size2)
-    _coord = tf.placeholder(tf.float32, size2 + [4])
+    _coord = tf.placeholder(tf.float32, size2 + [3])
     # weights term for L2 loss
     _proid = tf.placeholder(tf.float32, size1)
     # material calculating IOU
@@ -301,48 +301,55 @@ def loss(self, net_out):
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (3 + 1 + C)]) #<tf.Tensor 'Reshape:0' shape=(?, 19, 19, 5, 85) dtype=float32> x,y,w,h残差
     coords = net_out_reshape[:, :, :, :, :3]
     coords = tf.reshape(coords, [-1, H*W, B, 3])
+    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3])
+    adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
+    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:])
+    adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
 
     area_pred = shift_x_y(coords,H,W,B,anchors)
 
-    #max = tf.cast(tf.tile(tf.expand_dims(tf.argmax(area_pred,3),3),[1,1,1,5]),tf.int32)
-    #min = tf.cast(tf.tile(tf.expand_dims(tf.argmin(area_pred,3),3),[1,1,1,5]),tf.int32)
-    #area_pred = tf.reshape(tf.math.divide(tf.math.subtract(area_pred,min),tf.math.subtract(max,min)),[-1,HW,H,W,B])
     _areas = tf.transpose(_areas,(0,1,3,4,2))
     #pdb.set_trace()
     batch_size = tf.shape(coords)[0]
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
     #pdb.set_trace()
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,361,5))),2)
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,361,5))),2)
-    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,361,5))),2)
-
-    #x_max = tf.tile(tf.expand_dims(tf.argmax(intersect,2),2),[1,1,361,1])
-    #x_min = tf.tile(tf.expand_dims(tf.argmin(intersect,2),2),[1,1,361,1])
-    #intersect = tf.math.divide(tf.subtract(tf.cast(intersect,tf.int64),x_min),tf.subtract(x_max,x_min))*255
-    #pdb.set_trace()
-    #intersect = tf.reduce_sum(x,2)
-    #_areas = tf.reduce_sum(normalize_(_areas),2)
-    #area_pred = tf.reduce_sum(normalize_(area_pred),2)
+    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,361,5))),2) #<tf.Tensor 'Sum:0' shape=(?, 361, 5) dtype=float64>
+    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,361,5))),2) #<tf.Tensor 'Sum_1:0' shape=(?, 361, 5) dtype=float32>
+    _areas= tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,361,5))),2) #<tf.Tensor 'Sum_2:0' shape=(?, 361, 5) dtype=float32>
 
 
-    iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10)
+    iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10) #<tf.Tensor 'truediv:0' shape=(?, 361, 5) dtype=float64>
+    adjusted_net_out = tf.concat([coords, adjusted_c, adjusted_prob], 3)
+    best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
+    best_box = tf.to_float(best_box)
+    confs = tf.multiply(best_box, _confs)
 
-    #pdb.set_trace()
+    conid = snoob * (1. - confs) + sconf * confs
+    weight_coo = tf.concat(3 * [tf.expand_dims(confs, -1)], 3)
+    cooid = scoor * weight_coo
+    weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3)
+    proid = sprob * weight_pro
 
+    self.fetch += [_probs, confs, conid, cooid, proid]
+    true = tf.concat([_coord, tf.expand_dims(confs, 3), _probs ], 3)
+    wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3)
+    #true = tf.concat([tf.expand_dims(confs,3),_probs],3)
+    #wght = tf.concat([tf.expand_dims(coind,3),proid],3)
     """
     intersect_num = tf.math.count_nonzero(tf.reshape(intersect,(200,361,361,5)),2)
     area_pred_num = tf.math.count_nonzero(tf.reshape(area_pred,(200,361,361,5)),2)
     _areas_num = tf.math.count_nonzero(tf.reshape(_areas,(200,361,361,5)),2)
     """
-    #iou = tf.truediv(intersect_num, _areas_num + area_pred_num - intersect_num) #<tf.Tensor 'truediv_3611:0' shape=(?, 361, 19, 19, 5) dtype=float32>
-    #pdb.set_trace()
-    iou = tf.reshape(iou,[-1,H*W*B])
-    loss = 1-tf.reduce_sum(iou,1)
+    #iou = tf.reshape(iou,[-1,H*W*B])
+    #loss = 1-tf.reduce_sum(iou,1)
 
+    iou_loss = tf.reduce_sum(tf.reduce_sum(iou,1),1)
     print('Building {} loss'.format(m['model']))
-    
     #pdb.set_trace()
-    #self.intersect = intersect
-    #self.area_pred = area_pred
+    loss = tf.pow(adjusted_net_out - true, 2)
+    loss = tf.multiply(loss, wght)
+    loss = tf.reshape(loss, [-1, H*W*B*(3 + 1 + C)])
+    loss = tf.reduce_sum(loss, 1) - tf.cast(iou_loss,tf.float32)*1000
+    #pdb.set_trace()
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)

@@ -55,7 +55,7 @@ def train(self):
 
         if self.FLAGS.summary:
             fetches.append(self.summary_op)
-        self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
+        #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
         fetched = self.sess.run(fetches, feed_dict)
         
         loss = fetched[1]
@@ -134,6 +134,7 @@ def predict(self):
         self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
         start = time.time()
         out = self.sess.run(self.out, feed_dict)
+        pdb.set_trace()
         stop = time.time(); last = stop - start
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))
