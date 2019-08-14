@@ -9,7 +9,7 @@ import pdb
 import cv2
 from tensorflow.python.ops import tensor_array_ops
 from tensorflow .python import debug as tf_debug
-
+import pickle
 def mask_anchor(anchor,H):
     img_x = 1000
     img_y = 1000
@@ -58,22 +58,30 @@ def mask_anchor(anchor,H):
                 resize_mask = np.resize(mask_base,(H,H))
                 if l == 0:
                     mask = resize_mask[np.newaxis]
+                    mask_row = mask_base[np.newaxis]
                 else:
                     mask = np.append(mask,resize_mask[np.newaxis],axis=0)
+                    mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
 
 
             step_x += step_size
             if t == 0:
                 mask_ = mask[np.newaxis]
+                mask__row=mask_row[np.newaxis]
             else:
                 mask_ = np.append(mask_,mask[np.newaxis],axis=0)
+                mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
         print(i)
         step_y += step_size
         if i == 0:
             mask_fi = mask_[np.newaxis]
+            mask_fi_row = mask__row[np.newaxis]
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+            mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
 
+    with open('data/anchor/anchor.binaryfile','wb') as anc:
+        pickle.dump(mask_fi_row,anc,protocol=4)
     return mask_fi
 
 
@@ -268,6 +276,7 @@ def loss(self, net_out):
     anchors = mask_anchor(anchors,H)
     anchors=anchors.astype(np.float32)
 
+    
 
     print('{} loss hyper-parameters:'.format(m['model']))
     print('\tH	     = {}'.format(H))

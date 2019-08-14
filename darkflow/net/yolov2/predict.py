@@ -30,6 +30,7 @@ def postprocess(self, net_out, im, save = True):
 	"""
 	Takes net output, draw net_out, save to disk
 	"""
+	#pdb.set_trace()
 	boxes = self.findboxes(net_out)
 
 	# meta
@@ -43,8 +44,11 @@ def postprocess(self, net_out, im, save = True):
 	h, w, _ = imgcv.shape
 
 	resultsForJSON = []
+	#pdb.set_trace()
 	for b in boxes:
+		#pdb.set_trace()
 		boxResults = self.process_box(b, h, w, threshold)
+		
 		if boxResults is None:
 			continue
 		left, right, top, bot, mess, max_indx, confidence = boxResults
