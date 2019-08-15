@@ -58,30 +58,31 @@ def mask_anchor(anchor,H):
                 resize_mask = np.resize(mask_base,(H,H))
                 if l == 0:
                     mask = resize_mask[np.newaxis]
-                    mask_row = mask_base[np.newaxis]
+                    #mask_row = mask_base[np.newaxis]
                 else:
                     mask = np.append(mask,resize_mask[np.newaxis],axis=0)
-                    mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
+                    #mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
 
 
             step_x += step_size
             if t == 0:
                 mask_ = mask[np.newaxis]
-                mask__row=mask_row[np.newaxis]
+                #mask__row=mask_row[np.newaxis]
             else:
                 mask_ = np.append(mask_,mask[np.newaxis],axis=0)
-                mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
+                #mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
         print(i)
         step_y += step_size
         if i == 0:
             mask_fi = mask_[np.newaxis]
-            mask_fi_row = mask__row[np.newaxis]
+            #mask_fi_row = mask__row[np.newaxis]
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
-            mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-
+            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
+    """
     with open('data/anchor/anchor.binaryfile','wb') as anc:
         pickle.dump(mask_fi_row,anc,protocol=4)
+    """
     return mask_fi
 
 
@@ -105,14 +106,17 @@ def condition(i,N,theta,input_fmap,l_):
 
 def update(i,N,theta,input_fmap,l_):
     #pdb.set_trace()
+    
     batch_grids = affine_grid_generator(19, 19, theta[i])
+    #pdb.set_trace()
+    x_s = batch_grids[:, 0, :, :] #<tf.Tensor 'while/strided_slice_2:0' shape=(361, 19, 19) dtype=float32>
+    y_s = batch_grids[:, 1, :, :] #<tf.Tensor 'while/strided_slice_3:0' shape=(361, 19, 19) dtype=float32>
+    #pdb.set_trace()
 
-    x_s = batch_grids[:, 0, :, :]
-    y_s = batch_grids[:, 1, :, :]
-
-    out_fmap = bilinear_sampler(input_fmap, x_s, y_s)
+    out_fmap = bilinear_sampler(input_fmap, x_s, y_s) #<tf.Tensor 'while/AddN:0' shape=(361, 19, 19, 5) dtype=float32>
     l_ = l_.write(i,out_fmap)
-    return i+1,N,theta,tf.transpose(out_fmap,[0,3,1,2]),l_
+    #pdb.set_trace()
+    return i+1,N,theta,out_fmap,l_
 
 def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
 
@@ -123,7 +127,9 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     cos = tf.math.cos(z_rotate)
     batch_size = tf.shape(theta)[0]
     new_theta=tf.transpose(tf.stack([cos,tf.math.negative(sin),x_shift,sin,cos,y_shift]))
-    new_theta = tf.reshape(new_theta,[batch_size,361,5,2,3])
+    new_theta = tf.reshape(new_theta,[batch_size,361*5,2,3])
+    #new_theta = tf.reshape(new_theta,[batch_size,361*5,6])
+    input_fmap = tf.reshape(input_fmap,[361*5,19,19,-1])
     #pdb.set_trace()
     # grab input dimensions
     B = tf.shape(input_fmap)[0]
@@ -134,7 +140,7 @@ def spatial_transformer_network(input_fmap, theta, out_dims=None, **kwargs):
     # reshape theta to (B, 2, 3)
     #theta = tf.reshape(theta, [B, 2, 3])
     out_list = tensor_array_ops.TensorArray(tf.float32, size=1, dynamic_size=True)
-    init_val = (0,batch_size,theta,input_fmap,out_list)
+    init_val = (0,batch_size,new_theta,input_fmap,out_list)
     #pdb.set_trace()
 
     out_fmap = tf.while_loop(cond=condition,body=update,loop_vars=init_val)
@@ -187,14 +193,15 @@ def affine_grid_generator(height, width, theta):
     # batch grid has shape (num_batch, 2, H*W)
 
     # reshape to (num_batch, H, W, 2)
-    batch_grids = tf.reshape(batch_grids, [num_batch, 5, height, width])
+    #pdb.set_trace()
+    batch_grids = tf.reshape(batch_grids, [num_batch, 2, height, width])
     #pdb.set_trace()
     return batch_grids
 
 
 def bilinear_sampler(img, x, y):
     #pdb.set_trace()
-    img = tf.transpose(img,[0,2,3,1])
+    #img = tf.transpose(img,[0,2,3,1])
     H = tf.shape(img)[1]
     W = tf.shape(img)[2]
     max_y = tf.cast(H - 1, 'int32')
@@ -316,6 +323,7 @@ def loss(self, net_out):
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
 
     area_pred = shift_x_y(coords,H,W,B,anchors)
+    area_pred = tf.reshape(area_pred,[tf.shape(coords)[0],361,19,19,5])
 
     _areas = tf.transpose(_areas,(0,1,3,4,2))
     #pdb.set_trace()

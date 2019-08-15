@@ -8,7 +8,9 @@ from tensorflow .python import debug as tf_debug
 import pdb
 import cv2
 from ..cython_utils.cy_yolo2_findboxes import box_constructor
-
+import matplotlib
+matplotlib.use('Agg') # -----(1)
+import matplotlib.pyplot as plt
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -61,9 +63,15 @@ def make_result(out,img_name,meta,j):
         dest[:,0] += x_shift
         dest[:,1] += y_shift
         #pdb.set_trace()
-
-        prediction = cv2.warpAffine(np.tile(anchor[np.newaxis].T.astype(np.uint8),[1,1,3]), dest, (1000, 1000))
-
+        
+        anchor =  np.tile(anchor[np.newaxis].T.astype(np.uint8),[1,1,3])
+        cv2.imwrite('anchor.png',anchor)
+        
+        prediction = cv2.warpAffine(anchor, dest, (1000, 1000))
+        cv2.imwrite('prediction.png',prediction)
+        
+        
+        #pdb.set_trace()
         dst = cv2.addWeighted(np.asarray(imgcv,np.float64),0.1,np.asarray(prediction,np.float64),0.9,0)
         cv2.imwrite(os.path.join('data/out_test','test_image_{0}_{1}.png'.format(j,i)),dst)
         
@@ -78,7 +86,9 @@ def train(self):
 
     batches = self.framework.shuffle()
     loss_op = self.framework.loss
-
+    step_plot = np.array([])
+    loss_plot = np.array([])
+    s = 0
     for i, (x_batch, datum) in enumerate(batches):
         if not i: self.say(train_stats.format(
             self.FLAGS.lr, self.FLAGS.batch,
@@ -99,6 +109,8 @@ def train(self):
         fetched = self.sess.run(fetches, feed_dict)
         
         loss = fetched[1]
+        
+        
 
         if loss_mva is None: loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
@@ -109,6 +121,16 @@ def train(self):
         #pdb.set_trace()
         form = 'step {} - loss {} - moving ave loss {}'
         self.say(form.format(step_now, loss, loss_mva))
+        if step_now%1 == 0:
+            step_plot = np.append(step_plot,step_now)
+            loss_plot = np.append(loss_plot,loss)
+            plt.plot(step_plot,loss_plot)
+
+            plt.xlabel("step")
+            plt.ylabel("loss")
+            plt.savefig('data/out_test/figure.png')
+            plt.clf()
+
         profile += [(loss, loss_mva)]
 
         ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)

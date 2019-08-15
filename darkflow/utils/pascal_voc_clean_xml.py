@@ -220,9 +220,10 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
                 grid = rotate_grid(rot,grid)
                 #pdb.set_trace()
                 mask_parts = project_2d_on_sphere(mask_prepare,grid)
+                #pdb.set_trace()
                 mask_parts = cv2.resize(mask_parts,(19,19))
                 mask_parts = np.reshape(mask_parts,[-1])
-                ###############################################################
+                ################################################################
                 ###############################################################
                 current = [name,xn,yn,xx,yx,mask_parts]
                 #pdb.set_trace()
