@@ -1,11 +1,140 @@
 import os
 import sys
 import glob
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pylab as plt
 import numpy as np
 import pdb
 import cv2
 import pickle
 import xml.etree.ElementTree as ET
+import math
+import random
+
+
+#  ICP parameters
+EPS = 0.00001
+MAXITER = 100
+
+show_animation = False
+
+
+def ICP_matching(ppoints, cpoints):
+    """
+    Iterative Closest Point matching
+    - input
+    ppoints: 2D points in the previous frame
+    cpoints: 2D points in the current frame
+    - output
+    R: Rotation matrix
+    T: Translation vector
+    """
+    H = None  # homogeneous transformation matrix
+
+    dError = 1000.0
+    preError = 1000.0
+    count = 0
+
+    while dError >= EPS:
+        count += 1
+
+        if show_animation:  # pragma: no cover
+            
+            plt.cla()
+            plt.plot(ppoints[0, :], ppoints[1, :], ".r")
+            plt.plot(cpoints[0, :], cpoints[1, :], ".b")
+            plt.plot(0.0, 0.0, "xr")
+            plt.axis("equal")
+            plt.pause(1.0)
+            plt.savefig("icp_test_{0}.png".format(count))
+
+        inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
+        Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
+
+        # update current points
+        cpoints = (Rt @ cpoints) + Tt[:, np.newaxis]
+
+        H = update_homogeneous_matrix(H, Rt, Tt)
+
+        dError = abs(preError - error)
+        preError = error
+        #print("Residual:", error)
+
+        if dError <= EPS:
+            #print("Converge", error, dError, count)
+            break
+        elif MAXITER <= count:
+            print("Not Converge...", error, dError, count)
+            break
+
+    R = np.array(H[0:2, 0:2])
+    T = np.array(H[0:2, 2])
+
+    return R, T
+
+
+def update_homogeneous_matrix(Hin, R, T):
+
+    H = np.zeros((3, 3))
+
+    H[0, 0] = R[0, 0]
+    H[1, 0] = R[1, 0]
+    H[0, 1] = R[0, 1]
+    H[1, 1] = R[1, 1]
+    H[2, 2] = 1.0
+
+    H[0, 2] = T[0]
+    H[1, 2] = T[1]
+
+    if Hin is None:
+        return H
+    else:
+        return Hin @ H
+
+
+def nearest_neighbor_assosiation(ppoints, cpoints):
+
+    # calc the sum of residual errors
+    dcpoints = ppoints - cpoints
+    d = np.linalg.norm(dcpoints, axis=0)
+    error = sum(d)
+
+    # calc index with nearest neighbor assosiation
+    inds = []
+    for i in range(cpoints.shape[1]):
+        minid = -1
+        mind = float("inf")
+        for ii in range(ppoints.shape[1]):
+            d = np.linalg.norm(ppoints[:, ii] - cpoints[:, i])
+
+            if mind >= d:
+                mind = d
+                minid = ii
+
+        inds.append(minid)
+
+    return inds, error
+
+
+def SVD_motion_estimation(ppoints, cpoints):
+
+    pm = np.mean(ppoints, axis=1)
+    cm = np.mean(cpoints, axis=1)
+
+    pshift = ppoints - pm[:, np.newaxis]
+    cshift = cpoints - cm[:, np.newaxis]
+
+    W = cshift @ pshift.T
+    u, s, vh = np.linalg.svd(W)
+
+    R = (u @ vh).T
+    t = pm - (R @ cm)
+
+    return R, t
+
+
+
 
 def get_projection_grid(b, grid_type="Driscoll-Healy"):
     theta, phi = np.meshgrid(np.arange(2 * b) * np.pi / (2. * b),np.arange(2 * b) * np.pi / b, indexing='ij')
@@ -294,17 +423,18 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     return np.array(dumps)
 
 def make_coords_from_mask(data,flag):
-
+    #pdb.set_tarce()
     if flag == 0:
         anchor = data
         anchor = np.reshape(anchor,[anchor.shape[0]*anchor.shape[1],anchor.shape[2],anchor.shape[3],anchor.shape[4]])
         anchor_coords = list()
-        anc_parts = []
         
+        #pdb.set_trace()
         for i in range(anchor.shape[0]):
-            for j in range(anchor.shape[1]):
-               anchor_coords_parts = np.array(np.where(anchor[i][j]>0))
-               anc_parts.append(anchor_coords_parts)
+            anc_parts = []
+            for j in range(anchor.shape[1]):            
+                anchor_coords_parts = np.array(np.where(anchor[i][j]>0))
+                anc_parts.append(anchor_coords_parts)
             anchor_coords.append(anc_parts)
         return anchor_coords
 
@@ -333,38 +463,112 @@ def make_coords_from_mask(data,flag):
 
         return ann_coords
     return 0
+    
+def detect_R_T(ann,anchor):
+
+    # simulation parameters
+    nPoint = 10
+    fieldLength = 50.0
+    motion = [0.5, 2.0, np.deg2rad(-10.0)]  # movement [x[m],y[m],yaw[deg]]
+
+    nsim = 10  # number of simulation
+    R_list = list()
+    T_list = list()
+    R_parts = list()
+    T_parts = list()
+    R_return = list()
+    T_return = list()
+    dumps = list()
+ 
+    for ann_len in range(len(ann)):
+    
+        img_name = ann[ann_len][0]
+        all = list()
+       
+    
+        for ann_0_len in range(len(ann[ann_len][1])):
+            #pdb.set_trace()
+            try:
+                name = ann[ann_len][1][ann_0_len][0]
+            except:
+                pdb.set_trace()
+            current = list()
+        
+            for anchor_len in range(len(anchor)):
+            
+                for anchor_0_len in range(len(anchor[anchor_len][1])):
+                
+                    R_list = list()
+                    T_list = list()
+                        
+                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
+                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
+                    
+                    my_list_ann = []
+                    my_list_anchor = []
+                    for k in range(30):
+                        x = random.randint(0,ann_len_-1)
+                        y = random.randint(0,anchor_len_-1) 
+                        my_list_ann.append(x)    
+                        my_list_anchor.append(y)
+                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
+                    
+                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
+                        
+                   
+                    print("start ICP matching")
+                    R, T = ICP_matching(ann_stack,anchor_stack)
+                    
+                    #R, T = icp_matching(previous_points, current_points)
+                    R_parts.append(R)
+                    T_parts.append(T)    
+                    
+                R_list.append(R_parts)
+                T_list.append(T_parts) 
+            current = [name,R_list,T_list]
+            all += current
+            #pdb.set_trace()
+        add = [[img_name,[all]]]
+        dumps += add
+        print("finish:{0}".format(ann_len))
+        if ann_len % 20 == 0:
+            with open('../data/ann_anchor_data/redidual_parts_{0}.pickle'.format(ann_len%20),mode = 'wb') as f:
+                pickle.dump(dumps,f)
+            dumps = list()
+            
+        
+
+    with open('../data/ann_anchor_data/redidual_1.pickle',mode = 'wb') as f:
+            pickle.dump(dumps,f)
+       
+    return 0
 
 if __name__ ==  '__main__':
 
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('mask_anchor.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/anchor_coords.pickle'):
         print("make mask anchor")
         with open("anchor.txt") as f:
             x = f.read().split()
 
         anchor = mask_anchor(np.array(x),19)
-
-        with open('mask_anchor.pickle',mode = 'wb') as f:
-            pickle.dump(anchor,f)
+        #pdb.set_trace()
+        anchor_coords=make_coords_from_mask(anchor,0)
+        #pdb.set_trace()
+        with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'wb') as f:
+            pickle.dump(anchor_coords,f)
+        
         print("finish making mask anchor")
-    else:
-        """
-        with open("mask_anchor.pickle",mode = 'rb') as f:
-            anchor = pickle.load(f)
-        """
-        pass
-        #print("load mask anchor")
-        #with open('mask_anchor.pickle',mode = 'rb') as f:
-        #    anchor = pickle.load(f)
+    
     #----------------------------------------
 
     #----------------------------------------
     #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
     #
-    if not os.path.exists('ann_coords_1.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
         print("make mask annotations_1")
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体
@@ -376,7 +580,7 @@ if __name__ ==  '__main__':
 	
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('ann_coords_1.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -390,7 +594,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('ann_coords_2.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
         
@@ -404,7 +608,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('ann_coords_3.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -418,32 +622,30 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('ann_coords_4.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
         del annotations,ann_coords
 
-        with open("mask_anchor.pickle",mode = 'rb') as f:
-            anchor = pickle.load(f)
         
-        anchor_coords=make_coords_from_mask(anchor,0)
-        
-        with open('anchor_coords.pickle',mode = 'wb') as f:
-            pickle.dump(anchor_coords,f)
         
     else:
-        with open('anchor_coords.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-        with open('ann_coords.pickle',mode = 'rb') as f:
-            ann = pickle.load(f)
+        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        #pdb.set_trace()
+        print("start detect the redidual between anchors and annotations")
+        ann_1 = detect_R_T(ann_1,anchor)
+        
+        #with open('../data/ann_anchor_data/redidual_1.pickle',mode = 'wb') as f:
+        #   pickle.dump(ann_1,f)
+        
         pdb.set_trace()
-        #del annotations_1,annotations_2
-        """
-        with open('mask_annotations.pickle',mode = 'wb') as f:
-            pickle.dump(annotations,f)
-        print("finish making mask annotations")
-        """
 
+
+        
+    
 
 
