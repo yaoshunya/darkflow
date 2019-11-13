@@ -516,7 +516,7 @@ def detect_R_T(ann,anchor):
                     anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
                         
                    
-                    print("start ICP matching")
+                    #print("start ICP matching")
                     R, T = ICP_matching(ann_stack,anchor_stack)
                     
                     #R, T = icp_matching(previous_points, current_points)
@@ -531,8 +531,8 @@ def detect_R_T(ann,anchor):
         add = [[img_name,[all]]]
         dumps += add
         print("finish:{0}".format(ann_len))
-        if ann_len % 20 == 0:
-            with open('../data/ann_anchor_data/redidual_parts_{0}.pickle'.format(ann_len%20),mode = 'wb') as f:
+        if ann_len % 10 == 0:
+            with open('../data/ann_anchor_data/redidual_parts_{0}.pickle'.format(ann_len//10),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
             
