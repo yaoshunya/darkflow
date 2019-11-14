@@ -642,7 +642,7 @@ if __name__ ==  '__main__':
     else:
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
         #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")

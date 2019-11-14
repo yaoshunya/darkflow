@@ -46,7 +46,21 @@ def load_data(path,pick,exclusive):
 
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     cur_dir = os.getcwd()
+    dumps = list()
     dumps_1 = load_data('data/redidual_1',pick,exclusive)
-    pdb.set_trace()
     os.chdir(cur_dir)
+    dumps_2 = load_data('data/redidual_2',pick,exclusive)
+    os.chdir(cur_dir)
+    dumps_3 = load_data('data/redidual_3',pick,exclusive)
+    os.chdir(cur_dir)
+    #dumps_4 = load_data('data/redidual_4',pick,exclusive)
+    
+    dumps += dumps_1
+    dumps += dumps_2
+    dumps += dumps_3
+    #dumps += dumps_4
+    pdb.set_trace()
+    
+    #os.chdir(cur_dir)
+    
     return dumps
