@@ -58,9 +58,9 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     dumps += dumps_1
     dumps += dumps_2
     dumps += dumps_3
-    #dumps += dumps_4
+    dumps += dumps_4
     pdb.set_trace()
     
-    #os.chdir(cur_dir)
+    os.chdir(cur_dir)
     
     return dumps
