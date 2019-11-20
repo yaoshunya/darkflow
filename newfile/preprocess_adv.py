@@ -310,7 +310,7 @@ def mask_anchor(anchor,H):
 
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
-
+                mask_base = np.resize(mask_base,(500,500))
                 #-------------------------------------------------
                 #アンカーの球面写像
                 grid = get_projection_grid(b=500)
@@ -319,7 +319,7 @@ def mask_anchor(anchor,H):
                 mask_base = project_2d_on_sphere(mask_base,grid)
                 #-------------------------------------------------
 
-                #resize_mask = np.resize(mask_base,(H,H))
+                
                 resize_mask = mask_base
                 if l == 0:
                     mask = resize_mask[np.newaxis]
@@ -400,6 +400,7 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             mask_parts = project_2d_on_sphere(mask_prepare,grid)
             #mask_parts = cv2.resize(mask_parts,(19,19))
             mask_parts = np.reshape(mask_parts,[-1])
+            mask_parts = cv2
             #pdb.set_trace()
             ################################################################
             ################################################################
@@ -464,9 +465,10 @@ def make_coords_from_mask(data,flag):
         return ann_coords
     return 0
     
-def detect_R_T(ann,anchor):
+def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
+    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     
     for ann_len in range(len(ann)):
     
@@ -478,6 +480,13 @@ def detect_R_T(ann,anchor):
             error = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
+            annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
+            annotations_y = np.array(ann[ann_len][1][ann_0_len][1][1])
+            x_max = np.max(annotations_x)
+            x_min = np.min(annotations_x)
+            y_max = np.max(annotations_y)
+            y_min = np.min(annotations_y)
+            #pdb.set_trace()
         
             for anchor_len in range(len(anchor)):
         
@@ -529,31 +538,54 @@ def detect_R_T(ann,anchor):
                 R, T = ICP_matching(ann_stack,anchor_stack)
                 R_list.append(R)
                 T_list.append(T)
-            current = [name,R_list,T_list]
+            current = [name,R_list,T_list,x_min,y_min,x_max,y_min]
             all.append(current)
             #pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
+        #pdb.set_trace()
         print("finish:{0}".format(ann_len)) 
         if ann_len % 50 == 0:
-            with open('../data/ann_anchor_data/redidual_parts_{0}.pickle'.format(ann_len//50),mode = 'wb') as f:
+            with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
             
-        
-
-    with open('../data/ann_anchor_data/redidual_1.pickle',mode = 'wb') as f:
+    with open('../data/{0}/redidual_1.pickle'.format(path[path_num]),mode = 'wb') as f:
             pickle.dump(dumps,f)
        
     return 0
-   
-                
-  
-  
-    
 
+def make_area():
+    file = ['ann_coords_1','ann_coords_2','ann_coords_3','ann_coords_4']
+    for i in file:
+        with open('../data/ann_anchor_data/{0}.pickle'.format(i),mode = 'rb') as f:
+            ann = pickle.load(f)
+               
+        
+        for ann_len in range(len(ann)):
+            mask = np.zeros((1000,1000))
+            for ann_0_len in range(len(ann[ann_len][1])): 
+                X=ann[ann_len][1][ann_0_len][1]
+                mask[X] = 1
+            name = ann[ann_len][0][:6]
+            #pdb.set_trace()
+            mask = cv2.resize(mask,(500,500))
+            with open('../data/mask_ann/{0}.pickle'.format(name),mode = 'wb') as f:
+                pickle.dump(mask,f)   
+            print("finish : {0}".format(name))
+           
 if __name__ ==  '__main__':
 
+    if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
+        with open("anchor.txt") as f:
+            x = f.read().split()
+
+        anchors = mask_anchor(np.array(x),19)
+        
+        #anchors = mask_anchor(anchors,19)
+        
+        with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'wb') as f:
+            pickle.dump(mask_anchor,f)
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
@@ -639,21 +671,38 @@ if __name__ ==  '__main__':
 
         
         
-    else:
+    elif not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'): 
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
+	
+        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
         #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")
-        ann_1 = detect_R_T(ann_1,anchor)
+        ann_1 = detect_R_T(ann_1,anchor,0)
         
-        #with open('../data/ann_anchor_data/redidual_1.pickle',mode = 'wb') as f:
-        #   pickle.dump(ann_1,f)
+        print("finish 1")
         
-        #pdb.set_trace()
+        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,1)
+        
+        print("finish 2")
+        
+        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,2)
+        
+        print("finish 3")
+        
+        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,3)
+        
+        print("finish 4")
 
-
+    else:
+        make_area()
         
     
 

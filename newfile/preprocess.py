@@ -464,12 +464,14 @@ def make_coords_from_mask(data,flag):
         return ann_coords
     return 0
     
-def detect_R_T(ann,anchor):
+def detect_R_T(ann,anchor,path_num):
 
     # simulation parameters
     nPoint = 10
     fieldLength = 50.0
     motion = [0.5, 2.0, np.deg2rad(-10.0)]  # movement [x[m],y[m],yaw[deg]]
+
+    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
 
     nsim = 10  # number of simulation
     R_list = list()
@@ -493,6 +495,8 @@ def detect_R_T(ann,anchor):
             except:
                 pdb.set_trace()
             current = list()
+            
+            pdb.set_trace()
         
             for anchor_len in range(len(anchor)):
             
@@ -532,7 +536,7 @@ def detect_R_T(ann,anchor):
         dumps += add
         print("finish:{0}".format(ann_len))
         if ann_len % 10 == 0:
-            with open('../data/ann_anchor_data/redidual_parts_{0}.pickle'.format(ann_len//10),mode = 'wb') as f:
+            with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//10),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
             
@@ -542,7 +546,15 @@ def detect_R_T(ann,anchor):
             pickle.dump(dumps,f)
        
     return 0
-
+    
+def make_area():
+    file = ['ann_coords_1','ann_coords_2','ann_coords_3']
+    for i in file:
+        with open('../data/ann_anchor_data/{0}.pickle'.format(i),mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        
+        pdb.set_trace()
+    
 if __name__ ==  '__main__':
 
     #----------------------------------------
@@ -630,19 +642,42 @@ if __name__ ==  '__main__':
 
         
         
-    else:
+    elif not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'): 
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
+	
         with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
         #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")
-        ann_1 = detect_R_T(ann_1,anchor)
+        ann_1 = detect_R_T(ann_1,anchor,0)
+        
+        print("finish 1")
+        
+        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,1)
+        
+        print("finish 2")
+        
+        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,2)
+        
+        print("finish 3")
+        
+        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        ann_1 = detect_R_T(ann_1,anchor,3)
+        
+        print("finish 4")
         
         #with open('../data/ann_anchor_data/redidual_1.pickle',mode = 'wb') as f:
         #   pickle.dump(ann_1,f)
         
-        pdb.set_trace()
+    else:
+        make_area()
+        
 
 
         

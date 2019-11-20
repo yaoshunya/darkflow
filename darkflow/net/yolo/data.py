@@ -96,6 +96,7 @@ def shuffle(self):
     batch = self.FLAGS.batch
     data = self.parse()
     size = len(data)
+    #pdb.set_trace()
 
     print('Dataset of {} instance(s)'.format(size))
     if batch > size: self.FLAGS.batch = batch = size
@@ -112,6 +113,7 @@ def shuffle(self):
             #pdb.set_trace()
             for j_ in range(b_*batch, b_*batch+batch):
                 train_instance = data[shuffle_idx[j_]]
+                #pdb.set_trace()
                 try: 
                     inp, new_feed = self._batch(train_instance)
                 except ZeroDivisionError:

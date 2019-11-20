@@ -85,6 +85,7 @@ def train(self):
     loss_mva = None; profile = list()
 
     batches = self.framework.shuffle()
+    #pdb.set_trace()
     loss_op = self.framework.loss
     step_plot = np.array([])
     loss_plot = np.array([])
@@ -106,6 +107,7 @@ def train(self):
         if self.FLAGS.summary:
             fetches.append(self.summary_op)
         #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
+        pdb.set_trace()
         fetched = self.sess.run(fetches, feed_dict)
         
         loss = fetched[1]

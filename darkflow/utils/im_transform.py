@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import pdb
 
 def imcv2_recolor(im, a = .1):
 	t = [np.random.uniform()]
@@ -17,7 +18,11 @@ def imcv2_recolor(im, a = .1):
 
 def imcv2_affine_trans(im):
 	# Scale and translate
-	h, w, c = im.shape
+	#pdb.set_trace()
+	try:
+	    h, w, c = im.shape
+	except:
+		pdb.set_trace()
 	scale = np.random.uniform() / 10. + 1.
 	max_offx = (scale-1.) * w
 	max_offy = (scale-1.) * h

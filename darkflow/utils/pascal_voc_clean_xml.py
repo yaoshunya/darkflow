@@ -53,13 +53,13 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     os.chdir(cur_dir)
     dumps_3 = load_data('data/redidual_3',pick,exclusive)
     os.chdir(cur_dir)
-    #dumps_4 = load_data('data/redidual_4',pick,exclusive)
+    dumps_4 = load_data('data/redidual_4',pick,exclusive)
     
     dumps += dumps_1
     dumps += dumps_2
     dumps += dumps_3
     dumps += dumps_4
-    pdb.set_trace()
+    #pdb.set_trace()
     
     os.chdir(cur_dir)
     

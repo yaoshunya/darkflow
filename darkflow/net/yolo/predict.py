@@ -63,7 +63,7 @@ def preprocess(self, im, allobj = None):
 
 	if allobj is not None: # in training mode
 		#pdb.set_trace()
-		result = imcv2_affine_trans(im)
+		result = imcv2_affine_trans(im)	
 		im, dims, trans_param = result
 		scale, offs, flip = trans_param
 		#for obj in allobj:
