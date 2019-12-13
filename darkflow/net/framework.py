@@ -39,8 +39,6 @@ class YOLOv2(framework):
     shuffle = yolov2.data.shuffle
     preprocess = yolo.predict.preprocess
     loss = yolov2.train.loss
-    #area_pred = yolov2.train.area_pred
-    #intersect = yolov2.train.intersect
     is_inp = yolo.misc.is_inp
     postprocess = yolov2.predict.postprocess
     _batch = yolov2.data._batch

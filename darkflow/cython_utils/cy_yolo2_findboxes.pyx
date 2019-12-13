@@ -65,8 +65,8 @@ def box_constructor(meta,np.ndarray[float,ndim=3] net_out_in):
     
     cdef:
         float[:, :, :, ::1] net_out = net_out_in.reshape([H, W, B, net_out_in.shape[2]/B])
-        float[:, :, :, ::1] Classes = net_out[:, :, :, 5:]
-        float[:, :, :, ::1] Bbox_pred =  net_out[:, :, :, :5]
+        float[:, :, :, ::1] Classes = net_out[:, :, :, 7:]
+        float[:, :, :, ::1] Bbox_pred =  net_out[:, :, :, :6]
         float[:, :, :, ::1] probs = np.zeros((H, W, B, C), dtype=np.float32)
     
     for row in range(H):
@@ -74,11 +74,8 @@ def box_constructor(meta,np.ndarray[float,ndim=3] net_out_in):
             for box_loop in range(B):
                 arr_max=0
                 sum=0;
-                Bbox_pred[row, col, box_loop, 4] = expit_c(Bbox_pred[row, col, box_loop, 4])
-                Bbox_pred[row, col, box_loop, 0] = (col + expit_c(Bbox_pred[row, col, box_loop, 0])) / W
-                Bbox_pred[row, col, box_loop, 1] = (row + expit_c(Bbox_pred[row, col, box_loop, 1])) / H
-                Bbox_pred[row, col, box_loop, 2] = exp(Bbox_pred[row, col, box_loop, 2]) * anchors[2 * box_loop + 0] / W
-                Bbox_pred[row, col, box_loop, 3] = exp(Bbox_pred[row, col, box_loop, 3]) * anchors[2 * box_loop + 1] / H
+                Bbox_pred[row, col, box_loop, 6] = expit_c(Bbox_pred[row, col, box_loop, 6])
+                
                 #SOFTMAX BLOCK, no more pointer juggling
                 for class_loop in range(C):
                     arr_max=max_c(arr_max,Classes[row,col,box_loop,class_loop])
@@ -94,4 +91,4 @@ def box_constructor(meta,np.ndarray[float,ndim=3] net_out_in):
     
     
     #NMS                    
-    return NMS(np.ascontiguousarray(probs).reshape(H*W*B,C), np.ascontiguousarray(Bbox_pred).reshape(H*B*W,5))
+    return NMS(np.ascontiguousarray(probs).reshape(H*W*B,C), np.ascontiguousarray(Bbox_pred).reshape(H*B*W,6))

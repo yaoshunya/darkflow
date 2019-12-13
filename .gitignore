@@ -41,6 +41,7 @@ built_graph/
 
 #Training checkpoints
 ckpt/*
+ckpt_pre/*
 
 #pytest cache
 .cache/

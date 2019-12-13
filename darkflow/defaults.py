@@ -27,7 +27,7 @@ class argHandler(dict):
         self.define('lr', 1e-5, 'learning rate')
         self.define('keep',20,'Number of most recent training results to save')
         self.define('batch', 10, 'batch size')
-        self.define('epoch', 10000, 'number of epoch')
+        self.define('epoch', 1000, 'number of epoch')
         self.define('save', 2000, 'save checkpoint every ? training examples')
         self.define('demo', '', 'demo on webcam')
         self.define('queue', 1, 'process demo in batch')

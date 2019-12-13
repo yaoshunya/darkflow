@@ -228,7 +228,7 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 
     sample *= 255
     sample = sample.astype(np.uint8)
-
+    pdb.set_trace()
     return sample
 
 def sample_within_bounds(signal, x, y, bounds):
@@ -560,7 +560,7 @@ if __name__ ==  '__main__':
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/anchor_coords.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/anchor_coords_.pickle'):
         print("make mask anchor")
         with open("anchor.txt") as f:
             x = f.read().split()
@@ -676,7 +676,8 @@ if __name__ ==  '__main__':
         #   pickle.dump(ann_1,f)
         
     else:
-        make_area()
+        #make_area()
+        pass
         
 
 

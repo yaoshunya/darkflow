@@ -11,6 +11,8 @@ from ..cython_utils.cy_yolo2_findboxes import box_constructor
 import matplotlib
 matplotlib.use('Agg') # -----(1)
 import matplotlib.pyplot as plt
+import pickle
+
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -33,7 +35,7 @@ def _save_ckpt(self, step, loss_profile):
     ckpt = os.path.join(self.FLAGS.backup, ckpt)
     self.say('Checkpoint at step {}'.format(step))
     self.saver.save(self.sess, ckpt)
-
+"""
 def make_result(out,img_name,meta,j):
     with open('data/anchor/anchor.binaryfile','rb') as anc:
         anchors = pickle.load(anc)
@@ -77,7 +79,7 @@ def make_result(out,img_name,meta,j):
         
         #pdb.set_trace()
     return 0
-        
+ """     
 
 def train(self):
     loss_ph = self.framework.placeholders
@@ -107,12 +109,11 @@ def train(self):
         if self.FLAGS.summary:
             fetches.append(self.summary_op)
         #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
-        pdb.set_trace()
+        
         fetched = self.sess.run(fetches, feed_dict)
         
         loss = fetched[1]
-        
-        
+     
 
         if loss_mva is None: loss_mva = loss
         loss_mva = .9 * loss_mva + .1 * loss
@@ -123,6 +124,7 @@ def train(self):
         #pdb.set_trace()
         form = 'step {} - loss {} - moving ave loss {}'
         self.say(form.format(step_now, loss, loss_mva))
+        """
         if step_now%1 == 0:
             step_plot = np.append(step_plot,step_now)
             loss_plot = np.append(loss_plot,loss)
@@ -132,7 +134,7 @@ def train(self):
             plt.ylabel("loss")
             plt.savefig('data/out_test/figure.png')
             plt.clf()
-
+        """
         profile += [(loss, loss_mva)]
 
         ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)
@@ -169,9 +171,98 @@ def return_predict(self, im):
         })
     return boxesInfo
 
+def make_result(out,this_batch):
+
+    batch_size = len(this_batch)
+    
+    with open('data/ann_anchor_data/mask_anchor.pickle', 'rb') as f:
+        anchor = pickle.load(f)
+    
+    for i in range(batch_size):
+        #pdb.set_trace()
+        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
+        image_name = this_batch[i]
+        
+        out_conf = out_now[3]      
+        max_indx = np.argmax(np.reshape(out_conf,[1805]))
+        max_anchor,max_indx = divmod(max_indx,361)
+        R = out_now[0][max_indx][max_anchor]
+        T = [out_now[1][max_indx][max_anchor],out_now[2][max_indx][max_anchor]]
+        
+        pdb.set_trace()
+        anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
+        src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
+        dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
+        
+        affine = cv2.getAffineTransform(src, dest)
+        affine[0][2] = T[0]
+        affine[1][2] = T[1]
+        
+        anchor_now = np.tile(anchor_now[np.newaxis].T.astype(np.uint8),[1,1,3])
+        anchor_now = cv2.warpAffine(anchor_now, affine, (1000, 1000))
+        
+        imgcv = cv2.imread(os.path.join('data/VOC2012/sphereLite',this_batch[i]))  
+                  
+        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.1,np.asarray(anchor_now,np.float64),0.9,0)
+        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(i)),prediction)
+        
+    return 0
+    
+    
 import math
 
 def predict(self):
+    inp_path = self.FLAGS.imgdir
+    all_inps = os.listdir(inp_path)
+    all_inps = [i for i in all_inps if self.framework.is_inp(i)]
+    if not all_inps:
+        msg = 'Failed to find any images in {} .'
+        exit('Error: {}'.format(msg.format(inp_path)))
+
+    batch = min(self.FLAGS.batch, len(all_inps))
+
+    # predict in batches
+    n_batch = int(math.ceil(len(all_inps) / batch))
+    for j in range(n_batch):
+        from_idx = j * batch
+        to_idx = min(from_idx + batch, len(all_inps))
+
+        # collect images input in the batch
+        this_batch = all_inps[from_idx:to_idx]
+        inp_feed = pool.map(lambda inp: (
+            np.expand_dims(self.framework.preprocess(
+                os.path.join(inp_path, inp)), 0)), this_batch)
+        
+        # Feed to the net
+        feed_dict = {self.inp : np.concatenate(inp_feed, 0)}    
+        self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
+        start = time.time()
+        out = self.sess.run(self.out, feed_dict)
+        #pdb.set_trace()
+        stop = time.time(); last = stop - start
+        self.say('Total time = {}s / {} inps = {} ips'.format(
+            last, len(inp_feed), len(inp_feed) / last))
+
+        # Post processing
+        self.say('Post processing {} inputs ...'.format(len(inp_feed)))
+        start = time.time()
+        
+        make_result(out,this_batch)
+        
+        #pdb.set_trace()
+        """
+        pool.map(lambda p: (lambda i, prediction:
+            self.framework.postprocess(
+               prediction, os.path.join(inp_path, this_batch[i])))(*p),
+            enumerate(out))
+        """
+        stop = time.time(); last = stop - start
+
+        # Timing
+        self.say('Total time = {}s / {} inps = {} ips'.format(
+            last, len(inp_feed), len(inp_feed) / last))
+
+def predict_(self):
     inp_path = self.FLAGS.imgdir
     all_inps = os.listdir(inp_path)
     all_inps = [i for i in all_inps if self.framework.is_inp(i)]
@@ -197,6 +288,7 @@ def predict(self):
         feed_dict = {self.inp : np.concatenate(inp_feed, 0)}    
         self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
         start = time.time()
+        self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
         out = self.sess.run(self.out, feed_dict)
         """
         for img_num in range(out.shape[0]):
@@ -219,7 +311,8 @@ def predict(self):
         # Post processing
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
-        x = make_result(out,this_batch,self.meta,j)
+        
+        #x = make_result(out,this_batch,self.meta,j)
         """pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
                prediction, os.path.join(inp_path, this_batch[i])))(*p),

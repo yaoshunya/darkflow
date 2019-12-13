@@ -132,9 +132,7 @@ def shuffle(self):
                     feed_batch[key] = np.concatenate([ 
                         old_feed, [new] 
                     ])
-                    #pdb.set_trace()      
-                #print(k)
-                #print(x_batch) 
+                     
             x_batch = np.concatenate(x_batch, 0)
             #pdb.set_trace()
             yield x_batch, feed_batch

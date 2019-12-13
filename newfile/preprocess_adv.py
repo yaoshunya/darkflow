@@ -11,7 +11,7 @@ import pickle
 import xml.etree.ElementTree as ET
 import math
 import random
-
+import shutil
 
 #  ICP parameters
 EPS = 0.00001
@@ -35,7 +35,8 @@ def ICP_matching(ppoints, cpoints):
     dError = 1000.0
     preError = 1000.0
     count = 0
-
+    ppoints = np.array([ppoints[1],ppoints[0]])
+    cpoints = np.array([cpoints[1],cpoints[0]])
     while dError >= EPS:
         count += 1
 
@@ -70,6 +71,7 @@ def ICP_matching(ppoints, cpoints):
 
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
+    R = math.asin(R[0][0])
 
     return R, T
 
@@ -310,7 +312,7 @@ def mask_anchor(anchor,H):
 
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
-                mask_base = np.resize(mask_base,(500,500))
+                #mask_base = np.resize(mask_base,(500,500))
                 #-------------------------------------------------
                 #アンカーの球面写像
                 grid = get_projection_grid(b=500)
@@ -340,10 +342,7 @@ def mask_anchor(anchor,H):
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
             #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-    """
-    with open('data/anchor/anchor.binaryfile','wb') as anc:
-        pickle.dump(mask_fi_row,anc,protocol=4)
-    """
+    
     return mask_fi
 
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
@@ -399,16 +398,16 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             grid = rotate_grid(rot,grid)
             mask_parts = project_2d_on_sphere(mask_prepare,grid)
             #mask_parts = cv2.resize(mask_parts,(19,19))
-            mask_parts = np.reshape(mask_parts,[-1])
-            mask_parts = cv2
+            mask_parts = np.reshape(mask_parts,(1000,1000))
+            #mask_parts = cv2
             #pdb.set_trace()
             ################################################################
             ################################################################
             #pdb.set_trace()
             #mask_parts = np.reshape(mask_parts,[1000,1000])
-            
+            #pdb.set_trace()
             mask_ = mask_parts[np.newaxis]
-            
+            #pdb.set_trace()
             current = [name,mask_]
             all += [current]
     
@@ -417,6 +416,11 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
         dumps += add
         in_file.close()
         #pdb.set_trace()
+        
+        ###################################################################
+        
+        
+        ###################################################################
     os.chdir(cur_dir)
     all = list()
     current = list()
@@ -454,7 +458,9 @@ def make_coords_from_mask(data,flag):
                 name = annotations[i][1][j][0]
                 current = list()
                 ann_coords_parts = np.where(np.reshape(annotations[i][1][j][1],[1000,1000])>0)
+                ann_coords_parts = (ann_coords_parts[1],ann_coords_parts[0])
                 current = [name,ann_coords_parts]
+                #pdb.set_trace()
                 all += [current]
 
             add = [[jpg,all]]
@@ -466,7 +472,7 @@ def make_coords_from_mask(data,flag):
     return 0
     
 def detect_R_T(ann,anchor,path_num):
-
+    
     dumps = list()
     path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     
@@ -498,6 +504,7 @@ def detect_R_T(ann,anchor,path_num):
                     
                     my_list_ann = []
                     my_list_anchor = []
+                    
                     for k in range(30):
                         x = random.randint(0,ann_len_-1)
                         y = random.randint(0,anchor_len_-1) 
@@ -527,6 +534,7 @@ def detect_R_T(ann,anchor,path_num):
                     
                 my_list_ann = []
                 my_list_anchor = []
+                #pdb.set_trace()
                 for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1) 
@@ -536,9 +544,46 @@ def detect_R_T(ann,anchor,path_num):
                     
                 anchor_stack = np.vstack((anchor[index][i][0][my_list_anchor],anchor[index][i][1][my_list_anchor]))
                 R, T = ICP_matching(ann_stack,anchor_stack)
+                #pdb.set_trace()
+                ###############################
+                """
+                #pdb.set_trace()
+                
+                with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
+                    anchor_ = pickle.load(f)
+                anchor_ = np.reshape(anchor_,(361,5,1000,1000))
+                img = cv2.imread('../data/VOC2012/sphere_data/001163.png', 0)
+                with open('../data/mask_ann/001163.pickle',mode = 'rb') as f:
+                    an = pickle.load(f)
+                X = np.zeros((1000,1000))
+                pdb.set_trace()
+                
+                X[ann[0][1][0][1]] = 255
+                #X[ann[0][1][0][1]] = 255
+                #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
+                an = cv2.resize(an,(1000,1000))
+                
+                #pdb.set_trace()
+                for annn in range(5):
+                    an_ = anchor_[min_index[0],annn]
+                    affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                    
+                    #pdb.set_trace()
+                    pre=cv2.warpAffine(an_, affine, (1000,1000))
+                    prediction = cv2.addWeighted(np.asarray(img,np.float64),0.2,np.asarray(pre,np.float64),0.8,0)
+                    prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.2,np.asarray(X,np.float64),0.8,0)
+                    cv2.imwrite('messigray_{0}.png'.format(annn),prediction)
+                    
+                cv2.imwrite('sample_ann.png',X)
+                
+                
+                ###############################
+                pdb.set_trace()
+                """
                 R_list.append(R)
                 T_list.append(T)
             current = [name,R_list,T_list,x_min,y_min,x_max,y_min]
+            #pdb.set_trace()
             all.append(current)
             #pdb.set_trace()
         add = [[img_name,[all]]]
@@ -569,7 +614,7 @@ def make_area():
                 mask[X] = 1
             name = ann[ann_len][0][:6]
             #pdb.set_trace()
-            mask = cv2.resize(mask,(500,500))
+            mask = cv2.resize(mask,(50,50))
             with open('../data/mask_ann/{0}.pickle'.format(name),mode = 'wb') as f:
                 pickle.dump(mask,f)   
             print("finish : {0}".format(name))
@@ -585,7 +630,8 @@ if __name__ ==  '__main__':
         #anchors = mask_anchor(anchors,19)
         
         with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'wb') as f:
-            pickle.dump(mask_anchor,f)
+            pickle.dump(anchors,f)
+        #pdb.set_trace()
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
@@ -594,7 +640,10 @@ if __name__ ==  '__main__':
         with open("anchor.txt") as f:
             x = f.read().split()
 
-        anchor = mask_anchor(np.array(x),19)
+        with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
+            anchor = pickle.load(f)
+        
+        
         #pdb.set_trace()
         anchor_coords=make_coords_from_mask(anchor,0)
         #pdb.set_trace()
@@ -614,11 +663,11 @@ if __name__ ==  '__main__':
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体
 
-        annotations = pascal_voc_clean_xml(path,pick)
+        annotations = pascal_voc_clean_xml(path,pick) 
         #annotations = np.array(annotations).astype('int')
 
         print("make mask annotations coords_1")
-	
+
         ann_coords=make_coords_from_mask(annotations,1)
 
         with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'wb') as f:
@@ -674,10 +723,10 @@ if __name__ ==  '__main__':
     elif not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'): 
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-	
+
         with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
-        #pdb.set_trace()
+        #.set_trace()
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,0)
         
@@ -702,8 +751,17 @@ if __name__ ==  '__main__':
         print("finish 4")
 
     else:
-        make_area()
+        annotations = glob.glob('../data/redidual_4/*.pickle')
+        for i,file in enumerate(annotations):
         
-    
+        
+            with open(file,mode = 'rb') as f:
+                annotations_parts = pickle.load(f)
+        
+            name = annotations_parts[0][0]
+            new = '../data/VOC2012/sphere_data/'+ name
+            new_path = shutil.move(new, '../data/VOC2012/sphere_test/')
+            print(name)
+        
 
 

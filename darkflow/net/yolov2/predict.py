@@ -22,6 +22,7 @@ def findboxes(self, net_out):
 	# meta
 	meta = self.meta
 	boxes = list()
+	#pdb.set_trace()
 	boxes=box_constructor(meta,net_out)
 	#pdb.set_trace()
 	return boxes
@@ -32,7 +33,7 @@ def postprocess(self, net_out, im, save = True):
 	"""
 	#pdb.set_trace()
 	boxes = self.findboxes(net_out)
-
+	pdb.set_trace()
 	# meta
 	meta = self.meta
 	threshold = meta['thresh']

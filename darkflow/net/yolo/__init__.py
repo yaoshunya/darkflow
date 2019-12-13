@@ -3,12 +3,13 @@ from . import predict
 from . import data
 from . import misc
 import numpy as np
+import pdb
 
 
 """ YOLO framework __init__ equivalent"""
 
 def constructor(self, meta, FLAGS):
-
+	#pdb.set_trace()
 	def _to_color(indx, base):
 		""" return (b, r, g) tuple"""
 		base2 = base * base
@@ -16,8 +17,9 @@ def constructor(self, meta, FLAGS):
 		r = 2 - (indx % base2) / base
 		g = 2 - (indx % base2) % base
 		return (b * 127, r * 127, g * 127)
-	if 'labels' not in meta:
-		misc.labels(meta, FLAGS) #We're not loading from a .pb so we do need to load the labels
+	#if 'labels' not in meta:
+	#	misc.labels(meta, FLAGS) #We're not loading from a .pb so we do need to load the labels
+	meta['labels'] = ['car','Truck']
 	assert len(meta['labels']) == meta['classes'], (
 		'labels.txt and {} indicate' + ' '
 		'inconsistent class numbers'
