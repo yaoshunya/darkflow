@@ -18,7 +18,23 @@ EPS = 0.00001
 MAXITER = 100
 
 show_animation = False
-
+def load_data(path):
+    
+    cur_dir = os.getcwd()
+    os.chdir(path)
+    annotations = os.listdir('.')
+    annotations = glob.glob(str(annotations)+'*.pickle')
+    size = len(annotations)
+    
+    annotations_ = list()
+    #pdb.set_trace()
+    for i,file in enumerate(annotations):
+        
+        with open(file,mode = 'rb') as f:
+            annotations_parts = pickle.load(f)
+            
+        annotations_ += annotations_parts            
+    return annotations_,cur_dir
 
 def ICP_matching(ppoints, cpoints):
     """
@@ -614,7 +630,7 @@ def make_area():
                 mask[X] = 1
             name = ann[ann_len][0][:6]
             #pdb.set_trace()
-            mask = cv2.resize(mask,(50,50))
+            mask = cv2.resize(mask,(100,100))
             with open('../data/mask_ann/{0}.pickle'.format(name),mode = 'wb') as f:
                 pickle.dump(mask,f)   
             print("finish : {0}".format(name))
@@ -750,7 +766,61 @@ if __name__ ==  '__main__':
         
         print("finish 4")
 
-    else:
+    elif not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+        with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        pdb.set_trace()
+        dumps = list()
+        dumps_1,cur_dir = load_data('../data/redidual_1')
+        os.chdir(cur_dir)
+        dumps_2,cur_dir = load_data('../data/redidual_2')
+        os.chdir(cur_dir)
+        dumps_3,cur_dir = load_data('../data/redidual_3')
+        os.chdir(cur_dir)
+        dumps += dumps_1
+        dumps += dumps_2
+        dumps += dumps_3 
+        
+        t_0_max = -100000
+        t_0_min = 100000
+        t_1_max = -100000
+        t_1_min = 100000
+        
+        annotations = np.array(dumps)
+        
+        print("start detectiong normalization!!")
+        for i in range(annotations.shape[0]):      
+            for j in range(len(annotations[i][1][0])):
+                #pdb.set_trace()
+                if t_0_max < np.max(np.array(annotations[i][1][0][j][2]).T[0]):
+                    t_0_max = np.max(np.array(annotations[i][1][0][j][2]).T[0])
+                if t_0_min > np.min(np.array(annotations[i][1][0][j][2]).T[0]):
+                    t_0_min = np.min(np.array(annotations[i][1][0][j][2]).T[0])
+                if t_1_max < np.max(np.array(annotations[i][1][0][j][2]).T[1]):
+                    t_1_max = np.max(np.array(annotations[i][1][0][j][2]).T[1])
+                if t_1_min > np.min(np.array(annotations[i][1][0][j][2]).T[1]):
+                    t_1_min = np.min(np.array(annotations[i][1][0][j][2]).T[1])
+                
+        for i in range(annotations.shape[0]):
+            for j in range(len(annotations[i][1][0])):
+                X_0 = np.array(annotations[i][1][0][j][2]).T[0]
+                X_1 = np.array(annotations[i][1][0][j][2]).T[1]
+                #pdb.set_trace()
+                X_0 = ((X_0-t_0_min)/(t_0_max-t_0_min))*2 - 1
+                X_1 = ((X_1-t_1_min)/(t_1_max-t_1_min))*2 - 1
+                annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
+                
+        max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
+        
+        with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'wb') as f:
+            pickle.dump(annotations,f)
+        with open('../cfg/tiny-yolo.cfg','a') as f:
+            print("t_0_max = {0}".format(t_0_max),file = f)
+            print("t_0_min = {0}".format(t_0_min),file = f)
+            print("t_1_max = {0}".format(t_1_max),file = f)
+            print("t_1_min = {0}".format(t_1_min),file = f)
+        #make_area()
+        """
         annotations = glob.glob('../data/redidual_4/*.pickle')
         for i,file in enumerate(annotations):
         
@@ -763,5 +833,5 @@ if __name__ ==  '__main__':
             new_path = shutil.move(new, '../data/VOC2012/sphere_test/')
             print(name)
         
-
+        """
 

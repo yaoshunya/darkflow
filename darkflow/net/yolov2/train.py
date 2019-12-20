@@ -12,14 +12,14 @@ from tensorflow .python import debug as tf_debug
 import pickle
 
 def shift_x_y(R,T,H,W,B,image):
-    #pdb.set_trace()
+    
     img_row = image.shape[3]
     img_col = image.shape[4]
-    #pdb.set_trace()
+    
     image = tf.reshape(tf.convert_to_tensor(image,dtype=tf.float32),(H*W,B,img_row,img_col))
     n_fc = 6
-
-    h_trans = spatial_transformer_network(image, R,T)
+    
+    h_trans = spatial_transformer_network(image, R,tf.divide(T,10))
 
     return h_trans
     
@@ -34,40 +34,31 @@ def get_pixel_value(img, x, y):
     b = tf.tile(batch_idx, (1, height, width))
 
     indices = tf.stack([b, y, x], 3)
-    #pdb.set_trace()
+    
     return tf.gather_nd(img, indices)
 
 def spatial_transformer_network(input_fmap, R, T, out_dims=None, **kwargs):
 
-    #pdb.set_trace()
-
-    #x_shift = tf.transpose(theta)[0]
-    #y_shift = tf.transpose(theta)[1]
-    #z_rotate = tf.transpose(theta)[2]
+    
     sin = tf.math.sin(R)
     cos = tf.math.cos(R)
     batch_size = tf.shape(R)[0]
-    #pdb.set_trace()
-    #new_theta=tf.transpose(tf.stack([cos,tf.math.negative(sin),x_shift,sin,cos,y_shift]))
-    #new_theta=tf.transpose(tf.stack([R[:,:,:,0],R[:,:,:,1],T[:,:,:,0],R[:,:,:,2],R[:,:,:,3],T[:,:,:,1]]))  
-    #pdb.set_trace()
+    H = tf.shape(input_fmap)[2]
+    W = tf.shape(input_fmap)[3]
+    
     new_theta = tf.stack([cos,sin,tf.reshape(T[:,:,:,0],(batch_size,361,5,1)),tf.math.negative(sin),cos,tf.reshape(T[:,:,:,1],(batch_size,361,5,1))])
     new_theta = tf.reshape(new_theta,[batch_size,361*5,2,3])
-    #new_theta = tf.reshape(new_theta,[batch_size,361*5,6])
-    #pdb.set_trace()
-    input_fmap = tf.reshape(input_fmap,[361*5,50,50,-1])
-    #pdb.set_trace()
+    
+    input_fmap = tf.reshape(input_fmap,[361*5,H,W,-1])
+    
     # grab input dimensions
     B = tf.shape(input_fmap)[0]
     H = tf.shape(input_fmap)[1]
     W = tf.shape(input_fmap)[2]
-    #pdb.set_trace()
-
-    # reshape theta to (B, 2, 3)
-    #theta = tf.reshape(theta, [B, 2, 3])
+    
     out_list = tensor_array_ops.TensorArray(tf.float32, size=1, dynamic_size=True)
     init_val = (0,batch_size,new_theta,input_fmap,out_list)
-    #pdb.set_trace()
+    
 
     out_fmap = tf.while_loop(cond=condition,body=update,loop_vars=init_val)
     out_stack = out_fmap[4].stack()
@@ -77,12 +68,12 @@ def condition(i,N,theta,input_fmap,l_):
     return i < N
 
 def update(i,N,theta,input_fmap,l_):
-    #pdb.set_trace()
-    batch_grids = affine_grid_generator(50,50, theta[i])
-    #pdb.set_trace()
-    x_s = batch_grids[:, 0, :, :] #<tf.Tensor 'while/strided_slice_2:0' shape=(361, 19, 19) dtype=float32>
-    y_s = batch_grids[:, 1, :, :] #<tf.Tensor 'while/strided_slice_3:0' shape=(361, 19, 19) dtype=float32>
-    #pdb.set_trace()
+   
+    batch_grids = affine_grid_generator(100,100, theta[i])
+   
+    x_s = tf.squeeze(batch_grids[:, 0:1, :, :]) #<tf.Tensor 'while/strided_slice_2:0' shape=(361, 19, 19) dtype=float32>
+    y_s = tf.squeeze(batch_grids[:, 1:2, :, :]) #<tf.Tensor 'while/strided_slice_3:0' shape=(361, 19, 19) dtype=float32>
+    
 
     out_fmap = bilinear_sampler(input_fmap, x_s, y_s) #<tf.Tensor 'while/AddN:0' shape=(361, 19, 19, 5) dtype=float32>
     l_ = l_.write(i,out_fmap)
@@ -114,7 +105,7 @@ def affine_grid_generator(height, width, theta):
     sampling_grid = tf.cast(sampling_grid, 'float32')
 
     # transform the sampling grid - batch multiply
-    #pdb.set_trace()
+    
     batch_grids = tf.matmul(theta, sampling_grid)
     # batch grid has shape (num_batch, 2, H*W)
 
@@ -125,7 +116,7 @@ def affine_grid_generator(height, width, theta):
     return batch_grids
 
 def bilinear_sampler(img, x, y):
-    #pdb.set_trace()
+    
     #img = tf.transpose(img,[0,2,3,1])
     H = tf.shape(img)[1]
     W = tf.shape(img)[2]
@@ -206,8 +197,8 @@ def mask_anchor(anchor,H):
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
-                side = int(w_*500/39)
-                ver = int(h_*200/13)
+                side = int(w_)
+                ver = int(h_)
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -225,7 +216,7 @@ def mask_anchor(anchor,H):
 
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
-                resize_mask = np.resize(mask_base,(50,50))
+                resize_mask = np.resize(mask_base,(100,100))
                 #grid = get_projection_grid(b=500)
                 #rot = rand_rotation_matrix(deflection=1.0)
                 #grid = rotate_grid(rot,grid)
@@ -266,7 +257,7 @@ def mask_anchor(anchor,H):
 
 
 def expit_tensor(x):
-	return 1. / (1. + tf.exp(-x))
+    return 1. / (1. + tf.exp(-x))
 
 def max_pool(x):
     return tf.nn.max_pool(x, ksize=[1, 1, 5, 5], strides=[1, 1, 5, 5], padding='SAME')
@@ -277,10 +268,10 @@ def loss(self, net_out):
     returned in batch() func above,
     to build train_op and loss
     """
-    #pdb.set_trace()
+    
     # meta
     m = self.meta
-    #pdb.set_trace()
+    
     sprob = float(m['class_scale'])
     sconf = float(m['object_scale'])
     snoob = float(m['noobject_scale'])
@@ -290,9 +281,16 @@ def loss(self, net_out):
     HW = H * W # number of grid cells
     anchors = m['anchors']
     
+    t_0_max = m['t_0_max']
+    t_0_min = m['t_0_min']
+    t_1_max = m['t_1_max']
+    t_1_min = m['t_1_min'] 
+    
+    size = 100
+     
     anchors = mask_anchor(anchors,H)
     anchors=anchors.astype(np.float32)
-
+    
     print('{} loss hyper-parameters:'.format(m['model']))
     print('\tH       = {}'.format(H))
     print('\tW       = {}'.format(W))
@@ -302,7 +300,7 @@ def loss(self, net_out):
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
-    size3 = [None, HW, B, 50, 50]
+    size3 = [None, HW, B, size, size]
     size4 = [None, HW, B, 1]
 
     # return the below placeholders
@@ -323,32 +321,53 @@ def loss(self, net_out):
     # Extract the coordinate prediction from net.out
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 2 + 1 + C)])
     
-    
-    R        =     tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1])
-    T        =     tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2])
-   
+    R = tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1])
+    T = tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2])
     
     adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3])
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
-
+   
     adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:])
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
     adjusted_net_out = tf.concat([T, adjusted_c, adjusted_prob], 3)
-    
     batch_size = tf.shape(adjusted_net_out)[0]
- 
-
-    area_pred = tf.reshape(shift_x_y(R,T,H,W,B,anchors),[batch_size,H*W,50,50,B])
-    
    
-    _areas = tf.reshape(_areas,[batch_size,H*W,50,50,5])
+    min_ = float(-1)
+    max_ = float(1)
+    T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min
+    T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min
+    """
+    min_ = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(-1,tf.float32),0),0),0)
+    min_ = tf.tile(min_,(batch_size,H*W,B))
+    max_ = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(1,tf.float32),0),0),0)
+    max_ = tf.tile(max_,(batch_size,H*W,B))
     
+    max_0 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_0_max,tf.float32),0),0),0)
+    max_0 = tf.tile(max_0,(batch_size,H*W,B))
+    min_0 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_0_min,tf.float32),0),0),0)
+    min_0 = tf.tile(min_0,(batch_size,H*W,B))
+    
+    max_1 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_1_max,tf.float32),0),0),0)
+    max_1 = tf.tile(max_1,(batch_size,H*W,B))
+    min_1 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_1_min,tf.float32),0),0),0)
+    min_1 = tf.tile(min_1,(batch_size,H*W,B))
+    
+    
+    T_new_0 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,0],min_),tf.math.subtract(max_0,min_0)),tf.math.subtract(max_,min_)),min_0)
+    T_new_1 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,1],min_),tf.math.subtract(max_1,min_1)),tf.math.subtract(max_,min_)),min_1)
+    """
+    
+    T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
+    
+    #pdb.set_trace()
+    area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
+    _areas = tf.reshape(_areas,[batch_size,H*W,size,size,5])
     
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
     
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,2500,5))),2) 
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,2500,5))),2) 
-    _areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,2500,5))),2)
+    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,size*size,5))),2) 
+    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,size*size,5))),2) 
+    _areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,size*size,5))),2)
     
 
     iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10) 
@@ -366,14 +385,13 @@ def loss(self, net_out):
     weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3) 
     proid = sprob * weight_pro 
     
-    self.fetch += [_probs, confs, conid, cooid, proid, _R, _T]
-    #pdb.set_trace()
+    self.fetch += [_probs, confs, conid, cooid, proid]
     
     R = tf.reshape(R,[batch_size,361,5,1])
     _R = tf.reshape(_R,[batch_size,361,5,1])
     
     true = tf.concat([_T, tf.expand_dims(confs, 3), _probs ], 3)
-    wght = tf.concat([T, tf.expand_dims(conid, 3), proid ], 3) 
+    wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3) 
     pre_angle = tf.concat([tf.math.sin(R),tf.math.cos(R)],3)
     true_angle = tf.concat([tf.math.sin(_R),tf.math.cos(_R)],3)
     
@@ -386,16 +404,18 @@ def loss(self, net_out):
     vec_abs_fin = tf.add(tf.multiply(pre_norm,true_norm),0.00001)
         
     difal = tf.subtract(1., tf.divide(vec_dot, vec_abs_fin))
-    #pdb.set_trace()
+    weight_difal = tf.concat(1 * [tf.expand_dims(confs, -1)], 3)
+    difal = difal * weight_difal
+    
     print('Building {} loss'.format(m['model']))
-    loss = adjusted_net_out - true
-    #pdb.set_trace()
-    loss = tf.pow(tf.multiply(loss, wght),2) 
-    #pdb.set_trace()
+    loss = tf.pow(adjusted_net_out - true,2)
+    
+    loss = tf.multiply(loss, wght)
+    
     loss = tf.concat([loss,difal],3)
-    #pdb.set_trace()
+    
     loss = tf.reshape(loss, [-1, H*W*B*(1 + 2 + 1 + C)]) 
-    #pdb.set_trace()
+    
     loss = tf.reduce_sum(loss, 1) 
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)

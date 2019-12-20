@@ -47,6 +47,7 @@ def load_data(path,pick,exclusive):
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     cur_dir = os.getcwd()
     dumps = list()
+    """
     dumps_1 = load_data('data/redidual_1',pick,exclusive)
     
     os.chdir(cur_dir)
@@ -61,7 +62,9 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     dumps += dumps_3
     #dumps += dumps_4
     #pdb.set_trace()
-    
-    os.chdir(cur_dir)
+    """
+    #pdb.set_trace()
+    with open('data/ann_anchor_data/annotations_nor.pickle',mode = 'rb') as f:
+        dumps = pickle.load(f)
     
     return dumps

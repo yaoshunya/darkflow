@@ -124,7 +124,7 @@ def train(self):
         #pdb.set_trace()
         form = 'step {} - loss {} - moving ave loss {}'
         self.say(form.format(step_now, loss, loss_mva))
-        """
+        
         if step_now%1 == 0:
             step_plot = np.append(step_plot,step_now)
             loss_plot = np.append(loss_plot,loss)
@@ -134,7 +134,7 @@ def train(self):
             plt.ylabel("loss")
             plt.savefig('data/out_test/figure.png')
             plt.clf()
-        """
+        
         profile += [(loss, loss_mva)]
 
         ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)
@@ -177,6 +177,13 @@ def make_result(out,this_batch):
     
     with open('data/ann_anchor_data/mask_anchor.pickle', 'rb') as f:
         anchor = pickle.load(f)
+    with open('data/ann_anchor_data/max_min.pickle','rb') as f:
+        X = pickle.load(f)
+        
+    t_0_max = np.array(X[0])
+    t_0_min = np.array(X[1])
+    t_1_max = np.array(X[2])
+    t_1_min = np.array(X[3])
     
     for i in range(batch_size):
         #pdb.set_trace()
@@ -187,9 +194,16 @@ def make_result(out,this_batch):
         max_indx = np.argmax(np.reshape(out_conf,[1805]))
         max_anchor,max_indx = divmod(max_indx,361)
         R = out_now[0][max_indx][max_anchor]
-        T = [out_now[1][max_indx][max_anchor],out_now[2][max_indx][max_anchor]]
-        
         pdb.set_trace()
+        """
+        T_new_0 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,0],min_),tf.math.subtract(max_0,min_0)),tf.math.subtract(max_,min_)),min_0)
+    T_new_1 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,1],min_),tf.math.subtract(max_1,min_1)),tf.math.subtract(max_,min_)),min_1)
+        """
+        T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
+        T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
+        T = [T_0,T_1]
+        
+        #pdb.set_trace()
         anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
         src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
         dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
@@ -201,15 +215,21 @@ def make_result(out,this_batch):
         anchor_now = np.tile(anchor_now[np.newaxis].T.astype(np.uint8),[1,1,3])
         anchor_now = cv2.warpAffine(anchor_now, affine, (1000, 1000))
         
-        imgcv = cv2.imread(os.path.join('data/VOC2012/sphereLite',this_batch[i]))  
+        imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
                   
-        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.1,np.asarray(anchor_now,np.float64),0.9,0)
+        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(anchor_now,np.float64),0.5,0)
         cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(i)),prediction)
         
     return 0
     
     
 import math
+
+def min_max(x, axis=None):
+    min = x.min(axis=axis, keepdims=True)
+    max = x.max(axis=axis, keepdims=True)
+    result = (x-min)/(max-min)
+    return result
 
 def predict(self):
     inp_path = self.FLAGS.imgdir
