@@ -4,6 +4,7 @@ import glob
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pylab as plt
+import seaborn as sns
 import numpy as np
 import pdb
 import cv2
@@ -12,6 +13,7 @@ import xml.etree.ElementTree as ET
 import math
 import random
 import shutil
+import pandas as pd
 
 #  ICP parameters
 EPS = 0.00001
@@ -508,8 +510,7 @@ def detect_R_T(ann,anchor,path_num):
             x_min = np.min(annotations_x)
             y_max = np.max(annotations_y)
             y_min = np.min(annotations_y)
-            #pdb.set_trace()
-        
+           
             for anchor_len in range(len(anchor)):
         
                 error_parts = list()
@@ -542,7 +543,8 @@ def detect_R_T(ann,anchor,path_num):
             for i in range(error.shape[0]):
                 min_index.append(np.argmin(error[i])) 
             R_list = list()
-            T_list = list()   
+            T_list = list()  
+            #pdb.set_trace() 
             for i in range(len(min_index)):
                 index = min_index[i]
                 anchor_len_ = len(anchor[index][i][0])
@@ -598,7 +600,7 @@ def detect_R_T(ann,anchor,path_num):
                 """
                 R_list.append(R)
                 T_list.append(T)
-            current = [name,R_list,T_list,x_min,y_min,x_max,y_min]
+            current = [name,R_list,T_list,x_min,y_min,x_max,y_min,min_index]
             #pdb.set_trace()
             all.append(current)
             #pdb.set_trace()
@@ -767,9 +769,7 @@ if __name__ ==  '__main__':
         print("finish 4")
 
     elif not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
-        with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        pdb.set_trace()
+        
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
         os.chdir(cur_dir)
@@ -785,11 +785,39 @@ if __name__ ==  '__main__':
         t_0_min = 100000
         t_1_max = -100000
         t_1_min = 100000
+        #pdb.set_trace()
+        annotations = dumps
         
-        annotations = np.array(dumps)
+        T_0 = []
+        T_1 = []
         
+        for i in range(len(dumps)):
+            for j in range(len(dumps[i][1][0])):
+                T_0.append(dumps[i][1][0][j][2][0][0])
+                T_1.append(dumps[i][1][0][j][2][0][1])
+            print(i)
+        #pdb.set_trace()
+        #sns.set_style("whitegrid")
+        sns.distplot(np.array(T_0))
+        #plt.plot(np.array(T_0))
+        plt.savefig('../data/out_test/T_0_not_nor.png') 
+        plt.clf()
+        sns.distplot(np.array(T_1))
+        #plt.plot(np.array(T_1))
+        plt.savefig('../data/out_test/T_1_not_nor.png') 
+        plt.clf()
+        
+        """
+        s = pd.Series()
+        pdb.set_trace()
+        sns.pairplot(s, hue="species", size=2.5)
+        plt.savefig('../data/out_test/T_sample.png') 
+        """
+        """
+        pdb.set_trace()
+        """
         print("start detectiong normalization!!")
-        for i in range(annotations.shape[0]):      
+        for i in range(len(annotations)):      
             for j in range(len(annotations[i][1][0])):
                 #pdb.set_trace()
                 if t_0_max < np.max(np.array(annotations[i][1][0][j][2]).T[0]):
@@ -800,8 +828,8 @@ if __name__ ==  '__main__':
                     t_1_max = np.max(np.array(annotations[i][1][0][j][2]).T[1])
                 if t_1_min > np.min(np.array(annotations[i][1][0][j][2]).T[1]):
                     t_1_min = np.min(np.array(annotations[i][1][0][j][2]).T[1])
-                
-        for i in range(annotations.shape[0]):
+        #pdb.set_trace()        
+        for i in range(len(annotations)):
             for j in range(len(annotations[i][1][0])):
                 X_0 = np.array(annotations[i][1][0][j][2]).T[0]
                 X_1 = np.array(annotations[i][1][0][j][2]).T[1]
@@ -814,6 +842,8 @@ if __name__ ==  '__main__':
         
         with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
+        with open('../data/ann_anchor_data/max_min.pickle',mode = 'wb') as f:
+            pickle.dump(max_min,f)
         with open('../cfg/tiny-yolo.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)
             print("t_0_min = {0}".format(t_0_min),file = f)

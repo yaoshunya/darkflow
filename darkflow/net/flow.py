@@ -35,51 +35,7 @@ def _save_ckpt(self, step, loss_profile):
     ckpt = os.path.join(self.FLAGS.backup, ckpt)
     self.say('Checkpoint at step {}'.format(step))
     self.saver.save(self.sess, ckpt)
-"""
-def make_result(out,img_name,meta,j):
-    with open('data/anchor/anchor.binaryfile','rb') as anc:
-        anchors = pickle.load(anc)
-    for i in range(out.shape[0]):
-        out_num = np.reshape(out[i],(361,5,6))
-        out_num_reshape = np.reshape(out_num,(out_num.shape[0]*out_num.shape[1],out_num.shape[2]))
 
-        imgcv = cv2.imread(os.path.join('data/VOC2012/PNGImagesTest',img_name[i]))
-
-        out_max_conf_index = np.argmax(out_num_reshape.T[3])
-        second_index = out_max_conf_index//out_num.shape[0]
-        first_index = out_max_conf_index%out_num.shape[0]
-
-        anchor = np.reshape(anchors,(361,5,1000,1000))[first_index][second_index]
-
-        max_conf = out_num[first_index][second_index]
-        
-        x_shift = max_conf[0]
-        y_shift = max_conf[1]
-        theta = max_conf[2]
-        sin = np.sin(theta)
-        cos = np.cos(theta)
-        
-        src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
-        rotate = cv2.getRotationMatrix2D((0.0,0.0), theta, 1.0)
-        dest = rotate.copy()
-        dest[:,0] += x_shift
-        dest[:,1] += y_shift
-        #pdb.set_trace()
-        
-        anchor =  np.tile(anchor[np.newaxis].T.astype(np.uint8),[1,1,3])
-        cv2.imwrite('anchor.png',anchor)
-        
-        prediction = cv2.warpAffine(anchor, dest, (1000, 1000))
-        cv2.imwrite('prediction.png',prediction)
-        
-        
-        #pdb.set_trace()
-        dst = cv2.addWeighted(np.asarray(imgcv,np.float64),0.1,np.asarray(prediction,np.float64),0.9,0)
-        cv2.imwrite(os.path.join('data/out_test','test_image_{0}_{1}.png'.format(j,i)),dst)
-        
-        #pdb.set_trace()
-    return 0
- """     
 
 def train(self):
     loss_ph = self.framework.placeholders
@@ -190,27 +146,28 @@ def make_result(out,this_batch):
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
         image_name = this_batch[i]
         
-        out_conf = out_now[3]      
-        max_indx = np.argmax(np.reshape(out_conf,[1805]))
+        out_conf = out_now[3] 
+             
+        max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
+        confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
+        """
+        if confidence < 0.5:
+            continue
+        """
         max_anchor,max_indx = divmod(max_indx,361)
         R = out_now[0][max_indx][max_anchor]
-        pdb.set_trace()
-        """
-        T_new_0 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,0],min_),tf.math.subtract(max_0,min_0)),tf.math.subtract(max_,min_)),min_0)
-    T_new_1 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,1],min_),tf.math.subtract(max_1,min_1)),tf.math.subtract(max_,min_)),min_1)
-        """
+        
         T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
         T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
-        T = [T_0,T_1]
         
-        #pdb.set_trace()
+        
         anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
         src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
         dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
-        
+        dest = src.copy()
+        dest[:,0] += T_0
+        dest[:,1] += T_1
         affine = cv2.getAffineTransform(src, dest)
-        affine[0][2] = T[0]
-        affine[1][2] = T[1]
         
         anchor_now = np.tile(anchor_now[np.newaxis].T.astype(np.uint8),[1,1,3])
         anchor_now = cv2.warpAffine(anchor_now, affine, (1000, 1000))
@@ -218,7 +175,7 @@ def make_result(out,this_batch):
         imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
                   
         prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(anchor_now,np.float64),0.5,0)
-        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(i)),prediction)
+        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
         
     return 0
     

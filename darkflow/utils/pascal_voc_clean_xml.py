@@ -11,6 +11,11 @@ import numpy as np
 import pdb
 import cv2
 import pickle
+import matplotlib
+matplotlib.use('Agg') # -----(1)
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def _pp(l): # pretty printing
     for i in l: print('{}: {}'.format(i,l[i]))
@@ -66,5 +71,25 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     #pdb.set_trace()
     with open('data/ann_anchor_data/annotations_nor.pickle',mode = 'rb') as f:
         dumps = pickle.load(f)
-    
+    """
+    T_0 = []
+    T_1 = []
+    for i in range(len(dumps)):
+        for j in range(len(dumps[i][1][0])):
+            T_0.append(dumps[i][1][0][j][2][0][0])
+            T_1.append(dumps[i][1][0][j][2][0][1])
+        print(i)
+    #pdb.set_trace()
+    #sns.set_style("whitegrid")
+    T_0 = np.array(T_0)
+    sns.distplot(np.array(T_0))
+    #plt.plot(np.array(T_0))
+    plt.savefig('data/out_test/T_0.png') 
+    plt.clf()
+    sns.distplot(np.array(T_1))
+    #plt.plot(np.array(T_1))
+    plt.savefig('data/out_test/T_1.png') 
+    plt.clf()
+    """
+    #pdb.set_trace()
     return dumps

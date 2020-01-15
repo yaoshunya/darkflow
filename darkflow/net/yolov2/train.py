@@ -244,10 +244,7 @@ def mask_anchor(anchor,H):
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
             #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-    """
-    with open('data/anchor/anchor.binaryfile','wb') as anc:
-        pickle.dump(mask_fi_row,anc,protocol=4)
-    """
+    
     return mask_fi
 
 
@@ -336,30 +333,9 @@ def loss(self, net_out):
     max_ = float(1)
     T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min
     T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min
-    """
-    min_ = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(-1,tf.float32),0),0),0)
-    min_ = tf.tile(min_,(batch_size,H*W,B))
-    max_ = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(1,tf.float32),0),0),0)
-    max_ = tf.tile(max_,(batch_size,H*W,B))
-    
-    max_0 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_0_max,tf.float32),0),0),0)
-    max_0 = tf.tile(max_0,(batch_size,H*W,B))
-    min_0 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_0_min,tf.float32),0),0),0)
-    min_0 = tf.tile(min_0,(batch_size,H*W,B))
-    
-    max_1 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_1_max,tf.float32),0),0),0)
-    max_1 = tf.tile(max_1,(batch_size,H*W,B))
-    min_1 = tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(t_1_min,tf.float32),0),0),0)
-    min_1 = tf.tile(min_1,(batch_size,H*W,B))
-    
-    
-    T_new_0 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,0],min_),tf.math.subtract(max_0,min_0)),tf.math.subtract(max_,min_)),min_0)
-    T_new_1 = tf.add(tf.div(tf.multiply(tf.math.subtract(T[:,:,:,1],min_),tf.math.subtract(max_1,min_1)),tf.math.subtract(max_,min_)),min_1)
-    """
     
     T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
     
-    #pdb.set_trace()
     area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
     _areas = tf.reshape(_areas,[batch_size,H*W,size,size,5])
     

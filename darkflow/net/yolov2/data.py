@@ -35,7 +35,7 @@ def _batch(self, chunk):
     # Calculate regression target
     cellx = 1. * w / W #画像の横幅を１グリッドあたりのピクセル数
     celly = 1. * h / H #画像の縦幅１グリッドあたりのピクセル数
-    
+    """
     for obj in allobj:
         #pdb.set_trace()
         centerx = .5*(obj[3]+obj[5]) #xmin, xmax 物体の中心座標
@@ -46,28 +46,28 @@ def _batch(self, chunk):
         if cx >= W or cy >= H: return None, None #１３以上なら画面外になってしまうから
         
         obj += [int(np.floor(cy) * W + np.floor(cx))]
-
+    """
     # show(im, allobj, S, w, h, cellx, celly) # unit test
     
 
     # Calculate placeholders' values
     probs = np.zeros([H*W,B,C])  #169x5x2セルごとの各クラスへの所属確率
     confs = np.zeros([H*W,B]) #169x5 セルごとの各BBの信頼度
-    
     R = np.zeros([H*W,B,1])
     T = np.zeros([H*W,B,2])
     proid = np.zeros([H*W,B,C])
     prear = np.zeros([H*W,4])
     for obj in allobj:
-        
-        probs[obj[7], :, :] = [[0.]*C] * B #物体があるセルにクラスの数だけ要素を設けている
-        probs[obj[7], :, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
-        proid[obj[7], :, :] = [[1.]*C] * B
-        R[obj[7], :, :] = np.array(obj[1])[np.newaxis].T
+        for i in range(len(obj[7])):
+            
+            probs[obj[7][i], i, :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
+            probs[obj[7][i], i, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
+            proid[obj[7][i], i, :] = [[1.]*C][0]
+            #pdb.set_trace()
+            R[obj[7][i], :, :] = np.array(obj[1])[np.newaxis].T
+            T[obj[7][i], :, :] = np.array(obj[2])        
+            confs[obj[7][i], i] = 1.  #物体が存在するセルの各BBの信頼度を１とする
         #pdb.set_trace()
-
-        T[obj[7], :, :] = np.array(obj[2])        
-        confs[obj[7], :] = [1.] * B #物体が存在するセルの各BBの信頼度を１とする
     os.chdir('data/mask_ann')
     #pdb.set_trace()
     with open('./{0}.pickle'.format(jpg[:6]),mode = 'rb') as f:
