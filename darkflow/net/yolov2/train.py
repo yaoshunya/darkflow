@@ -179,7 +179,7 @@ def mask_anchor(anchor,H):
     step_y=0
     S = H
     #anchor = np.reshape(anchor,(5,2))
-    anchor_size = anchor.shape[0]
+    anchor_size = np.array(anchor).shape[0]
     step_size = int(img_x/S)
 
 
@@ -191,9 +191,10 @@ def mask_anchor(anchor,H):
                 step_x = 0
             center_x = int((step_x + (step_x + step_size))/2)
             center_y = int((step_y + (step_y + step_size))/2)
-            for l in range(anchor_size):
-                w_ = float(anchor[l].split(",")[0])
-                h_ = float(anchor[l].split(",")[1])
+            for l in range(0,anchor_size,2):
+                #pdb.set_trace()
+                w_ = anchor[l]
+                h_ = anchor[l+1]
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
