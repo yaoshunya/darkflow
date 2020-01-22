@@ -160,7 +160,9 @@ def mask_anchor(anchor,H):
     #anchor = np.reshape(anchor,(5,2))
     anchor_size = np.array(anchor).shape[0]
     step_size = int(img_x/S)
-
+    if os.path.exists('../data/ann_anchor_data/mask_anchor_train.pickle',mode = 'wb') as f:
+        mask_anchor = pickle.load(f)
+        return mask_anchor
 
     mask = np.array([])
 
@@ -226,7 +228,8 @@ def mask_anchor(anchor,H):
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
             #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-
+    with open('../data/ann_anchor_data/mask_anchor_train.pickle',mode='wb') as f:
+        pickle.dump(mask_fi)
     return mask_fi
 
 
