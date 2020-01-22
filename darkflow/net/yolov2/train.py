@@ -149,6 +149,88 @@ def loss(self, net_out):
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
 
+
+def mask_anchor(anchor,H):
+    img_x = 1000
+    img_y = 1000
+
+    step_x=0
+    step_y=0
+    S = H
+    #anchor = np.reshape(anchor,(5,2))
+    anchor_size = np.array(anchor).shape[0]
+    step_size = int(img_x/S)
+
+
+    mask = np.array([])
+
+    for i in range(S):
+        for t in range(S):
+            if t==0:
+                step_x = 0
+            center_x = int((step_x + (step_x + step_size))/2)
+            center_y = int((step_y + (step_y + step_size))/2)
+            for l in range(0,anchor_size,2):
+                #pdb.set_trace()
+                w_ = anchor[l]
+                h_ = anchor[l+1]
+
+                mask_base = np.zeros((img_x,img_y),dtype=int)
+
+                side = int(w_)
+                ver = int(h_)
+
+                side_min = center_x - side
+                side_max = center_x + side
+                ver_min = center_y - ver
+                ver_max = center_y + ver
+
+                if side_min < 0:
+                    side_min = 0
+                if side_max > img_x:
+                    side_max = img_x
+                if ver_min < 0:
+                    ver_min = 0
+                if ver_max > img_y:
+                    ver_max = img_y
+
+
+                mask_base[ver_min:ver_max,side_min:side_max] = 255
+                resize_mask = np.resize(mask_base,(100,100))
+                grid = get_projection_grid(b=500)
+                rot = rand_rotation_matrix(deflection=1.0)
+                grid = rotate_grid(rot,grid)
+                mask_base = project_2d_on_sphere(mask_base,grid)
+                resize_mask = resize_mask.T
+                #resize_mask = np.resize(mask_base,(100,100)).T
+                if l == 0:
+                    mask = resize_mask[np.newaxis]
+                    #mask_row = mask_base[np.newaxis]
+                else:
+                    mask = np.append(mask,resize_mask[np.newaxis],axis=0)
+                    #mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
+
+
+            step_x += step_size
+            if t == 0:
+                mask_ = mask[np.newaxis]
+                #mask__row=mask_row[np.newaxis]
+            else:
+                mask_ = np.append(mask_,mask[np.newaxis],axis=0)
+                #mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
+        print(i)
+        step_y += step_size
+        if i == 0:
+            mask_fi = mask_[np.newaxis]
+            #mask_fi_row = mask__row[np.newaxis]
+        else:
+            mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
+            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
+
+    return mask_fi
+
+
+
 def shift_x_y(R,T,H,W,B,image):
 
     img_row = image.shape[3]
@@ -402,88 +484,40 @@ def rotate_grid(rot,grid):
     return x_r,y_r,z_r
 
 
-def mask_anchor(anchor,H):
-    img_x = 1000
-    img_y = 1000
-
-    step_x=0
-    step_y=0
-    S = H
-    #anchor = np.reshape(anchor,(5,2))
-    anchor_size = np.array(anchor).shape[0]
-    step_size = int(img_x/S)
-
-
-    mask = np.array([])
-
-    for i in range(S):
-        for t in range(S):
-            if t==0:
-                step_x = 0
-            center_x = int((step_x + (step_x + step_size))/2)
-            center_y = int((step_y + (step_y + step_size))/2)
-            for l in range(0,anchor_size,2):
-                #pdb.set_trace()
-                w_ = anchor[l]
-                h_ = anchor[l+1]
-
-                mask_base = np.zeros((img_x,img_y),dtype=int)
-
-                side = int(w_)
-                ver = int(h_)
-
-                side_min = center_x - side
-                side_max = center_x + side
-                ver_min = center_y - ver
-                ver_max = center_y + ver
-
-                if side_min < 0:
-                    side_min = 0
-                if side_max > img_x:
-                    side_max = img_x
-                if ver_min < 0:
-                    ver_min = 0
-                if ver_max > img_y:
-                    ver_max = img_y
-
-
-                mask_base[ver_min:ver_max,side_min:side_max] = 255
-                resize_mask = np.resize(mask_base,(100,100))
-                grid = get_projection_grid(b=500)
-                rot = rand_rotation_matrix(deflection=1.0)
-                grid = rotate_grid(rot,grid)
-                mask_base = project_2d_on_sphere(mask_base,grid)
-                resize_mask = resize_mask.T
-                #resize_mask = np.resize(mask_base,(100,100)).T
-                if l == 0:
-                    mask = resize_mask[np.newaxis]
-                    #mask_row = mask_base[np.newaxis]
-                else:
-                    mask = np.append(mask,resize_mask[np.newaxis],axis=0)
-                    #mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
-
-
-            step_x += step_size
-            if t == 0:
-                mask_ = mask[np.newaxis]
-                #mask__row=mask_row[np.newaxis]
-            else:
-                mask_ = np.append(mask_,mask[np.newaxis],axis=0)
-                #mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
-        print(i)
-        step_y += step_size
-        if i == 0:
-            mask_fi = mask_[np.newaxis]
-            #mask_fi_row = mask__row[np.newaxis]
-        else:
-            mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
-            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-
-    return mask_fi
-
-
 def expit_tensor(x):
     return 1. / (1. + tf.exp(-x))
 
 def max_pool(x):
     return tf.nn.max_pool(x, ksize=[1, 1, 5, 5], strides=[1, 1, 5, 5], padding='SAME')
+
+def sample_bilinear(signal, rx, ry):
+    #pdb.set_trace()
+    if len(signal.shape) > 2:
+        signal_dim_x = signal.shape[1]
+        signal_dim_y = signal.shape[2]
+    else:
+        signal_dim_x = signal.shape[0]
+        signal_dim_y = signal.shape[1]
+    rx *= signal_dim_x
+    ry *= signal_dim_y
+
+
+    ix = rx.astype(int)
+    iy = ry.astype(int)
+
+    ix0 = ix - 1
+    iy0 = iy - 1
+    ix1 = ix + 1
+    iy1 = iy + 1
+
+    bounds = (0, signal_dim_x, 0, signal_dim_y)
+
+    signal_00 = sample_within_bounds(signal, ix0, iy0, bounds)
+    signal_10 = sample_within_bounds(signal, ix1, iy0, bounds)
+    signal_01 = sample_within_bounds(signal, ix0, iy1, bounds)
+    signal_11 = sample_within_bounds(signal, ix1, iy1, bounds)
+
+    fx1 = (ix1-rx) * signal_00 + (rx-ix0) * signal_10
+    fx2 = (ix1-rx) * signal_01 + (rx-ix0) * signal_11
+
+    return (iy1 - ry) * fx1 + (ry - iy0) * fx2
