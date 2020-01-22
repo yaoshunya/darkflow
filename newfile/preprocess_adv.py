@@ -303,7 +303,7 @@ def mask_anchor(anchor,H):
             center_x = int((step_x + (step_x + step_size))/2)
             center_y = int((step_y + (step_y + step_size))/2)
             for l in range(anchor_size):
-
+                pdb.set_trace()
                 w_ = float(x[l].split(",")[0])
                 h_ = float(x[l].split(",")[1])
 
@@ -311,8 +311,8 @@ def mask_anchor(anchor,H):
 
                 #side = int(w_*1224/488)
                 #ver = int(h_*370/488)
-                side = int(w_*500/39)
-                ver = int(h_*200/13)
+                side = int(w_)
+                ver = int(h_)
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -340,7 +340,7 @@ def mask_anchor(anchor,H):
                 #-------------------------------------------------
 
                 
-                resize_mask = mask_base
+                resize_mask = mask_base.T
                 if l == 0:
                     mask = resize_mask[np.newaxis]
                 else:
@@ -493,7 +493,10 @@ def detect_R_T(ann,anchor,path_num):
     
     dumps = list()
     path = ['redidual_1','redidual_2','redidual_3','redidual_4']
-    
+    with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
+        mask_anchor = pickle.load(f)
+        mask_anchor = np.reshape(mask_anchor/255,[361,5,1000,1000])
+        
     for ann_len in range(len(ann)):
     
         img_name = ann[ann_len][0]
@@ -501,7 +504,8 @@ def detect_R_T(ann,anchor,path_num):
         
         for ann_0_len in range(len(ann[ann_len][1])):
         
-            error = list()
+            error = list()    
+            iou = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
             annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
@@ -510,12 +514,47 @@ def detect_R_T(ann,anchor,path_num):
             x_min = np.min(annotations_x)
             y_max = np.max(annotations_y)
             y_min = np.min(annotations_y)
-           
+            
+            mask_annotation = np.zeros([1000,1000])
+            mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
             for anchor_len in range(len(anchor)):
-        
                 error_parts = list()
-                
+                iou_parts = list()
+
                 for anchor_0_len in range(len(anchor[anchor_len])):
+                    my_list_ann = []
+                    my_list_anchor = []
+                        
+                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
+                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
+                    
+                    for k in range(30):
+                        x = random.randint(0,ann_len_-1)
+                        y = random.randint(0,anchor_len_-1)
+                        my_list_ann.append(x)
+                        my_list_anchor.append(y)
+            
+                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
+                    
+                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
+                    
+                    dcpoints = ann_stack - anchor_stack
+                    d = np.linalg.norm(dcpoints)
+                    
+                    if d < 700:
+                    #pdb.set_trace()
+                        intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
+                        union = mask_anchor[anchor_len][anchor_0_len] + mask_annotation
+                        intersection = len(np.where(intersection>0)[0])
+                        union = len(np.where(union>0)[0])
+                        iou_0 = intersection/union
+                    else:
+                        iou_0 = 0
+                    iou_parts.append(iou_0)
+                    #print(iou_0)
+                #print(iou_parts)        
+                iou.append(iou_parts)
+                """                
                     anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
                     ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
                     
@@ -535,18 +574,21 @@ def detect_R_T(ann,anchor,path_num):
                     d = np.linalg.norm(dcpoints, axis=0)
                     error_0 = sum(d)
                     error_parts.append(error_0)
+           
                 error.append(error_parts)
-            error = np.array(error).T
+                """
+            #pdb.set_trace()
+            iou = np.array(iou).T
             
-            min_index = list()
+            max_index = list()
             
-            for i in range(error.shape[0]):
-                min_index.append(np.argmin(error[i])) 
+            for i in range(iou.shape[0]):
+                max_index.append(np.argmax(iou[i])) 
             R_list = list()
             T_list = list()  
             #pdb.set_trace() 
-            for i in range(len(min_index)):
-                index = min_index[i]
+            for i in range(len(max_index)):
+                index = max_index[i]
                 anchor_len_ = len(anchor[index][i][0])
                 ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
                     
@@ -564,9 +606,9 @@ def detect_R_T(ann,anchor,path_num):
                 R, T = ICP_matching(ann_stack,anchor_stack)
                 #pdb.set_trace()
                 ###############################
-                """
-                #pdb.set_trace()
                 
+                #pdb.set_trace()
+                """    
                 with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
                     anchor_ = pickle.load(f)
                 anchor_ = np.reshape(anchor_,(361,5,1000,1000))
@@ -574,7 +616,7 @@ def detect_R_T(ann,anchor,path_num):
                 with open('../data/mask_ann/001163.pickle',mode = 'rb') as f:
                     an = pickle.load(f)
                 X = np.zeros((1000,1000))
-                pdb.set_trace()
+                #pdb.set_trace()
                 
                 X[ann[0][1][0][1]] = 255
                 #X[ann[0][1][0][1]] = 255
@@ -583,9 +625,10 @@ def detect_R_T(ann,anchor,path_num):
                 
                 #pdb.set_trace()
                 for annn in range(5):
-                    an_ = anchor_[min_index[0],annn]
+                    an_ = anchor_[max_index[0],annn]
                     affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-                    
+                    affine[0][2] = T[0]
+                    affine[0][2] = T[1]
                     #pdb.set_trace()
                     pre=cv2.warpAffine(an_, affine, (1000,1000))
                     prediction = cv2.addWeighted(np.asarray(img,np.float64),0.2,np.asarray(pre,np.float64),0.8,0)
@@ -600,7 +643,7 @@ def detect_R_T(ann,anchor,path_num):
                 """
                 R_list.append(R)
                 T_list.append(T)
-            current = [name,R_list,T_list,x_min,y_min,x_max,y_min,min_index]
+            current = [name,R_list,T_list,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
             #pdb.set_trace()
@@ -626,19 +669,19 @@ def make_area():
                
         
         for ann_len in range(len(ann)):
-            mask = np.zeros((1000,1000))
-            for ann_0_len in range(len(ann[ann_len][1])): 
+            for ann_0_len in range(len(ann[ann_len][1])):
+                mask = np.zeros((1000,1000))
                 X=ann[ann_len][1][ann_0_len][1]
                 mask[X] = 1
-            name = ann[ann_len][0][:6]
+                name = ann[ann_len][0][:6]
             #pdb.set_trace()
-            mask = cv2.resize(mask,(100,100))
-            with open('../data/mask_ann/{0}.pickle'.format(name),mode = 'wb') as f:
-                pickle.dump(mask,f)   
+                mask = cv2.resize(mask,(100,100))
+                with open('../data/mask_ann/{0}_{1}.pickle'.format(name,ann_0_len),mode = 'wb') as f:
+                    pickle.dump(mask,f)   
             print("finish : {0}".format(name))
            
 if __name__ ==  '__main__':
-
+    #make_area()
     if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
         with open("anchor.txt") as f:
             x = f.read().split()
@@ -667,7 +710,7 @@ if __name__ ==  '__main__':
         #pdb.set_trace()
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'wb') as f:
             pickle.dump(anchor_coords,f)
-        
+        #pdb.set_trace()        
         print("finish making mask anchor")
     
     #----------------------------------------
@@ -738,7 +781,7 @@ if __name__ ==  '__main__':
 
         
         
-    elif not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'): 
+    if not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'): 
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
@@ -768,7 +811,7 @@ if __name__ ==  '__main__':
         
         print("finish 4")
 
-    elif not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
         
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')

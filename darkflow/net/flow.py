@@ -159,22 +159,25 @@ def make_result(out,this_batch):
         
         T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
         T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
-        
+        #pdb.set_trace()        
         
         anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
-        src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
-        dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
-        dest = src.copy()
-        dest[:,0] += T_0
-        dest[:,1] += T_1
-        affine = cv2.getAffineTransform(src, dest)
+        #src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
+        #dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
+        dest = cv2.getRotationMatrix2D((0,0),R,1.0)
+
+        dest[0][2] = T_0
+        dest[1][2] = T_1
+        #affine = cv2.getAffineTransform(src, dest)
         
-        anchor_now = np.tile(anchor_now[np.newaxis].T.astype(np.uint8),[1,1,3])
-        anchor_now = cv2.warpAffine(anchor_now, affine, (1000, 1000))
-        
+        #anchor_now = np.tile(anchor_now[np.newaxis].astype(np.uint8),[1,1,3])
+        pre = cv2.warpAffine(anchor_now, dest, (1000, 1000))
+        pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
         imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
-                  
-        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(anchor_now,np.float64),0.5,0)
+        
+
+        #pdb.set_trace()          
+        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
         cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
         
     return 0

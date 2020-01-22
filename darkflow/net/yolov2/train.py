@@ -178,7 +178,7 @@ def mask_anchor(anchor,H):
     step_x=0
     step_y=0
     S = H
-    anchor = np.reshape(anchor,(5,2))
+    #anchor = np.reshape(anchor,(5,2))
     anchor_size = anchor.shape[0]
     step_size = int(img_x/S)
 
@@ -192,8 +192,8 @@ def mask_anchor(anchor,H):
             center_x = int((step_x + (step_x + step_size))/2)
             center_y = int((step_y + (step_y + step_size))/2)
             for l in range(anchor_size):
-                w_ = anchor[l][0]
-                h_ = anchor[l][0]
+                w_ = float(anchor[l].split(",")[0])
+                h_ = float(anchor[l].split(",")[1])
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
@@ -217,10 +217,12 @@ def mask_anchor(anchor,H):
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
                 resize_mask = np.resize(mask_base,(100,100))
-                #grid = get_projection_grid(b=500)
-                #rot = rand_rotation_matrix(deflection=1.0)
-                #grid = rotate_grid(rot,grid)
-                #mask_base = project_2d_on_sphere(mask_base,grid)
+                grid = get_projection_grid(b=500)
+                rot = rand_rotation_matrix(deflection=1.0)
+                grid = rotate_grid(rot,grid)
+                mask_base = project_2d_on_sphere(mask_base,grid)
+                resize_mask = resize_mask.T
+                #resize_mask = np.resize(mask_base,(100,100)).T
                 if l == 0:
                     mask = resize_mask[np.newaxis]
                     #mask_row = mask_base[np.newaxis]
