@@ -534,15 +534,19 @@ def detect_R_T(ann,anchor,path_num):
                         my_list_ann.append(x)
                         my_list_anchor.append(y)
 
+                    
                     ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
 
                     anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
 
                     dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints)
-
-                    if d < 700:
+                    d = np.linalg.norm(dcpoints,axis=0)
+                    error_ = sum(d)
+                    #error.append(error_)
+                    #pdb.set_trace()                    
+                    if error_ < 4500:
                     #pdb.set_trace()
+                        #pdb.set_trace()
                         intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
                         union = mask_anchor[anchor_len][anchor_0_len] + mask_annotation
                         intersection = len(np.where(intersection>0)[0])
@@ -554,7 +558,8 @@ def detect_R_T(ann,anchor,path_num):
                     #print(iou_0)
                 #print(iou_parts)
                 iou.append(iou_parts)
-                """
+                    
+                """                
                     anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
                     ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
@@ -572,11 +577,12 @@ def detect_R_T(ann,anchor,path_num):
 
                     dcpoints = ann_stack - anchor_stack
                     d = np.linalg.norm(dcpoints, axis=0)
+                    
                     error_0 = sum(d)
                     error_parts.append(error_0)
 
                 error.append(error_parts)
-                """
+                """    
             #pdb.set_trace()
             iou = np.array(iou).T
 
@@ -781,7 +787,7 @@ if __name__ ==  '__main__':
 
 
 
-    if not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'):
+    if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
         with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
@@ -811,7 +817,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
@@ -883,9 +889,9 @@ if __name__ ==  '__main__':
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
-        with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/annotations_nor_iou.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
-        with open('../data/ann_anchor_data/max_min.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/max_min_iou.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
         with open('../cfg/tiny-yolo.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)

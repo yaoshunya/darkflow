@@ -65,9 +65,10 @@ def _batch(self, chunk):
         with open('./{0}_{1}.pickle'.format(jpg[:6],k),mode = 'rb') as f:
             area = pickle.load(f)
         os.chdir('../../')
-        k = k + 1        
+        k = k + 1
+        #pdb.set_trace()
         for i in range(len(obj[7])):
-            areas[obj[7][i], i, :] = area    
+            areas[obj[7][i], :, :] = area*255    
             probs[obj[7][i], i, :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
             probs[obj[7][i], i, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
             proid[obj[7][i], i, :] = [[1.]*C][0]

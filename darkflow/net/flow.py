@@ -146,32 +146,47 @@ def make_result(out,this_batch):
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
         image_name = this_batch[i]
         
-        out_conf = out_now[3] 
-             
-        max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
-        confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
-        """
-        if confidence < 0.5:
-            continue
-        """
-        max_anchor,max_indx = divmod(max_indx,361)
-        R = out_now[0][max_indx][max_anchor]
+        out_conf = np.reshape(out_now[3],[-1])
         
-        T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
-        T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
+        confidence = (1/(1+np.exp(-out_conf)))
+        trast_conf = np.where(confidence>0.8)
+        #pdb.set_trace()
+        pre = np.zeros((1000,1000))
+        if len(trast_conf[0]) == 0:
+            continue
+        for j in range(len(trast_conf[0])):
+            #max_anchor,max_indx = divmod(trast_conf[0][j],361)
+            R = np.reshape(out_now[0],[-1])[trast_conf[0][j]]
+            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[0][j]]+1,2),t_0_max-t_0_min)+t_0_min
+            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[0][j]]+1,2),t_1_max-t_1_min)+t_1_min
+            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[0][j]]
+            dest = cv2.getRotationMatrix2D((0,0),R,1.0)
+
+            dest[0][2] = T_0
+            dest[1][2] = T_1
+            pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
+            pre[np.where(pre_ > 0)] = 255
+            
+        #max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
+        #confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
+        #max_anchor,max_indx = divmod(max_indx,361)
+        #R = out_now[0][max_indx][max_anchor]
+        
+        #T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
+        #T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
         #pdb.set_trace()        
         
-        anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
+        #anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
         #src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
         #dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
-        dest = cv2.getRotationMatrix2D((0,0),R,1.0)
+        #dest = cv2.getRotationMatrix2D((0,0),R,1.0)
 
-        dest[0][2] = T_0
-        dest[1][2] = T_1
+        #dest[0][2] = T_0
+        #dest[1][2] = T_1
         #affine = cv2.getAffineTransform(src, dest)
         
         #anchor_now = np.tile(anchor_now[np.newaxis].astype(np.uint8),[1,1,3])
-        pre = cv2.warpAffine(anchor_now, dest, (1000, 1000))
+        #pre = cv2.warpAffine(anchor_now, dest, (1000, 1000))
         pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
         imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
         
