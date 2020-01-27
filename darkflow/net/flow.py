@@ -47,6 +47,7 @@ def train(self):
     loss_op = self.framework.loss
     step_plot = np.array([])
     loss_plot = np.array([])
+    loss_plot_ = np.array([])
     s = 0
     for i, (x_batch, datum) in enumerate(batches):
         if not i: self.say(train_stats.format(
@@ -80,17 +81,21 @@ def train(self):
         #pdb.set_trace()
         form = 'step {} - loss {} - moving ave loss {}'
         self.say(form.format(step_now, loss, loss_mva))
-        
-        if step_now%1 == 0:
+
+        #step_plot = np.append(step_plot,step_now)
+        loss_plot = np.append(loss_plot,loss)
+
+        if step_now%50 == 0:
             step_plot = np.append(step_plot,step_now)
-            loss_plot = np.append(loss_plot,loss)
-            plt.plot(step_plot,loss_plot)
+            #loss_plot = np.append(loss_plot,loss)
+            loss_plot_ = np.append(loss_plot_,np.mean(loss_plot)) 
+            plt.plot(step_plot,loss_plot_)
 
             plt.xlabel("step")
             plt.ylabel("loss")
             plt.savefig('data/out_test/figure.png')
             plt.clf()
-        
+            loss_plot = np.array([])
         profile += [(loss, loss_mva)]
 
         ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)
