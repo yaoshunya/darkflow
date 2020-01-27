@@ -6,7 +6,7 @@ import cv2
 import math
 import random
 
-if __name == '__main__':
+if __name__ == '__main__':
     for i in range(5000):
         mask = np.zeros((1000,1000))
         center_x = random.randint(0,1000)
@@ -27,18 +27,18 @@ if __name == '__main__':
             ver_min = 0
         if ver_max > 1000:
             ver_max = 1000
-        mask[ver_min:ver_max,side_min,side_max] = 255
-        grid = get_projectiongrid(b=500)
+        mask[ver_min:ver_max,side_min:side_max] = 255
+        grid = get_projection_grid(b=500)
         rot = rand_rotation_matrix(deflection=1.0)
         grid = rotate_grid(rot,grid)
         mask = project_2d_on_sphere(mask,grid).T
         
         i_ = str(n).zfill(5)
-
+        print(i)
         if i > 2000:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_test/{0}.png'.format(i_))
+            cv2.imwrite(os.path.join('data/VOC2012/toy_test/{0}.png'.format(i_)))
         else:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_train/{0}.png'.format(i_))
+            cv2.imwrite(os.path.join('data/VOC2012/toy_train/{0}.png'.format(i_)))
 
 
 
