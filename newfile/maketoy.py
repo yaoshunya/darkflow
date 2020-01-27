@@ -5,43 +5,6 @@ import pdb
 import cv2
 import math
 import random
-
-if __name__ == '__main__':
-    for i in range(5000):
-        mask = np.zeros((1000,1000))
-        center_x = random.randint(0,1000)
-        center_y = random.randint(0,1000)
-        side = random.randint(0, 250)
-        ver = random.randint(0,250)
-
-        side_min = center_x - side
-        side_max = center_x + side
-        ver_min = center_y - ver
-        ver_max = center_y + ver
-
-        if side_min < 0:
-            side_min = 0
-        if side_max > 1000:
-            side_max = 1000
-        if ver_min < 0:
-            ver_min = 0
-        if ver_max > 1000:
-            ver_max = 1000
-        mask[ver_min:ver_max,side_min:side_max] = 255
-        grid = get_projection_grid(b=500)
-        rot = rand_rotation_matrix(deflection=1.0)
-        grid = rotate_grid(rot,grid)
-        mask = project_2d_on_sphere(mask,grid).T
-        
-        i_ = str(n).zfill(5)
-        print(i)
-        if i > 2000:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_test/{0}.png'.format(i_)))
-        else:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_train/{0}.png'.format(i_)))
-
-
-
 def get_projection_grid(b, grid_type="Driscoll-Healy"):
     theta, phi = np.meshgrid(np.arange(2 * b) * np.pi / (2. * b),np.arange(2 * b) * np.pi / b, indexing='ij')
     x_ = np.sin(theta) * np.cos(phi)
@@ -167,3 +130,38 @@ def project_sphere_on_xy_plane(grid, projection_origin):
     ry = (qy - ymin) / (2 * np.abs(ymin))
 
     return rx, ry
+
+
+if __name__ == '__main__':
+    for i in range(5000):
+        mask = np.zeros((1000,1000))
+        center_x = random.randint(0,1000)
+        center_y = random.randint(0,1000)
+        side = random.randint(0, 250)
+        ver = random.randint(0,250)
+
+        side_min = center_x - side
+        side_max = center_x + side
+        ver_min = center_y - ver
+        ver_max = center_y + ver
+
+        if side_min < 0:
+            side_min = 0
+        if side_max > 1000:
+            side_max = 1000
+        if ver_min < 0:
+            ver_min = 0
+        if ver_max > 1000:
+            ver_max = 1000
+        mask[ver_min:ver_max,side_min:side_max] = 255
+        grid = get_projection_grid(b=500)
+        rot = rand_rotation_matrix(deflection=1.0)
+        grid = rotate_grid(rot,grid)
+        mask = project_2d_on_sphere(mask,grid).T
+
+        i_ = str(n).zfill(5)
+        print(i)
+        if i > 2000:
+            cv2.imwrite(os.path.join('data/VOC2012/toy_test/{0}.png'.format(i_)))
+        else:
+            cv2.imwrite(os.path.join('data/VOC2012/toy_train/{0}.png'.format(i_)))
