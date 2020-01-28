@@ -137,8 +137,8 @@ if __name__ == '__main__':
         mask = np.zeros((1000,1000))
         center_x = random.randint(0,1000)
         center_y = random.randint(0,1000)
-        side = random.randint(0, 250)
-        ver = random.randint(0,250)
+        side = random.randint(100,255)
+        ver = random.randint(100,250)
 
         side_min = center_x - side
         side_max = center_x + side
@@ -159,9 +159,9 @@ if __name__ == '__main__':
         grid = rotate_grid(rot,grid)
         mask = project_2d_on_sphere(mask,grid).T
 
-        i_ = str(n).zfill(5)
+        i_ = str(i).zfill(5)
         print(i)
         if i > 2000:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_test/{0}.png'.format(i_)))
+            cv2.imwrite(os.path.join('../data/VOC2012/toy_test/{0}.png'.format(i_)),mask)
         else:
-            cv2.imwrite(os.path.join('data/VOC2012/toy_train/{0}.png'.format(i_)))
+            cv2.imwrite(os.path.join('../data/VOC2012/toy_train/{0}.png'.format(i_)),mask)

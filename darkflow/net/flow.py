@@ -170,7 +170,8 @@ def make_result(out,this_batch):
             dest[0][2] = T_0
             dest[1][2] = T_1
             pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
-            pre[np.where(pre_ > 0)] = 255
+            #pre[np.where(pre_ > 0)] = 255
+            pre[np.where(anchor_now>0)] = 255
             
         #max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
         #confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))

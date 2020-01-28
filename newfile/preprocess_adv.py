@@ -303,7 +303,7 @@ def mask_anchor(anchor,H):
             center_x = int((step_x + (step_x + step_size))/2)
             center_y = int((step_y + (step_y + step_size))/2)
             for l in range(anchor_size):
-                pdb.set_trace()
+                #pdb.set_trace()
                 w_ = float(x[l].split(",")[0])
                 h_ = float(x[l].split(",")[1])
 
@@ -524,7 +524,7 @@ def detect_R_T(ann,anchor,path_num):
                 for anchor_0_len in range(len(anchor[anchor_len])):
                     my_list_ann = []
                     my_list_anchor = []
-
+                    """
                     anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
                     ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
@@ -558,8 +558,9 @@ def detect_R_T(ann,anchor,path_num):
                     #print(iou_0)
                 #print(iou_parts)
                 iou.append(iou_parts)
+                    """
                     
-                """                
+                                
                     anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
                     ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
@@ -582,14 +583,15 @@ def detect_R_T(ann,anchor,path_num):
                     error_parts.append(error_0)
 
                 error.append(error_parts)
-                """    
+                    
             #pdb.set_trace()
-            iou = np.array(iou).T
+            iou = np.array(error).T
 
             max_index = list()
 
             for i in range(iou.shape[0]):
-                max_index.append(np.argmax(iou[i]))
+                max_index.append(np.argmin(iou[i]))
+            #pdb.set_trace()
             R_list = list()
             T_list = list()
             #pdb.set_trace()
@@ -842,6 +844,7 @@ if __name__ ==  '__main__':
 
         for i in range(len(dumps)):
             for j in range(len(dumps[i][1][0])):
+                #pdb.set_trace()
                 T_0.append(dumps[i][1][0][j][2][0][0])
                 T_1.append(dumps[i][1][0][j][2][0][1])
             print(i)
@@ -889,9 +892,9 @@ if __name__ ==  '__main__':
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
-        with open('../data/ann_anchor_data/annotations_nor_iou.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/annotations_nor.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
-        with open('../data/ann_anchor_data/max_min_iou.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/max_min.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
         with open('../cfg/tiny-yolo.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)

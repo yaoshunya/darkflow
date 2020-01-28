@@ -79,7 +79,7 @@ def loss(self, net_out):
 
     adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:])
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
-    adjusted_net_out = tf.concat([T, adjusted_c, adjusted_prob], 3)
+    adjusted_net_out = tf.concat([adjusted_c, adjusted_prob], 3)
     batch_size = tf.shape(adjusted_net_out)[0]
 
     min_ = float(-1)
@@ -88,15 +88,18 @@ def loss(self, net_out):
     T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min
 
     T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
-
-    area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
-    _areas = tf.reshape(_areas,[batch_size,H*W,size,size,5])
-
+    anchors = tf.expand_dims(anchors,0)
+    anchors = tf.tile(anchors,[batch_size,1,1,1,1,1])
+    #pdb.set_trace()
+    area_pred = tf.reshape(anchors,[batch_size,361,size,size,B])
+    #area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
+    _areas = tf.reshape(_areas,[batch_size,H*W,size,size,B])
+    #pdb.set_trace()
     intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
 
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,size*size,5))),2)
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,size*size,5))),2)
-    _areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,size*size,5))),2)
+    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,size*size,B))),2)
+    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,size*size,B))),2)
+    _areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,size*size,B))),2)
 
 
     iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10)
@@ -119,8 +122,8 @@ def loss(self, net_out):
     R = tf.reshape(R,[batch_size,361,5,1])
     _R = tf.reshape(_R,[batch_size,361,5,1])
 
-    true = tf.concat([_T, tf.expand_dims(confs, 3), _probs ], 3)
-    wght = tf.concat([cooid, tf.expand_dims(conid, 3), proid ], 3)
+    true = tf.concat([tf.expand_dims(confs, 3), _probs ], 3)
+    wght = tf.concat([tf.expand_dims(conid, 3), proid ], 3)
     pre_angle = tf.concat([tf.math.sin(R),tf.math.cos(R)],3)
     true_angle = tf.concat([tf.math.sin(_R),tf.math.cos(_R)],3)
 
@@ -141,9 +144,9 @@ def loss(self, net_out):
 
     loss = tf.multiply(loss, wght)
 
-    loss = tf.concat([loss,difal],3)
+    #loss = tf.concat([loss,difal],3)
 
-    loss = tf.reshape(loss, [-1, H*W*B*(1 + 2 + 1 + C)])
+    loss = tf.reshape(loss, [-1, H*W*B*(1 + C)])
 
     loss = tf.reduce_sum(loss, 1)
     self.loss = .5 * tf.reduce_mean(loss)
@@ -283,7 +286,7 @@ def spatial_transformer_network(input_fmap, R, T, out_dims=None, **kwargs):
     input_fmap = tf.reshape(input_fmap,[361*5,H,W,-1])
 
     # grab input dimensions
-    B = tf.shape(input_fmap)[0]
+    B = tf.shape(input_fmap)[0] 
     H = tf.shape(input_fmap)[1]
     W = tf.shape(input_fmap)[2]
 
