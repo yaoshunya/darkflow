@@ -69,7 +69,7 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     #pdb.set_trace()
     """
     #pdb.set_trace()
-    with open('data/ann_anchor_data/annotations_nor_iou.pickle',mode = 'rb') as f:
+    with open('data/ann_anchor_data/annotations_nor.pickle',mode = 'rb') as f:
         dumps = pickle.load(f)
     """
     T_0 = []
