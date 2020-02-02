@@ -51,13 +51,13 @@ def _batch(self, chunk):
     
 
     # Calculate placeholders' values
-    probs = np.zeros([H*W,B,C])  #169x5x2セルごとの各クラスへの所属確率
-    confs = np.zeros([H*W,B]) #169x5 セルごとの各BBの信頼度
-    R = np.zeros([H*W,B,1])
-    T = np.zeros([H*W,B,2])
-    proid = np.zeros([H*W,B,C])
+    probs = np.zeros([H*W*B,C])  #169x5x2セルごとの各クラスへの所属確率
+    confs = np.zeros([H*W*B]) #169x5 セルごとの各BBの信頼度
+    R = np.zeros([H*W*B,1])
+    T = np.zeros([H*W*B,2])
+    proid = np.zeros([H*W*B,C])
     prear = np.zeros([H*W,4])
-    areas = np.zeros([H*W,B,100,100])
+    areas = np.zeros([H*W*B,100,100])
     k = 0
     for obj in allobj:
 
@@ -65,18 +65,24 @@ def _batch(self, chunk):
         with open('./{0}_{1}.pickle'.format(jpg[:6],k),mode = 'rb') as f:
             area = pickle.load(f)
         os.chdir('../../')
-        k = k + 1
+        
         #pdb.set_trace()
-        for i in range(len(obj[7])):
-            areas[obj[7][i], :, :] = area*255    
-            probs[obj[7][i], i, :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
-            probs[obj[7][i], i, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
-            proid[obj[7][i], i, :] = [[1.]*C][0]
-            #pdb.set_trace()
-            R[obj[7][i], :, :] = np.array(obj[1])[np.newaxis].T
-            T[obj[7][i], :, :] = np.array(obj[2])        
-            confs[obj[7][i], i] = 1.  #物体が存在するセルの各BBの信頼度を１とする
+        
+        areas[obj[7], :] = area*255    
+        probs[obj[7], :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
+        probs[obj[7], labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
+        proid[obj[7], :] = [[1.]*C][0]
         #pdb.set_trace()
+        R[obj[7], :] = np.array(obj[1])[np.newaxis].T
+        T[obj[7], :] = np.array(obj[2])        
+        confs[obj[7]] = 1.  #物体が存在するセルの各BBの信頼度を１とする
+        #pdb.set_trace()
+    areas = np.reshape(areas,[H*W,B,100,100])
+    probs = np.reshape(probs,[H*W,B,C])
+    proid = np.reshape(proid,[H*W,B,C])
+    R = np.reshape(R,[H*W,B,1])
+    T = np.reshape(T,[H*W,B,2])
+    confs = np.reshape(confs,[H*W,B])
     """    
     os.chdir('data/mask_ann')
     #pdb.set_trace()

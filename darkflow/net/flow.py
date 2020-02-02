@@ -12,7 +12,9 @@ import matplotlib
 matplotlib.use('Agg') # -----(1)
 import matplotlib.pyplot as plt
 import pickle
-
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -145,7 +147,9 @@ def make_result(out,this_batch):
     t_0_min = np.array(X[1])
     t_1_max = np.array(X[2])
     t_1_min = np.array(X[3])
-    
+    iou_return = list()
+    precision_return = list()
+    recall_return = list()
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
@@ -154,9 +158,10 @@ def make_result(out,this_batch):
         out_conf = np.reshape(out_now[3],[-1])
         
         confidence = (1/(1+np.exp(-out_conf)))
-        trast_conf = np.where(confidence>0.8)
+        trast_conf = np.where(confidence>0.6)
         #pdb.set_trace()
         pre = np.zeros((1000,1000))
+        #pdb.set_trace()
         if len(trast_conf[0]) == 0:
             continue
         for j in range(len(trast_conf[0])):
@@ -172,7 +177,22 @@ def make_result(out,this_batch):
             pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
             #pre[np.where(pre_ > 0)] = 255
             pre[np.where(anchor_now>0)] = 255
-            
+        #pdb.set_trace()
+        with open('data/mask_ann/{0}.pickle'.format(this_batch[i][:6]),mode='rb') as f:
+            mask = pickle.load(f)
+        mask = 1*(cv2.resize(mask,(1000,1000))>0)
+        prediction = 1*(pre>0)       
+        overlap = np.sum(mask*prediction)
+        union = np.sum(1*((mask+prediction)>0))
+
+        iou_parts = overlap/union
+        
+        precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+        recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+        #pdb.set_trace()
+        iou_return.append(iou_parts)
+        precision_return.append(precision_parts)
+        recall_return.append(recall_parts)
         #max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
         #confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
         #max_anchor,max_indx = divmod(max_indx,361)
@@ -196,12 +216,14 @@ def make_result(out,this_batch):
         pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
         imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
         
-
+        
         #pdb.set_trace()          
         prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
         cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
-        
-    return 0
+    iou_return = np.mean(np.array(iou_return))
+    precision_return = np.mean(np.array(precision_return))
+    recall_return = np.mean(np.array(recall_return))
+    return iou_return,precision_return,recall_return
     
     
 import math
@@ -224,6 +246,11 @@ def predict(self):
 
     # predict in batches
     n_batch = int(math.ceil(len(all_inps) / batch))
+
+    iou_ = list()
+    precision_ = list()
+    recall_ = list()
+
     for j in range(n_batch):
         from_idx = j * batch
         to_idx = min(from_idx + batch, len(all_inps))
@@ -248,8 +275,10 @@ def predict(self):
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
         
-        make_result(out,this_batch)
-        
+        iou,precision,recall = make_result(out,this_batch)
+        iou_.append(iou)
+        precision_.append(precision)
+        recall_.append(recall)
         #pdb.set_trace()
         """
         pool.map(lambda p: (lambda i, prediction:
@@ -262,7 +291,10 @@ def predict(self):
         # Timing
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))
-
+    print("iou:{0}".format(np.nanmean(iou_)))
+    print("precision:{0}".format(np.nanmean(precision_)))
+    print("recall:{0}".format(np.nanmean(recall_)))
+    pdb.set_trace()
 def predict_(self):
     inp_path = self.FLAGS.imgdir
     all_inps = os.listdir(inp_path)
