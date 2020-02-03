@@ -311,8 +311,8 @@ def mask_anchor(anchor,H):
 
                 #side = int(w_*1224/488)
                 #ver = int(h_*370/488)
-                side = int(w_)
-                ver = int(h_)
+                side = int(w_)/2
+                ver = int(h_)/2
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -687,33 +687,33 @@ def make_area():
 
 if __name__ ==  '__main__':
     #make_area()
-    if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
-        with open("anchor.txt") as f:
+    if not os.path.exists('../data/ann_anchor_data/mask_anchor_.pickle'):
+        with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
         anchors = mask_anchor(np.array(x),19)
 
         #anchors = mask_anchor(anchors,19)
 
-        with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'wb') as f:
             pickle.dump(anchors,f)
         #pdb.set_trace()
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/anchor_coords.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/anchor_coords_.pickle'):
         print("make mask anchor")
         with open("anchor.txt") as f:
             x = f.read().split()
 
-        with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
 
         #pdb.set_trace()
         anchor_coords=make_coords_from_mask(anchor,0)
         #pdb.set_trace()
-        with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'wb') as f:
             pickle.dump(anchor_coords,f)
         #pdb.set_trace()
         print("finish making mask anchor")
@@ -787,12 +787,12 @@ if __name__ ==  '__main__':
 
 
     if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
-        with open('../data/ann_anchor_data/anchor_coords.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
         with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
-        pdb.set_trace()
+        #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,0)
 
@@ -816,7 +816,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
@@ -849,11 +849,11 @@ if __name__ ==  '__main__':
         #sns.set_style("whitegrid")
         sns.distplot(np.array(T_0))
         #plt.plot(np.array(T_0))
-        plt.savefig('../data/out_test/T_0_not_nor.png')
+        plt.savefig('../data/out_test/T_0_not_nor_k.png')
         plt.clf()
         sns.distplot(np.array(T_1))
         #plt.plot(np.array(T_1))
-        plt.savefig('../data/out_test/T_1_not_nor.png')
+        plt.savefig('../data/out_test/T_1_not_nor_k.png')
         plt.clf()
 
         """
@@ -898,9 +898,9 @@ if __name__ ==  '__main__':
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
-        with open('../data/ann_anchor_data/annotations_nor_iou.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/annotations_nor_iou_k.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
-        with open('../data/ann_anchor_data/max_min.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
         with open('../cfg/tiny-yolo.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)
