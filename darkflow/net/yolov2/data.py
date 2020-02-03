@@ -65,7 +65,7 @@ def _batch(self, chunk):
         with open('./{0}_{1}.pickle'.format(jpg[:6],k),mode = 'rb') as f:
             area = pickle.load(f)
         os.chdir('../../')
-        
+        k = k+1
         #pdb.set_trace()
         
         areas[obj[7], :] = area*255    
