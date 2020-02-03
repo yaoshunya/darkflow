@@ -138,7 +138,7 @@ def make_result(out,this_batch):
 
     batch_size = len(this_batch)
     
-    with open('data/ann_anchor_data/mask_anchor.pickle', 'rb') as f:
+    with open('data/ann_anchor_data/mask_anchor_.pickle', 'rb') as f:
         anchor = pickle.load(f)
     with open('data/ann_anchor_data/max_min.pickle','rb') as f:
         X = pickle.load(f)
