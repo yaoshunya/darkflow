@@ -138,9 +138,9 @@ def make_result(out,this_batch):
 
     batch_size = len(this_batch)
     
-    with open('data/ann_anchor_data/mask_anchor_.pickle', 'rb') as f:
+    with open('data/ann_anchor_data/mask_anchor_k.pickle', 'rb') as f:
         anchor = pickle.load(f)
-    with open('data/ann_anchor_data/max_min.pickle','rb') as f:
+    with open('data/ann_anchor_data/max_min_k.pickle','rb') as f:
         X = pickle.load(f)
         
     t_0_max = np.array(X[0])
@@ -158,8 +158,8 @@ def make_result(out,this_batch):
         out_conf = np.reshape(out_now[3],[-1])
         
         confidence = (1/(1+np.exp(-out_conf)))
-        trast_conf = np.where(confidence>0.6)
-        #pdb.set_trace()
+        trast_conf = np.where(confidence>0.24)
+        print(trast_conf[0])
         pre = np.zeros((1000,1000))
         #pdb.set_trace()
         if len(trast_conf[0]) == 0:
@@ -220,9 +220,9 @@ def make_result(out,this_batch):
         #pdb.set_trace()          
         prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
         cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
-    iou_return = np.mean(np.array(iou_return))
-    precision_return = np.mean(np.array(precision_return))
-    recall_return = np.mean(np.array(recall_return))
+    iou_return = np.nanmean(np.array(iou_return))
+    precision_return = np.nanmean(np.array(precision_return))
+    recall_return = np.nanmean(np.array(recall_return))
     return iou_return,precision_return,recall_return
     
     
