@@ -493,9 +493,10 @@ def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
     path = ['redidual_1','redidual_2','redidual_3','redidual_4']
-    with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
+    with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
-        mask_anchor = np.reshape(mask_anchor/255,[361,5,1000,1000])
+    mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
+    mask_ = np.reshape(mask_anchor,[1805,1000,1000])
 
     for ann_len in range(len(ann)):
 
@@ -598,60 +599,60 @@ def detect_R_T(ann,anchor,path_num):
             R_list = list()
             T_list = list()
             #pdb.set_trace()
-            
-            anchor_len_ = len(anchor[mod][q_][0])
+            anc = np.where(mask_[max_index]>0)
+            anchor_len_ = len(anc[0])
+            #anchor_len_ = len(anchor[mod][q_][0])
             ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
             my_list_ann = []
             my_list_anchor = []
-            #pdb.set_trace()
+            
             for k in range(30):
                 x = random.randint(0,ann_len_-1)
                 y = random.randint(0,anchor_len_-1)
                 my_list_ann.append(x)
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-            anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
+            anchor_stack = np.vstack((anc[0][y],anc[1][y]))
+            #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
-     
-            """
-                with open('../data/ann_anchor_data/mask_anchor.pickle',mode = 'rb') as f:
-                    anchor_ = pickle.load(f)
-                anchor_ = np.reshape(anchor_,(361,5,1000,1000))
-                img = cv2.imread('../data/VOC2012/sphere_data/001163.png', 0)
-                with open('../data/mask_ann/001163.pickle',mode = 'rb') as f:
-                    an = pickle.load(f)
-                X = np.zeros((1000,1000))
-                #pdb.set_trace()
+            #pdb.set_trace()     
+            
+            with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
+                anchor_ = pickle.load(f)
+            anchor_ = np.reshape(anchor_,(1805,1000,1000))
+            img = cv2.imread('../data/VOC2012/sphere_data/001163.png', 0)
+            with open('../data/mask_ann/001163_{0}.pickle'.format(ann_0_len),mode = 'rb') as f:
+                an = pickle.load(f)
+            #X = np.zeros((1000,1000))
+            #pdb.set_trace()
+            X = cv2.resize(an,(1000,1000))*255
+            #X[ann[0][1][0][1]] = 255
+            #X[ann[0][1][0][1]] = 255
+            #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
+            an = cv2.resize(an,(1000,1000))*255
+            #pdb.set_trace()
+            
+            an_ = anchor_[max_index]
+            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+            affine[0][2] = T[0]
+            affine[0][2] = T[1]
+            #pdb.set_trace()
+            pre=cv2.warpAffine(an_, affine, (1000,1000))
+            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.2,np.asarray(pre,np.float64),0.8,0)
+            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.2,np.asarray(X,np.float64),0.8,0)
+            cv2.imwrite('../../GoogleDrive/messigray_{0}.png'.format(ann_0_len),prediction)
 
-                X[ann[0][1][0][1]] = 255
-                #X[ann[0][1][0][1]] = 255
-                #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
-                an = cv2.resize(an,(1000,1000))
-
-                #pdb.set_trace()
-                for annn in range(5):
-                    an_ = anchor_[max_index[0],annn]
-                    affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-                    affine[0][2] = T[0]
-                    affine[0][2] = T[1]
-                    #pdb.set_trace()
-                    pre=cv2.warpAffine(an_, affine, (1000,1000))
-                    prediction = cv2.addWeighted(np.asarray(img,np.float64),0.2,np.asarray(pre,np.float64),0.8,0)
-                    prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.2,np.asarray(X,np.float64),0.8,0)
-                    cv2.imwrite('messigray_{0}.png'.format(annn),prediction)
-
-                cv2.imwrite('sample_ann.png',X)
+            #cv2.imwrite('sample_ann.png',X)
 
 
-                ###############################
-                pdb.set_trace()
-            """
+            ###############################
+            #pdb.set_trace()
+            
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
-            #pdb.set_trace()
+        pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
         #pdb.set_trace()
@@ -687,7 +688,7 @@ def make_area():
 
 if __name__ ==  '__main__':
     #make_area()
-    if not os.path.exists('../data/ann_anchor_data/mask_anchor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
@@ -701,7 +702,7 @@ if __name__ ==  '__main__':
     #----------------------------------------
     #マスクアンカーが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/anchor_coords_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/anchor_coords.pickle'):
         print("make mask anchor")
         with open("anchor.txt") as f:
             x = f.read().split()
@@ -816,7 +817,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')

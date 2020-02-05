@@ -158,7 +158,7 @@ def make_result(out,this_batch):
         out_conf = np.reshape(out_now[3],[-1])
         
         confidence = (1/(1+np.exp(-out_conf)))
-        trast_conf = np.where(confidence>0.24)
+        trast_conf = np.where(confidence>0.8)
         print(trast_conf[0])
         pre = np.zeros((1000,1000))
         #pdb.set_trace()
