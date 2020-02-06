@@ -311,8 +311,8 @@ def mask_anchor(anchor,H):
 
                 #side = int(w_*1224/488)
                 #ver = int(h_*370/488)
-                side = int(w_)/2
-                ver = int(h_)/2
+                side = int(h_)/2
+                ver = int(w_)/2
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -545,7 +545,7 @@ def detect_R_T(ann,anchor,path_num):
                     error_ = sum(d)
                     #error.append(error_)
                     #pdb.set_trace()                    
-                    if error_ < 4800:
+                    if error_ < 4500:
                     #pdb.set_trace()
                         #pdb.set_trace()
                         intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
@@ -617,11 +617,11 @@ def detect_R_T(ann,anchor,path_num):
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
             #pdb.set_trace()     
-            
+                        
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
-            img = cv2.imread('../data/VOC2012/sphere_data/001163.png', 0)
+            img = cv2.imread('../data/VOC2012/sphere_data/001163.png')
             with open('../data/mask_ann/001163_{0}.pickle'.format(ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             #X = np.zeros((1000,1000))
@@ -639,12 +639,27 @@ def detect_R_T(ann,anchor,path_num):
             affine[0][2] = T[1]
             #pdb.set_trace()
             pre=cv2.warpAffine(an_, affine, (1000,1000))
-            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.2,np.asarray(pre,np.float64),0.8,0)
-            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.2,np.asarray(X,np.float64),0.8,0)
+            where_ = np.where(pre)
+            pre_1 = np.zeros((1000,1000))
+            pre_2 = np.zeros((1000,1000))
+            pre_1[where_] = 0
+            pre_2[where_] = 200
+            pre = pre[np.newaxis]
+            pre_1 = pre_1[np.newaxis]
+            pre_2 = pre_2[np.newaxis]
+            pre = np.append(pre,pre_1,0)
+            pre = np.append(pre,pre_2,0)
+            #pdb.set_trace()
+            pre = np.transpose(pre,[1,2,0])
+            X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
+            #pre = np.tile(pre[newaxis],[])
+            #pdb.set_trace()
+            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
+            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/messigray_{0}.png'.format(ann_0_len),prediction)
 
             #cv2.imwrite('sample_ann.png',X)
-
+            
 
             ###############################
             #pdb.set_trace()
@@ -652,10 +667,10 @@ def detect_R_T(ann,anchor,path_num):
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
-        pdb.set_trace()
+        #pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
-        #pdb.set_trace()
+        pdb.set_trace()
         print("finish:{0}".format(ann_len))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
@@ -903,7 +918,7 @@ if __name__ ==  '__main__':
             pickle.dump(annotations,f)
         with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
-        with open('../cfg/tiny-yolo.cfg','a') as f:
+        with open('../cfg/tiny-yolo-ad.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)
             print("t_0_min = {0}".format(t_0_min),file = f)
             print("t_1_max = {0}".format(t_1_max),file = f)

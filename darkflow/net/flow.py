@@ -15,6 +15,7 @@ import pickle
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+import seaborn as sns
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -150,6 +151,8 @@ def make_result(out,this_batch):
     iou_return = list()
     precision_return = list()
     recall_return = list()
+    T_0_list = list()
+    T_1_list = list()
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
@@ -171,12 +174,14 @@ def make_result(out,this_batch):
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[0][j]]+1,2),t_1_max-t_1_min)+t_1_min
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[0][j]]
             dest = cv2.getRotationMatrix2D((0,0),R,1.0)
-
+            #pdb.set_trace()
             dest[0][2] = T_0
             dest[1][2] = T_1
             pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
             #pre[np.where(pre_ > 0)] = 255
             pre[np.where(anchor_now>0)] = 255
+            T_0_list.append(T_0)
+            T_1_list.append(T_1)
         #pdb.set_trace()
         with open('data/mask_ann/{0}.pickle'.format(this_batch[i][:6]),mode='rb') as f:
             mask = pickle.load(f)
@@ -186,7 +191,11 @@ def make_result(out,this_batch):
         union = np.sum(1*((mask+prediction)>0))
 
         iou_parts = overlap/union
-        
+        sns.distplot(np.array(T_0_list))
+        plt.savefig('data/out_test/T_0_test.png')
+        plt.clf()
+        sns.distplot(np.array(T_1_list))
+        plt.savefig('data/out_test/T_1_test.png')
         precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
         recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
         #pdb.set_trace()
