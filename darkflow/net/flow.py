@@ -25,87 +25,123 @@ train_stats = (
 )
 pool = ThreadPool()
 
-def _save_ckpt(self, step, loss_profile):
-    file = '{}-{}{}'
-    model = self.meta['name']
+def detect_most_near():
+    my_list_ann = []
+    my_list_anchor = []
 
-    profile = file.format(model, step, '.profile')
-    profile = os.path.join(self.FLAGS.backup, profile)
-    with open(profile, 'wb') as profile_ckpt: 
-        pickle.dump(loss_profile, profile_ckpt)
+    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
+    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
-    ckpt = file.format(model, step, '')
-    ckpt = os.path.join(self.FLAGS.backup, ckpt)
-    self.say('Checkpoint at step {}'.format(step))
-    self.saver.save(self.sess, ckpt)
+    for k in range(30):
+        x = random.randint(0,ann_len_-1)
+        y = random.randint(0,anchor_len_-1)
+        my_list_ann.append(x)
+        my_list_anchor.append(y)
 
 
-def train(self):
-    loss_ph = self.framework.placeholders
-    #pdb.set_trace()
-    loss_mva = None; profile = list()
+    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
 
-    batches = self.framework.shuffle()
-    #pdb.set_trace()
-    loss_op = self.framework.loss
-    step_plot = np.array([])
-    loss_plot = np.array([])
-    loss_plot_ = np.array([])
-    s = 0
-    for i, (x_batch, datum) in enumerate(batches):
-        if not i: self.say(train_stats.format(
-            self.FLAGS.lr, self.FLAGS.batch,
-            self.FLAGS.epoch, self.FLAGS.save
-        ))
+    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
 
-        feed_dict = {
-            loss_ph[key]: datum[key] 
-                for key in loss_ph }
-        feed_dict[self.inp] = x_batch
-        feed_dict.update(self.feed)
+    dcpoints = ann_stack - anchor_stack
+    d = np.linalg.norm(dcpoints,axis=0)
+    error_ = sum(d)
+    return X
 
-        fetches = [self.train_op, loss_op]
+def make_result(out,this_batch):
 
-        if self.FLAGS.summary:
-            fetches.append(self.summary_op)
-        #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
-        
-        fetched = self.sess.run(fetches, feed_dict)
-        
-        loss = fetched[1]
-     
+    batch_size = len(this_batch)
 
-        if loss_mva is None: loss_mva = loss
-        loss_mva = .9 * loss_mva + .1 * loss
-        step_now = self.FLAGS.load + i + 1
+    with open('data/ann_anchor_data/mask_anchor_k.pickle', 'rb') as f:
+        anchor = pickle.load(f)
+    with open('data/ann_anchor_data/max_min_k.pickle','rb') as f:
+        X = pickle.load(f)
 
-        if self.FLAGS.summary:
-            self.writer.add_summary(fetched[2], step_now)
+    with open('data/ann_anchor_data/ann_coords_4.pickle','rb') as f:
+        annotations = pickle.load(f)
+
+
+    t_0_max = np.array(X[0])
+    t_0_min = np.array(X[1])
+    t_1_max = np.array(X[2])
+    t_1_min = np.array(X[3])
+    iou_return = list()
+    precision_return = list()
+    recall_return = list()
+    T_0_list = list()
+    T_1_list = list()
+    for i in range(batch_size):
         #pdb.set_trace()
-        form = 'step {} - loss {} - moving ave loss {}'
-        self.say(form.format(step_now, loss, loss_mva))
+        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
+        image_name = this_batch[i]
 
-        #step_plot = np.append(step_plot,step_now)
-        loss_plot = np.append(loss_plot,loss)
+        out_conf = np.reshape(out_now[3],[-1])
 
-        if step_now%50 == 0:
-            step_plot = np.append(step_plot,step_now)
-            #loss_plot = np.append(loss_plot,loss)
-            loss_plot_ = np.append(loss_plot_,np.mean(loss_plot)) 
-            plt.plot(step_plot,loss_plot_)
+        confidence = (1/(1+np.exp(-out_conf)))
+        #trast_conf = np.where(confidence>0.1)
+        K = 5
+        X = np.argpartition(-confidence,K)[:K]
+        y = confidence[X]
+        indices = np.argsort(-y)
+        trast_conf = X[indices]
+        print(trast_conf[0])
+        pre = np.zeros((1000,1000))
+        #pdb.set_trace()
+        if len(trast_conf) == 0:
+            continue
+        for j in range(len(trast_conf)):
 
-            plt.xlabel("step")
-            plt.ylabel("loss")
-            plt.savefig('data/out_test/figure.png')
-            plt.clf()
-            loss_plot = np.array([])
-        profile += [(loss, loss_mva)]
+            R = np.reshape(out_now[0],[-1])[trast_conf[j]]
+            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
+            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
+            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
+            dest = cv2.getRotationMatrix2D((0,0),R,1.0)
+            #pdb.set_trace()
+            dest[0][2] = T_0
+            dest[1][2] = T_1
+            pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
+            #pre[np.where(pre_ > 0)] = 255
+            pre[np.where(anchor_now>0)] = 255
+            alpha = detect_most_near(pre,)
+            T_0_list.append(T_0)
+            T_1_list.append(T_1)
+        #pdb.set_trace()
+        with open('data/mask_ann/{0}.pickle'.format(this_batch[i][:6]),mode='rb') as f:
+            mask = pickle.load(f)
+        mask = 1*(cv2.resize(mask,(1000,1000))>0)
+        prediction = 1*(pre>0)
+        overlap = np.sum(mask*prediction)
+        union = np.sum(1*((mask+prediction)>0))
 
-        ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)
-        args = [step_now, profile]
-        if not ckpt: _save_ckpt(self, *args)
+        iou_parts = overlap/union
+        sns.distplot(np.array(T_0_list))
+        plt.savefig('data/out_test/T_0_test.png')
+        plt.clf()
+        sns.distplot(np.array(T_1_list))
+        plt.savefig('data/out_test/T_1_test.png')
+        plt.clf()
+        precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+        recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+        #pdb.set_trace()
+        iou_return.append(iou_parts)
+        precision_return.append(precision_parts)
+        recall_return.append(recall_parts)
+        pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
+        imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
 
-    if ckpt: _save_ckpt(self, *args)
+
+        #pdb.set_trace()
+        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
+        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
+    iou_return = np.nanmean(np.array(iou_return))
+    precision_return = np.nanmean(np.array(precision_return))
+    recall_return = np.nanmean(np.array(recall_return))
+    return iou_return,precision_return,recall_return
+
+
+import math
+
+
 
 def return_predict(self, im):
     assert isinstance(im, np.ndarray), \
@@ -135,113 +171,87 @@ def return_predict(self, im):
         })
     return boxesInfo
 
-def make_result(out,this_batch):
+def _save_ckpt(self, step, loss_profile):
+    file = '{}-{}{}'
+    model = self.meta['name']
 
-    batch_size = len(this_batch)
-    
-    with open('data/ann_anchor_data/mask_anchor_k.pickle', 'rb') as f:
-        anchor = pickle.load(f)
-    with open('data/ann_anchor_data/max_min_k.pickle','rb') as f:
-        X = pickle.load(f)
-        
-    t_0_max = np.array(X[0])
-    t_0_min = np.array(X[1])
-    t_1_max = np.array(X[2])
-    t_1_min = np.array(X[3])
-    iou_return = list()
-    precision_return = list()
-    recall_return = list()
-    T_0_list = list()
-    T_1_list = list()
-    for i in range(batch_size):
-        #pdb.set_trace()
-        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
-        image_name = this_batch[i]
-        
-        out_conf = np.reshape(out_now[3],[-1])
-        
-        confidence = (1/(1+np.exp(-out_conf)))
-        #trast_conf = np.where(confidence>0.1)
-        K = 5
-        X = np.argpartition(-confidence,K)[:K]
-        y = confidence[X]
-        indices = np.argsort(-y)
-        trast_conf = X[indices]
-        print(trast_conf[0])
-        pre = np.zeros((1000,1000))
-        #pdb.set_trace()
-        if len(trast_conf) == 0:
-            continue
-        for j in range(len(trast_conf)):
-            
-            R = np.reshape(out_now[0],[-1])[trast_conf[j]]
-            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
-            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
-            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
-            dest = cv2.getRotationMatrix2D((0,0),R,1.0)
-            #pdb.set_trace()
-            dest[0][2] = T_0
-            dest[1][2] = T_1
-            pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
-            #pre[np.where(pre_ > 0)] = 255
-            pre[np.where(anchor_now>0)] = 255
-            T_0_list.append(T_0)
-            T_1_list.append(T_1)
-        #pdb.set_trace()
-        with open('data/mask_ann/{0}.pickle'.format(this_batch[i][:6]),mode='rb') as f:
-            mask = pickle.load(f)
-        mask = 1*(cv2.resize(mask,(1000,1000))>0)
-        prediction = 1*(pre>0)       
-        overlap = np.sum(mask*prediction)
-        union = np.sum(1*((mask+prediction)>0))
+    profile = file.format(model, step, '.profile')
+    profile = os.path.join(self.FLAGS.backup, profile)
+    with open(profile, 'wb') as profile_ckpt:
+        pickle.dump(loss_profile, profile_ckpt)
 
-        iou_parts = overlap/union
-        sns.distplot(np.array(T_0_list))
-        plt.savefig('data/out_test/T_0_test.png')
-        plt.clf()
-        sns.distplot(np.array(T_1_list))
-        plt.savefig('data/out_test/T_1_test.png')
-        plt.clf()
-        precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
-        recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
-        #pdb.set_trace()
-        iou_return.append(iou_parts)
-        precision_return.append(precision_parts)
-        recall_return.append(recall_parts)
-        #max_indx = np.argmax(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
-        #confidence = np.max(1/(1+np.exp(np.reshape(-out_conf,[1805]))))
-        #max_anchor,max_indx = divmod(max_indx,361)
-        #R = out_now[0][max_indx][max_anchor]
-        
-        #T_0 = np.dot(np.divide(out_now[1][max_indx][max_anchor]+1,2),t_0_max-t_0_min)+t_0_min
-        #T_1 = np.dot(np.divide(out_now[2][max_indx][max_anchor]+1,2),t_1_max-t_1_min)+t_1_min
-        #pdb.set_trace()        
-        
-        #anchor_now = np.reshape(anchor,[361,5,1000,1000])[max_indx][max_anchor]
-        #src = np.array([[0.0, 0.0],[0.0, 1.0],[1.0, 0.0]], np.float32)
-        #dest = np.array([[0.0, 0.0], [np.sin(R),np.cos(R)], [np.cos(R),-np.sin(R)]], np.float32)
-        #dest = cv2.getRotationMatrix2D((0,0),R,1.0)
+    ckpt = file.format(model, step, '')
+    ckpt = os.path.join(self.FLAGS.backup, ckpt)
+    self.say('Checkpoint at step {}'.format(step))
+    self.saver.save(self.sess, ckpt)
 
-        #dest[0][2] = T_0
-        #dest[1][2] = T_1
-        #affine = cv2.getAffineTransform(src, dest)
-        
-        #anchor_now = np.tile(anchor_now[np.newaxis].astype(np.uint8),[1,1,3])
-        #pre = cv2.warpAffine(anchor_now, dest, (1000, 1000))
-        pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
-        imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))  
-        
-        
-        #pdb.set_trace()          
-        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
-        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
-    iou_return = np.nanmean(np.array(iou_return))
-    precision_return = np.nanmean(np.array(precision_return))
-    recall_return = np.nanmean(np.array(recall_return))
-    return iou_return,precision_return,recall_return
-    
-    
-import math
+
+def train(self):
+    loss_ph = self.framework.placeholders
+    #pdb.set_trace()
+    loss_mva = None; profile = list()
+
+    batches = self.framework.shuffle()
+    #pdb.set_trace()
+    loss_op = self.framework.loss
+    step_plot = np.array([])
+    loss_plot = np.array([])
+    loss_plot_ = np.array([])
+    s = 0
+    for i, (x_batch, datum) in enumerate(batches):
+        if not i: self.say(train_stats.format(
+            self.FLAGS.lr, self.FLAGS.batch,
+            self.FLAGS.epoch, self.FLAGS.save
+        ))
+
+        feed_dict = {
+            loss_ph[key]: datum[key]
+                for key in loss_ph }
+        feed_dict[self.inp] = x_batch
+        feed_dict.update(self.feed)
+
+        fetches = [self.train_op, loss_op]
+
+        if self.FLAGS.summary:
+            fetches.append(self.summary_op)
+        #self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
+
+        fetched = self.sess.run(fetches, feed_dict)
+
+        loss = fetched[1]
+
+
+        if loss_mva is None: loss_mva = loss
+        loss_mva = .9 * loss_mva + .1 * loss
+        step_now = self.FLAGS.load + i + 1
+
+        if self.FLAGS.summary:
+            self.writer.add_summary(fetched[2], step_now)
+        #pdb.set_trace()
+        form = 'step {} - loss {} - moving ave loss {}'
+        self.say(form.format(step_now, loss, loss_mva))
+
+        #step_plot = np.append(step_plot,step_now)
+        loss_plot = np.append(loss_plot,loss)
+
+        if step_now%50 == 0:
+            step_plot = np.append(step_plot,step_now)
+            #loss_plot = np.append(loss_plot,loss)
+            loss_plot_ = np.append(loss_plot_,np.mean(loss_plot))
+            plt.plot(step_plot,loss_plot_)
+
+            plt.xlabel("step")
+            plt.ylabel("loss")
+            plt.savefig('data/out_test/figure.png')
+            plt.clf()
+            loss_plot = np.array([])
+        profile += [(loss, loss_mva)]
+
+        ckpt = (i+1) % (self.FLAGS.save // self.FLAGS.batch)
+        args = [step_now, profile]
+        if not ckpt: _save_ckpt(self, *args)
+
+    if ckpt: _save_ckpt(self, *args)
 
 def min_max(x, axis=None):
     min = x.min(axis=axis, keepdims=True)
@@ -275,9 +285,9 @@ def predict(self):
         inp_feed = pool.map(lambda inp: (
             np.expand_dims(self.framework.preprocess(
                 os.path.join(inp_path, inp)), 0)), this_batch)
-        
+
         # Feed to the net
-        feed_dict = {self.inp : np.concatenate(inp_feed, 0)}    
+        feed_dict = {self.inp : np.concatenate(inp_feed, 0)}
         self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
         start = time.time()
         out = self.sess.run(self.out, feed_dict)
@@ -289,7 +299,7 @@ def predict(self):
         # Post processing
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
-        
+
         iou,precision,recall = make_result(out,this_batch)
         iou_.append(iou)
         precision_.append(precision)
@@ -333,7 +343,7 @@ def predict_(self):
                 os.path.join(inp_path, inp)), 0)), this_batch)
 
         # Feed to the net
-        feed_dict = {self.inp : np.concatenate(inp_feed, 0)}    
+        feed_dict = {self.inp : np.concatenate(inp_feed, 0)}
         self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
         start = time.time()
         self.sess = tf_debug.LocalCLIDebugWrapperSession(self.sess)
@@ -349,17 +359,17 @@ def predict_(self):
                 #pdb.set_trace()
                 dst = cv2.addWeighted(np.asarray(img,np.float64),0.1,np.asarray(im_pre,np.float64),0.9,0)
                 cv2.imwrite(os.path.join('data/out_test','test_image_{0}_{1}.png'.format(img_num,test_num)),dst)
-                
+
         """
         #pdb.set_trace()
         stop = time.time(); last = stop - start
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))
-        
+
         # Post processing
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
-        
+
         #x = make_result(out,this_batch,self.meta,j)
         """pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
