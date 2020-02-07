@@ -170,14 +170,14 @@ def make_result(out,this_batch):
         print(trast_conf[0])
         pre = np.zeros((1000,1000))
         #pdb.set_trace()
-        if len(trast_conf[0]) == 0:
+        if len(trast_conf) == 0:
             continue
-        for j in range(len(trast_conf[0])):
+        for j in range(len(trast_conf)):
             
-            R = np.reshape(out_now[0],[-1])[trast_conf[0][j]]
-            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[0][j]]+1,2),t_0_max-t_0_min)+t_0_min
-            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[0][j]]+1,2),t_1_max-t_1_min)+t_1_min
-            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[0][j]]
+            R = np.reshape(out_now[0],[-1])[trast_conf[j]]
+            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
+            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
+            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
             dest = cv2.getRotationMatrix2D((0,0),R,1.0)
             #pdb.set_trace()
             dest[0][2] = T_0
