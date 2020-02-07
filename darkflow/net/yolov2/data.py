@@ -57,7 +57,7 @@ def _batch(self, chunk):
     T = np.zeros([H*W*B,2])
     proid = np.zeros([H*W*B,C])
     prear = np.zeros([H*W,4])
-    areas = np.zeros([H*W*B,100,100])
+    areas = np.zeros([H*W*B,70,70])
     k = 0
     for obj in allobj:
 
@@ -77,7 +77,7 @@ def _batch(self, chunk):
         T[obj[7], :] = np.array(obj[2])        
         confs[obj[7]] = 1.  #物体が存在するセルの各BBの信頼度を１とする
         #pdb.set_trace()
-    areas = np.reshape(areas,[H*W,B,100,100])
+    areas = np.reshape(areas,[H*W,B,70,70])
     probs = np.reshape(probs,[H*W,B,C])
     proid = np.reshape(proid,[H*W,B,C])
     R = np.reshape(R,[H*W,B,1])

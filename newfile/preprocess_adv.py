@@ -696,13 +696,13 @@ def make_area():
                 mask[X] = 1
                 name = ann[ann_len][0][:6]
                 #pdb.set_trace()
-                mask = cv2.resize(mask,(100,100))
+                mask = cv2.resize(mask,(70,70))
                 with open('../data/mask_ann/{0}_{1}.pickle'.format(name,ann_0_len),mode = 'wb') as f:
                     pickle.dump(mask,f)
             print("finish : {0}".format(name))
 
 if __name__ ==  '__main__':
-    #make_area()
+    make_area()
     if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
@@ -802,7 +802,7 @@ if __name__ ==  '__main__':
 
 
 
-    if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
+    if not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'):
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 

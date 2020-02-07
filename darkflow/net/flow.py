@@ -161,14 +161,19 @@ def make_result(out,this_batch):
         out_conf = np.reshape(out_now[3],[-1])
         
         confidence = (1/(1+np.exp(-out_conf)))
-        trast_conf = np.where(confidence>0.8)
+        #trast_conf = np.where(confidence>0.1)
+        K = 5
+        X = np.argpartition(-confidence,K)[:K]
+        y = confidence[X]
+        indices = np.argsort(-y)
+        trast_conf = X[indices]
         print(trast_conf[0])
         pre = np.zeros((1000,1000))
         #pdb.set_trace()
         if len(trast_conf[0]) == 0:
             continue
         for j in range(len(trast_conf[0])):
-            #max_anchor,max_indx = divmod(trast_conf[0][j],361)
+            
             R = np.reshape(out_now[0],[-1])[trast_conf[0][j]]
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[0][j]]+1,2),t_0_max-t_0_min)+t_0_min
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[0][j]]+1,2),t_1_max-t_1_min)+t_1_min
@@ -196,6 +201,7 @@ def make_result(out,this_batch):
         plt.clf()
         sns.distplot(np.array(T_1_list))
         plt.savefig('data/out_test/T_1_test.png')
+        plt.clf()
         precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
         recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
         #pdb.set_trace()
@@ -303,7 +309,7 @@ def predict(self):
     print("iou:{0}".format(np.nanmean(iou_)))
     print("precision:{0}".format(np.nanmean(precision_)))
     print("recall:{0}".format(np.nanmean(recall_)))
-    pdb.set_trace()
+    #pdb.set_trace()
 def predict_(self):
     inp_path = self.FLAGS.imgdir
     all_inps = os.listdir(inp_path)

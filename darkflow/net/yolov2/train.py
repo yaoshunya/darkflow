@@ -36,7 +36,7 @@ def loss(self, net_out):
     t_1_max = m['t_1_max']
     t_1_min = m['t_1_min']
 
-    size = 100
+    size = 70
 
     anchors = mask_anchor(anchors,H)
     anchors=anchors.astype(np.float32)
@@ -93,24 +93,24 @@ def loss(self, net_out):
     #pdb.set_trace()
     #area_pred = tf.reshape(anchors,[batch_size,361,size,size,B])
     #pdb.set_trace()
-    area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
-    _areas = tf.reshape(_areas,[batch_size,H*W,size,size,B])
+    #area_pred = tf.reshape(shift_x_y(R,T_new,H,W,B,anchors),[batch_size,H*W,size,size,B])
+    #_areas = tf.reshape(_areas,[batch_size,H*W,size,size,B])
     #pdb.set_trace()
-    intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
+    #intersect = tf.math.multiply(tf.cast(area_pred,tf.float64),tf.cast(_areas,tf.float64))
 
-    intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,size*size,B))),2)
-    area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,size*size,B))),2)
-    _areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,size*size,B))),2)
+    #intersect = tf.reduce_sum(tf.math.sign(tf.reshape(intersect,(batch_size,361,size*size,B))),2)
+    #area_pred = tf.reduce_sum(tf.math.sign(tf.reshape(area_pred,(batch_size,361,size*size,B))),2)
+    #_areas = tf.reduce_sum(tf.math.sign(tf.reshape(_areas,(batch_size,361,size*size,B))),2)
 
 
-    iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10)
+    #iou = tf.math.divide(intersect,(tf.cast(_areas+area_pred,tf.float64)-intersect)+1e-10)
 
     # calculate the best IOU, set 0.0 confidence for worse boxes
 
-    best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
-    best_box = tf.to_float(best_box)
-    confs = tf.multiply(best_box, _confs)
-
+    #best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
+    #best_box = tf.to_float(best_box)
+    #confs = tf.multiply(best_box, _confs)
+    confs = _confs
     # take care of the weight terms
     conid = snoob * (1. - confs) + sconf * confs
     weight_coo = tf.concat(2 * [tf.expand_dims(confs, -1)], 3)
@@ -203,12 +203,13 @@ def mask_anchor(anchor,H):
 
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
-                resize_mask = np.resize(mask_base,(100,100))
+                #resize_mask = np.resize(mask_base,(70,70))
                 grid = get_projection_grid(b=500)
                 rot = rand_rotation_matrix(deflection=1.0)
                 grid = rotate_grid(rot,grid)
                 mask_base = project_2d_on_sphere(mask_base,grid)
-                resize_mask = resize_mask.T
+                mask_base = cv2.resize(mask_base,(70,70))
+                resize_mask = mask_base.T
                 #resize_mask = np.resize(mask_base,(100,100)).T
                 if l == 0:
                     mask = resize_mask[np.newaxis]
@@ -304,7 +305,7 @@ def condition(i,N,theta,input_fmap,l_):
 
 def update(i,N,theta,input_fmap,l_):
 
-    batch_grids = affine_grid_generator(100,100, theta[i])
+    batch_grids = affine_grid_generator(70,70, theta[i])
 
     x_s = tf.squeeze(batch_grids[:, 0:1, :, :]) #<tf.Tensor 'while/strided_slice_2:0' shape=(361, 19, 19) dtype=float32>
     y_s = tf.squeeze(batch_grids[:, 1:2, :, :]) #<tf.Tensor 'while/strided_slice_3:0' shape=(361, 19, 19) dtype=float32>
