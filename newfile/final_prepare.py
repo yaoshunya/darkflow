@@ -29,8 +29,8 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
 	if randnums is None:
 		randnums = np.random.uniform(size=(3,))
 
+	#theta,phi,z=(np.pi/2,np.pi,0.1)
 	theta,phi,z=(np.pi/2,np.pi,1)
-	#theta,phi,z=(np.pi,np.pi/2,1)
 
 	#theta,phi,z=(np.pi,2*np.pi/2.0,0.9)
 
@@ -199,7 +199,8 @@ def divide_color(image):
 			image_g = np.append(image_g,image[i].T[1].T[np.newaxis],axis=0)
 			image_r = np.append(image_r,image[i].T[2].T[np.newaxis],axis=0)
 		print(i)
-	return image_b,image_g,image_r
+		#pdb.set_trace()
+	return np.transpose(image_b,[0,2,1]),np.transpose(image_g,[0,2,1]),np.transpose(image_r,[0,2,1])
 
 def create_sphere(data,grid):
 	#pdb.set_trace()
@@ -291,7 +292,7 @@ def main():
 
 		print(i)
 		image_name = np.append(image_name,i[8:])
-
+		#pdb.set_trace()
 		t += 1
 		#print(t)
 		if t==10:
@@ -307,16 +308,18 @@ def main():
 			img_b = create_sphere(img_b,rotated_grid)
 			img_g = create_sphere(img_g,rotated_grid)
 			img_r = create_sphere(img_r,rotated_grid)
-			os.chdir('sphere_data')
+			os.chdir('sphere_sample')
 
 			for i in range(images.shape[0]):
 				#print(i)
 				image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
                                 #ipdb.set_trace()
-				#cv2.imwrite(image_name[i],image_sample.T)
+
 				#pdb.set_trace()
-				cv2.imwrite(image_name[i][1:],image_sample.T)
+				cv2.imwrite(image_name[i][1:],np.transpose(image_sample,[1,2,0]))
+				#pdb.set_trace()
+				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
 			#pdb.set_trace()
 			os.chdir('../')
@@ -325,7 +328,7 @@ def main():
 			image_name=np.array([])
 			t=0
 
-
+	"""
 	img_b,img_g,img_r=divide_color(images)
 	grid = get_projection_grid(b=500)
 	rot = rand_rotation_matrix(deflection=1.0)
@@ -340,9 +343,9 @@ def main():
 		print(i)
 		image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 		image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
-		cv2.imwrite(os.path.join('sphere_data',image_name[i]),image_sample.T)
-
-
+		cv2.imwrite(os.path.join('sphere_sample',image_name[i]),image_sample.T)
+	pdb.set_trace()
+	"""
 
 if __name__ == '__main__':
 	main()
