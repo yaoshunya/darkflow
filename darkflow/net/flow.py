@@ -16,6 +16,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 import seaborn as sns
+import random
 train_stats = (
     'Training statistics: \n'
     '\tLearning rate : {}\n'
@@ -25,28 +26,40 @@ train_stats = (
 )
 pool = ThreadPool()
 
-def detect_most_near():
-    my_list_ann = []
-    my_list_anchor = []
+def detect_most_near(pre,annotations,image_name):
+    for ann in annotations:
+        if ann[0] == image_name:
+            error_list = list()
+            if len(ann[1]) == 0:
+                return np.zeros((1000,1000,3))
+            for i in range(len(ann[1])):
 
-    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
+                my_list_ann = []
+                my_list_pre = []
+                #pdb.set_trace()
+                pre_len_ = len(np.where(pre>0)[0])
+                ann_len_ = len(ann[1][0][1][0])
+                pre_coords = np.where(pre>0) 
+                for k in range(30):
+                    x = random.randint(0,ann_len_-1)
+                    y = random.randint(0,pre_len_-1)
+                    my_list_ann.append(x)
+                    my_list_pre.append(y)
 
-    for k in range(30):
-        x = random.randint(0,ann_len_-1)
-        y = random.randint(0,anchor_len_-1)
-        my_list_ann.append(x)
-        my_list_anchor.append(y)
-
-
-    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-    dcpoints = ann_stack - anchor_stack
-    d = np.linalg.norm(dcpoints,axis=0)
-    error_ = sum(d)
-    return X
+                ann_stack = np.vstack((ann[1][0][1][0][my_list_ann],ann[1][0][1][1][my_list_ann]))
+                pre_stack = np.vstack((pre_coords[0][y],pre_coords[1][y]))
+   
+                dcpoints = ann_stack - pre_stack
+                d = np.linalg.norm(dcpoints,axis=0)
+                error = sum(d)
+                error_list.append(error)
+            min_index = np.argmin(np.array(error_list))
+            #pdb.set_trace()
+            X = np.zeros((1000,1000))
+            X[ann[1][min_index][1]] = 255
+            X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
+            return X
+    return np.zeros((1000,1000,3))
 
 def make_result(out,this_batch):
 
@@ -99,40 +112,49 @@ def make_result(out,this_batch):
             #pdb.set_trace()
             dest[0][2] = T_0
             dest[1][2] = T_1
-            pre_ = cv2.warpAffine(anchor_now,dest,(1000,1000))
-            #pre[np.where(pre_ > 0)] = 255
-            pre[np.where(anchor_now>0)] = 255
-            alpha = detect_most_near(pre,)
+            pre = cv2.warpAffine(anchor_now,dest,(1000,1000))
+            
+            #pre[np.where(anchor_now>0)] = 255
+            #pdb.set_trace()
+            pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]),[1,1,3])
+            
+            pre[:,:,1] = 0
+            pre[:,:,2]/255
+            pre[:,:,2]*200
+            
+            ann = detect_most_near(pre,annotations,image_name)
+            #pdb.set_trace()
+            #pdb.set_trace()
             T_0_list.append(T_0)
             T_1_list.append(T_1)
-        #pdb.set_trace()
-        with open('data/mask_ann/{0}.pickle'.format(this_batch[i][:6]),mode='rb') as f:
-            mask = pickle.load(f)
-        mask = 1*(cv2.resize(mask,(1000,1000))>0)
-        prediction = 1*(pre>0)
-        overlap = np.sum(mask*prediction)
-        union = np.sum(1*((mask+prediction)>0))
 
-        iou_parts = overlap/union
-        sns.distplot(np.array(T_0_list))
-        plt.savefig('data/out_test/T_0_test.png')
-        plt.clf()
-        sns.distplot(np.array(T_1_list))
-        plt.savefig('data/out_test/T_1_test.png')
-        plt.clf()
-        precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
-        recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
-        #pdb.set_trace()
-        iou_return.append(iou_parts)
-        precision_return.append(precision_parts)
-        recall_return.append(recall_parts)
-        pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
-        imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
+            #with open('data/mask_ann/{0}_{1}.pickle'.format(this_batch[i][:6],),mode='rb') as f:
+            #   mask = pickle.load(f)
+            mask = 1*(cv2.resize(ann[:,:,0],(1000,1000))>0)
+            prediction = 1*(pre[:,:,0]>0)
+            overlap = np.sum(mask*prediction)
+            union = np.sum(1*((mask+prediction)>0))
 
-
-        #pdb.set_trace()
-        prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.5,np.asarray(pre,np.float64),0.5,0)
-        cv2.imwrite(os.path.join('data/out_test','test_image_{0}.png'.format(this_batch[i][:6])),prediction)
+            iou_parts = overlap/union
+            """
+            sns.distplot(np.array(T_0_list))
+            plt.savefig('data/out_test/T_0_test.png')
+            plt.clf()
+            sns.distplot(np.array(T_1_list))
+            plt.savefig('data/out_test/T_1_test.png')
+            plt.clf()
+            """
+            precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+            recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
+            #pdb.set_trace()
+            iou_return.append(iou_parts)
+            precision_return.append(precision_parts)
+            recall_return.append(recall_parts)
+            #pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
+            imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
+            prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
+            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
+            cv2.imwrite('data/out_test/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
     iou_return = np.nanmean(np.array(iou_return))
     precision_return = np.nanmean(np.array(precision_return))
     recall_return = np.nanmean(np.array(recall_return))
