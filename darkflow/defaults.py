@@ -4,7 +4,7 @@ class argHandler(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     _descriptions = {'help, --h, -h': 'show this super helpful message and exit'}
-    
+
     def setDefaults(self):
         self.define('imgdir', './sample_img/', 'path to testing directory with images')
         self.define('binary', './bin/', 'path to .weights directory')
@@ -26,7 +26,7 @@ class argHandler(dict):
         self.define('gpuName', '/gpu:0', 'GPU device name')
         self.define('lr', 1e-5, 'learning rate')
         self.define('keep',20,'Number of most recent training results to save')
-        self.define('batch', 5, 'batch size')
+        self.define('batch', 20, 'batch size')
         self.define('epoch', 1000, 'number of epoch')
         self.define('save', 2000, 'save checkpoint every ? training examples')
         self.define('demo', '', 'demo on webcam')
@@ -39,7 +39,7 @@ class argHandler(dict):
     def define(self, argName, default, description):
         self[argName] = default
         self._descriptions[argName] = description
-    
+
     def help(self):
         print('Example usage: flow --imgdir sample_img/ --model cfg/yolo.cfg --load bin/yolo.weights')
         print('')
