@@ -270,7 +270,7 @@ def linspace(b, grid_type='Driscoll-Healy'):
 def main():
 
 	os.chdir('../data/VOC2012')
-	files = glob.glob("JPEGLite/*")
+	files = glob.glob("PNGImagesTrain/*")
 
 	#images = []
 	images = np.array([])
@@ -291,7 +291,7 @@ def main():
 			images = np.append(images,img[np.newaxis],axis=0)
 
 		print(i)
-		image_name = np.append(image_name,i[8:])
+		image_name = np.append(image_name,i[15:])
 		#pdb.set_trace()
 		t += 1
 		#print(t)
@@ -308,7 +308,7 @@ def main():
 			img_b = create_sphere(img_b,rotated_grid)
 			img_g = create_sphere(img_g,rotated_grid)
 			img_r = create_sphere(img_r,rotated_grid)
-			os.chdir('sphere_sample')
+			os.chdir('sphere_data_another')
 
 			for i in range(images.shape[0]):
 				#print(i)
@@ -317,7 +317,7 @@ def main():
                                 #ipdb.set_trace()
 
 				#pdb.set_trace()
-				cv2.imwrite(image_name[i][1:],np.transpose(image_sample,[1,2,0]))
+				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
 				#pdb.set_trace()
 				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
