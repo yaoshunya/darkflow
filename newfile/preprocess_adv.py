@@ -702,7 +702,7 @@ def make_area():
             print("finish : {0}".format(name))
 
 if __name__ ==  '__main__':
-    make_area()
+    #make_area()
     if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
@@ -832,7 +832,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
@@ -854,36 +854,46 @@ if __name__ ==  '__main__':
 
         T_0 = []
         T_1 = []
+        R = []
         #pdb.set_trace()
         for i in range(len(dumps)):
             for j in range(len(dumps[i][1][0])):
                 #pdb.set_trace()
                 T_0.append(dumps[i][1][0][j][2][0])
                 T_1.append(dumps[i][1][0][j][2][1])
-            print(i)
+                #pdb.set_trace()
+                R.append(dumps[i][1][0][j][1])
+            #print(i)
         #pdb.set_trace()
         #sns.set_style("whitegrid")
-        sns.distplot(np.array(T_0))
+        T_0 = np.array(T_0)
+        T_1 = np.array(T_1)
+        R = np.array(R)
+        plt.hist(T_0)
         #plt.plot(np.array(T_0))
-        plt.savefig('../data/out_test/T_0_not_nor_k.png')
+        plt.savefig('../../GoogleDrive/T_0_not_nor_k.png')
         plt.clf()
-        sns.distplot(np.array(T_1))
+        plt.hist(T_1)
         #plt.plot(np.array(T_1))
-        plt.savefig('../data/out_test/T_1_not_nor_k.png')
+        plt.savefig('../../GoogleDrive/T_1_not_nor_k.png')
         plt.clf()
-
-        """
-        s = pd.Series()
-        pdb.set_trace()
-        sns.pairplot(s, hue="species", size=2.5)
-        plt.savefig('../data/out_test/T_sample.png')
-        """
-        """
-        pdb.set_trace()
-        """
+        plt.hist(R)
+        plt.savefig('../../GoogleDrive/R_.png')
+        plt.clf()
         #pdb.set_trace()
-        
-        print("start detectiong normalization!!")
+        T_0_mean = np.mean(T_0)
+        T_0_var = np.var(T_0)
+
+        T_1_mean = np.mean(T_1)
+        T_1_var = np.var(T_1)
+
+        R_mean = np.mean(R)
+        R_var = np.var(R)
+
+        print('T_0   mean:{0}  var:{1}'.format(T_0_mean,T_0_var))
+        print('T_1   mean:{0}  var:{1}'.format(T_1_mean,T_1_var))
+        print('R     mean:{0}  var:{1}'.format(R_mean,R_var))
+
         """
         for i in range(len(annotations)):
             for j in range(len(annotations[i][1][0])):

@@ -30,6 +30,7 @@ def detect_most_near(pre,annotations,image_name):
     for ann in annotations:
         if ann[0] == image_name:
             error_list = list()
+            iou_list = list()
             if len(ann[1]) == 0:
                 return np.zeros((1000,1000,3))
             for i in range(len(ann[1])):
@@ -52,14 +53,31 @@ def detect_most_near(pre,annotations,image_name):
                 dcpoints = ann_stack - pre_stack
                 d = np.linalg.norm(dcpoints,axis=0)
                 error = sum(d)
-                error_list.append(error)
-            min_index = np.argmin(np.array(error_list))
+                if error < 10000:
+                    pre_ = np.zeros((1000,1000))
+                    pre_[pre[:,:,0]>0] = 1
+                    pre_ = np.reshape(pre_,[-1])
+                    X = np.zeros((1000,1000))
+                    X[ann[1][i][1]] = 1
+                    cm = confusion_matrix(np.reshape(X,[-1]),pre_)
+
+                    TP = cm[0][0]
+                    FP = cm[0][1]
+                    FN = cm[1][0]
+                    TP = cm[1][1]
+                    iou = TP/(TP+FP+FN)
+                    #pdb.set_trace()
+                else:
+                    iou = 0
+                #error_list.append(error)
+                iou_list.append(iou)
+            max_index = np.argmax(np.array(iou_list))
             #pdb.set_trace()
             X = np.zeros((1000,1000))
-            X[ann[1][min_index][1]] = 255
+            X[ann[1][max_index][1]] = 255
             X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
-            return X
-    return np.zeros((1000,1000,3))
+            return X,iou_list[max_index]
+    return np.zeros((1000,1000,3)),0
 
 def make_result(out,this_batch):
 
@@ -83,6 +101,7 @@ def make_result(out,this_batch):
     recall_return = list()
     T_0_list = list()
     T_1_list = list()
+    R_list = list()
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
@@ -92,19 +111,23 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))
         #trast_conf = np.where(confidence>0.1)
-        K = 5
+        K = 7
         X = np.argpartition(-confidence,K)[:K]
         y = confidence[X]
         indices = np.argsort(-y)
         trast_conf = X[indices]
-        print(trast_conf[0])
+        #print(trast_conf[0])
         pre = np.zeros((1000,1000))
         #pdb.set_trace()
         if len(trast_conf) == 0:
             continue
         for j in range(len(trast_conf)):
-
+            #pdb.set_trace()
+            if confidence[trast_conf[j]] < 0.4:
+                continue
+            print(confidence[trast_conf[j]])    
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
+            #print(R)
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
@@ -122,28 +145,22 @@ def make_result(out,this_batch):
             pre[:,:,2]/255
             pre[:,:,2]*200
             
-            ann = detect_most_near(pre,annotations,image_name)
+            ann,iou_parts = detect_most_near(pre,annotations,image_name)
             #pdb.set_trace()
             #pdb.set_trace()
             T_0_list.append(T_0)
             T_1_list.append(T_1)
-
+            R_list.append(R)
             #with open('data/mask_ann/{0}_{1}.pickle'.format(this_batch[i][:6],),mode='rb') as f:
             #   mask = pickle.load(f)
+
             mask = 1*(cv2.resize(ann[:,:,0],(1000,1000))>0)
             prediction = 1*(pre[:,:,0]>0)
+            """
             overlap = np.sum(mask*prediction)
             union = np.sum(1*((mask+prediction)>0))
-
-            iou_parts = overlap/union
             """
-            sns.distplot(np.array(T_0_list))
-            plt.savefig('data/out_test/T_0_test.png')
-            plt.clf()
-            sns.distplot(np.array(T_1_list))
-            plt.savefig('data/out_test/T_1_test.png')
-            plt.clf()
-            """
+            #iou_parts = overlap/union
             precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
             recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
             #pdb.set_trace()
@@ -158,7 +175,15 @@ def make_result(out,this_batch):
     iou_return = np.nanmean(np.array(iou_return))
     precision_return = np.nanmean(np.array(precision_return))
     recall_return = np.nanmean(np.array(recall_return))
-    return iou_return,precision_return,recall_return
+    #plt.hist(np.array(T_0_list))
+    #plt.savefig('../GoogleDrive/T_0_test.png')
+    #plt.clf()
+    #plt.hist(np.array(T_1_list))
+    #plt.savefig('../GoogleDrive/T_1_test.png')
+    #plt.clf()
+    #plt.hist(np.array(R))
+    #plt.savefig('../GoogleDrive/R.png')
+    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
 
 
 import math
@@ -297,7 +322,9 @@ def predict(self):
     iou_ = list()
     precision_ = list()
     recall_ = list()
-
+    T_0_ = list()
+    T_1_ = list()
+    R_ = list()
     for j in range(n_batch):
         from_idx = j * batch
         to_idx = min(from_idx + batch, len(all_inps))
@@ -322,22 +349,37 @@ def predict(self):
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
 
-        iou,precision,recall = make_result(out,this_batch)
+        iou,precision,recall,T_0,T_1,R = make_result(out,this_batch)
         iou_.append(iou)
         precision_.append(precision)
         recall_.append(recall)
-        #pdb.set_trace()
-        """
+        T_0_.append(T_0)
+        T_1_.append(T_1)
+        R_.append(R)
+    #pdb.set_trace() 
+    plt.hist(np.array(T_0_),color=['blue','blue','blue','blue'])
+    plt.savefig('../GoogleDrive/T_0.png')
+    plt.clf()
+    plt.hist(np.array(T_1_),color=['blue','blue','blue','blue'])
+    plt.savefig('../GoogleDrive/T_1.png')
+    plt.clf()
+    plt.hist(np.array(R_),color=['blue','blue','blue','blue'])
+    plt.savefig('../GoogleDrive/R.png')
+    plt.clf()
+    #pdb.set_trace()
+    """
         pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
                prediction, os.path.join(inp_path, this_batch[i])))(*p),
             enumerate(out))
-        """
-        stop = time.time(); last = stop - start
+    """
+        #stop = time.time(); last = stop - start
 
         # Timing
+    """
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))
+    """
     print("iou:{0}".format(np.nanmean(iou_)))
     print("precision:{0}".format(np.nanmean(precision_)))
     print("recall:{0}".format(np.nanmean(recall_)))

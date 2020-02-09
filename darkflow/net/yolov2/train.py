@@ -38,8 +38,8 @@ def loss(self, net_out):
 
     size = 70
 
-    anchors = mask_anchor(anchors,H)
-    anchors=anchors.astype(np.float32)
+    #anchors = mask_anchor(anchors,H)
+    #anchors=anchors.astype(np.float32)
 
     print('{} loss hyper-parameters:'.format(m['model']))
     print('\tH       = {}'.format(H))
@@ -147,7 +147,7 @@ def loss(self, net_out):
 
     loss = tf.concat([loss,difal],3)
 
-    loss = tf.reshape(loss, [-1, H*W*B*(1 + C)])
+    loss = tf.reshape(loss, [-1, H*W*B*(2 + 1 + C)])
 
     loss = tf.reduce_sum(loss, 1)
     self.loss = .5 * tf.reduce_mean(loss)
