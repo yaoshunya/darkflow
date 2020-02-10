@@ -38,7 +38,7 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
 	V=(
 		np.sin(phi)*r_,
 		np.cos(phi)*r_,
-		np.sqrt(2.0-z)
+		np.sqrt(z)
 	)
 	#pdb.set_trace()
 
@@ -200,7 +200,7 @@ def divide_color(image):
 			image_r = np.append(image_r,image[i].T[2].T[np.newaxis],axis=0)
 		print(i)
 		#pdb.set_trace()
-	return np.transpose(image_b,[0,2,1]),np.transpose(image_g,[0,2,1]),np.transpose(image_r,[0,2,1])
+	return np.transpose(image_b,[0,1,2]),np.transpose(image_g,[0,1,2]),np.transpose(image_r,[0,1,2])
 
 def create_sphere(data,grid):
 	#pdb.set_trace()
@@ -318,7 +318,7 @@ def main():
 
 				#pdb.set_trace()
 				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
-				#cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
+				cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
 				pdb.set_trace()
 				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
