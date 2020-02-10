@@ -146,8 +146,8 @@ def loss(self, net_out):
     loss = tf.multiply(loss, wght)
 
     loss = tf.concat([loss,difal],3)
-
-    loss = tf.reshape(loss, [-1, H*W*B*(2 + 1 + C)])
+    #pdb.set_trace()
+    loss = tf.reshape(loss, [-1, H*W*B*(3 + 1 + C)])
 
     loss = tf.reduce_sum(loss, 1)
     self.loss = .5 * tf.reduce_mean(loss)

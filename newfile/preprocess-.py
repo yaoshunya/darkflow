@@ -621,11 +621,11 @@ def detect_R_T(ann,anchor,path_num):
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
             #pdb.set_trace()     
-            """            
+                        
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
-            img = cv2.imread('../data/VOC2012/sphere_data/001163.png')
+            img = cv2.imread('../data/VOC2012/sphere_data_another/001163.png')
             with open('../data/mask_ann/001163_{0}.pickle'.format(ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             #X = np.zeros((1000,1000))
@@ -660,21 +660,21 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/messigray_{0}.png'.format(ann_0_len),prediction)
+            cv2.imwrite('../../GoogleDrive/messigray_{0}_dif.png'.format(ann_0_len),prediction)
 
             #cv2.imwrite('sample_ann.png',X)
             
 
             ###############################
             #pdb.set_trace()
-            """
+            
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
         #pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
-        #pdb.set_trace()
+        pdb.set_trace()
         print("finish:{0}".format(ann_len))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
@@ -744,7 +744,7 @@ if __name__ ==  '__main__':
     #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
     #
-    if not os.path.exists('../data/ann_anchor_data/ann_coords_1_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
         print("make mask annotations_1")
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体
@@ -836,14 +836,14 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_dif.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor_dif_.pickle'):
 
         dumps = list()
-        dumps_1,cur_dir = load_data('../data/redidual_1_dif')
+        dumps_1,cur_dir = load_data('../data/redidual_1')
         os.chdir(cur_dir)
-        dumps_2,cur_dir = load_data('../data/redidual_2_dif')
+        dumps_2,cur_dir = load_data('../data/redidual_2')
         os.chdir(cur_dir)
-        dumps_3,cur_dir = load_data('../data/redidual_3_dif')
+        dumps_3,cur_dir = load_data('../data/redidual_3')
         os.chdir(cur_dir)
         dumps += dumps_1
         dumps += dumps_2
@@ -865,16 +865,16 @@ if __name__ ==  '__main__':
                 T_0.append(dumps[i][1][0][j][2][0])
                 T_1.append(dumps[i][1][0][j][2][1])
             print(i)
-        #pdb.set_trace()
+        pdb.set_trace()
         #sns.set_style("whitegrid")
-        sns.distplot(np.array(T_0))
+        #sns.distplot(np.array(T_0))
         #plt.plot(np.array(T_0))
-        plt.savefig('../data/out_test/T_0_not_nor_dif.png')
-        plt.clf()
-        sns.distplot(np.array(T_1))
+        #plt.savefig('../data/out_test/T_0_not_nor_dif.png')
+        #plt.clf()
+        #sns.distplot(np.array(T_1))
         #plt.plot(np.array(T_1))
-        plt.savefig('../data/out_test/T_1_not_nor_dif.png')
-        plt.clf()
+        #plt.savefig('../data/out_test/T_1_not_nor_dif.png')
+        #plt.clf()
 
         """
         s = pd.Series()

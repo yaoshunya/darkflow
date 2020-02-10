@@ -318,7 +318,8 @@ def main():
 
 				#pdb.set_trace()
 				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
-				#pdb.set_trace()
+                                cv2.imwrite('../../../newfile/test_sample.png',np.tranpose(image_sample,[1,2,0]))
+				pdb.set_trace()
 				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
 			#pdb.set_trace()
