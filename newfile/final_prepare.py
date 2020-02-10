@@ -270,7 +270,7 @@ def linspace(b, grid_type='Driscoll-Healy'):
 def main():
 
 	os.chdir('../data/VOC2012')
-	files = glob.glob("PNGImagesTrain/*")
+	files = glob.glob("JPEGImages/*")
 
 	#images = []
 	images = np.array([])
@@ -295,7 +295,7 @@ def main():
 		#pdb.set_trace()
 		t += 1
 		#print(t)
-		if t==10:
+		if t==5:
 
 			img_b,img_g,img_r = divide_color(images)
 
@@ -304,10 +304,10 @@ def main():
 			rot = rand_rotation_matrix(deflection=1.0)
 
 			rotated_grid = rotate_grid(rot,grid)
-
-			img_b = create_sphere(img_b,rotated_grid)
-			img_g = create_sphere(img_g,rotated_grid)
-			img_r = create_sphere(img_r,rotated_grid)
+			#pdb.set_trace()
+			img_b = create_sphere(np.transpose(img_b,[0,2,1]),rotated_grid)
+			img_g = create_sphere(np.transpose(img_g,[0,2,1]),rotated_grid)
+			img_r = create_sphere(np.transpose(img_r,[0,2,1]),rotated_grid)
 			os.chdir('sphere_data_another')
 
 			for i in range(images.shape[0]):
@@ -318,7 +318,7 @@ def main():
 
 				#pdb.set_trace()
 				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
-				cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
+				#cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
 				pdb.set_trace()
 				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
