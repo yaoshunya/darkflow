@@ -551,9 +551,9 @@ def detect_R_T(ann,anchor,path_num):
                         #pdb.set_trace()
                         
                         mask_anchor[anchor_len][anchor_0_len][mask_anchor[anchor_len][anchor_0_len]>0] = 1
-                        pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(100,100)),[-1])
+                        pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(200,200)),[-1])
                         pre_[pre_>0] = 1
-                        mask_ann = cv2.resize(mask_annotation,(100,100))
+                        mask_ann = cv2.resize(mask_annotation,(200,200))
                         mask_ann[mask_ann>0] = 1
                         mask_ann = np.reshape(mask_ann,[-1])
                         #pdb.set_trace()
@@ -824,26 +824,6 @@ if __name__ ==  '__main__':
     if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-
-        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        #pdb.set_trace()
-        print("start detect the redidual between anchors and annotations")
-        ann_1 = detect_R_T(ann_1,anchor,0)
-
-        print("finish 1")
-
-        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,1)
-
-        print("finish 2")
-
-        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,2)
-
-        print("finish 3")
 
         with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)

@@ -76,6 +76,7 @@ def detect_most_near(pre,annotations,image_name):
             X = np.zeros((1000,1000))
             X[ann[1][max_index][1]] = 255
             X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
+            pdb.set_trace()
             return X,iou_list[max_index]
     return np.zeros((1000,1000,3)),0
 
@@ -111,7 +112,7 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))
         #trast_conf = np.where(confidence>0.1)
-        K = 7
+        K = 5
         X = np.argpartition(-confidence,K)[:K]
         y = confidence[X]
         indices = np.argsort(-y)

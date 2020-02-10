@@ -551,9 +551,9 @@ def detect_R_T(ann,anchor,path_num):
                         #pdb.set_trace()
                         
                         mask_anchor[anchor_len][anchor_0_len][mask_anchor[anchor_len][anchor_0_len]>0] = 1
-                        pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(100,100)),[-1])
+                        pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(200,200)),[-1])
                         pre_[pre_>0] = 1
-                        mask_ann = cv2.resize(mask_annotation,(100,100))
+                        mask_ann = cv2.resize(mask_annotation,(200,200))
                         mask_ann[mask_ann>0] = 1
                         mask_ann = np.reshape(mask_ann,[-1])
                         #pdb.set_trace()
@@ -634,7 +634,7 @@ def detect_R_T(ann,anchor,path_num):
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
             #pdb.set_trace()     
-            """                       
+            """                    
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -676,9 +676,9 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('sample_img/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-
+            """
             #cv2.imwrite('sample_ann.png',X)
-            """     
+                 
 
             ###############################
             #pdb.set_trace()
@@ -825,13 +825,6 @@ if __name__ ==  '__main__':
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
-        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        #pdb.set_trace()
-        print("start detect the redidual between anchors and annotations")
-        ann_1 = detect_R_T(ann_1,anchor,0)
-
-        print("finish 1")
 
         with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
@@ -839,17 +832,7 @@ if __name__ ==  '__main__':
 
         print("finish 2")
 
-        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,2)
-
-        print("finish 3")
-
-        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,3)
-
-        print("finish 4")
+        
 
     if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
 

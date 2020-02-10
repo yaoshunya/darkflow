@@ -270,7 +270,7 @@ def linspace(b, grid_type='Driscoll-Healy'):
 def main():
 
 	os.chdir('../data/VOC2012')
-	files = glob.glob("JPEGImages/*")
+	files = glob.glob("PNGImagesTrain/*")
 
 	#images = []
 	images = np.array([])
@@ -318,7 +318,7 @@ def main():
 
 				#pdb.set_trace()
 				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
-				#cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
+				cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
 				pdb.set_trace()
 				#cv2.imwrite(image_name[i][1:],image_sample.T)
 				#cv2.waitKey(0)
