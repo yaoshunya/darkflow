@@ -497,8 +497,14 @@ def detect_R_T(ann,anchor,path_num):
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
-    mask_ = np.reshape(mask_anchor,[1805,1000,1000])
-
+    mask__ = np.reshape(mask_anchor,[1805,1000,1000])
+    mask_ = list()
+    for i in range(1805):
+        mask_parts = cv2.resize(mask__[i],(250,250))
+        mask_parts[mask_parts>0] = 1
+        mask_.append(mask_parts)
+    mask_ = np.array(mask_)
+    
     for ann_len in range(len(ann)):
 
         img_name = ann[ann_len][0]
@@ -519,66 +525,23 @@ def detect_R_T(ann,anchor,path_num):
 
             mask_annotation = np.zeros([1000,1000])
             mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
-            for anchor_len in range(len(anchor)):
-                error_parts = list()
-                iou_parts = list()
-                X_parts = list()
-                for anchor_0_len in range(len(anchor[anchor_len])):
-                    my_list_ann = []
-                    my_list_anchor = []
-                    
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
-
-                    for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
-                        my_list_ann.append(x)
-                        my_list_anchor.append(y)
-
-                    
-                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-                    error_ = np.sum(calic_dist_np(np.array(ann_stack).T,np.array(anchor_stack).T))   
-                    if error_ < 100000:
-                    
-                        mask_anchor[anchor_len][anchor_0_len][mask_anchor[anchor_len][anchor_0_len]>0] = 1
-                        pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(200,200)),[-1])
-                        pre_[pre_>0] = 1
-                        mask_ann = cv2.resize(mask_annotation,(200,200))
-                        mask_ann[mask_ann>0] = 1
-                        mask_ann = np.reshape(mask_ann,[-1])
-                        #pdb.set_trace()
-                        cm = confusion_matrix(mask_ann,pre_)
-
-                        TP = cm[0][0]
-                        FP = cm[0][1]
-                        FN = cm[1][0]
-                        TP = cm[1][1]
-                        iou_0 = TP/(TP+FP+FN)
-                        
-                    else:
-                        iou_0 = 0
-                    iou_parts.append(iou_0)
-                    #X_parts.append(error_)
-                    #print(iou_0)
-                #print(iou_parts)
-                iou.append(iou_parts)
-                #X.append(X_parts)
-                
+            mask_annotation = cv2.resize(mask_annotation,(250,250))
+            mask_annotation[mask_annotation>0] = 1
+            mask_annotation = np.tile(mask_annotation[np.newaxis],[1805,1,1])
+            or_ = np.logical_or(mask_,mask_annotation).astype(np.int)
+            and_ = np.logical_and(mask_,mask_annotation).astype(np.int)
+            or_ = np.sum(np.sum(or_,1),1)
+            and_ = np.sum(np.sum(and_,1),1)
+            iou = and_/or_
             #pdb.set_trace()
-            iou = np.array(iou)
-            #X = np.array(X)
-            max_index = list()
             """
             for i in range(iou.shape[0]):
                 max_index.append(np.argmin(iou[i]))
             """
             #pdb.set_trace()
-            max_index = np.argmax(np.reshape(iou,[-1]))
+            max_index = np.argmax(iou)
             print(max_index)
-            q_,mod = divmod(max_index,361)
+            #q_,mod = divmod(max_index,361)
             #pdb.set_trace()
             R_list = list()
             T_list = list()
@@ -621,11 +584,13 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             
             an_ = anchor_[max_index]
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-            affine[0][2] = T[0]
-            affine[0][2] = T[1]
-            #pdb.set_trace()
+            affine = np.array([[1,0,T[1]],[0,1,T[0]]])
+            #affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+            #affine[0][2] = T[0]
+            #affine[0][2] = T[1]
             pre=cv2.warpAffine(an_, affine, (1000,1000))
+            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+            pre = cv2.warpAffine(an_,affine,(1000,1000))
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -643,10 +608,10 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('sample_img/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-
+            cv2.imwrite('../../GoogleDrive/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            """
             #cv2.imwrite('sample_ann.png',X)
-            """     
+                 
 
             ###############################
             #pdb.set_trace()

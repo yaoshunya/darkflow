@@ -191,7 +191,7 @@ def make_result(out,this_batch):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            cv2.imwrite('data/out_test/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            #cv2.imwrite('data/out_test/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
    
     return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,iou_label,precision_label,recall_label
 
@@ -290,11 +290,11 @@ def predict(self):
     #[recall_label_mean.append(mean(recall_label_all[i])) for i in range(6)]
     
     with open('data/out_data/iou_label.pickle',mode = 'wb') as f:
-            pickle.dump(iou_label,f) 
+            pickle.dump(iou_label_all,f) 
     with open('data/out_data/precision_label.pickle',mode='wb') as f:
-            pickle.dump(precision_label,f)
+            pickle.dump(precision_label_all,f)
     with open('data/out_data/recall_label.pickle',mode='wb') as f:
-            pickle.dump(recall_label,f)
+            pickle.dump(recall_label_all,f)
     with open('data/out_data/R.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
     with open('data/out_data/T_0.pickle',mode='wb') as f:
