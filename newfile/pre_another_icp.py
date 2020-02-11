@@ -1,8 +1,8 @@
 import os
 import sys
 import glob
-import matplotlib as mpl
-mpl.use('Agg')
+#import matplotlib as mpl
+#mpl.use('Agg')
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
@@ -17,9 +17,9 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 #  ICP parameters
 EPS = 0.00001
-MAXITER = 100
+MAX_ITER = 100
 
-show_animation = False
+show_animation = True
 def load_data(path):
 
     cur_dir = os.getcwd()
@@ -38,12 +38,12 @@ def load_data(path):
         annotations_ += annotations_parts
     return annotations_,cur_dir
 
-def ICP_matching(ppoints, cpoints):
+def icp_matching(previous_points, current_points):
     """
     Iterative Closest Point matching
     - input
-    ppoints: 2D points in the previous frame
-    cpoints: 2D points in the current frame
+    previous_points: 2D points in the previous frame
+    current_points: 2D points in the current frame
     - output
     R: Rotation matrix
     T: Translation vector
@@ -53,44 +53,43 @@ def ICP_matching(ppoints, cpoints):
     dError = 1000.0
     preError = 1000.0
     count = 0
-    ppoints = np.array([ppoints[1],ppoints[0]])
-    cpoints = np.array([cpoints[1],cpoints[0]])
+
     while dError >= EPS:
         count += 1
 
         if show_animation:  # pragma: no cover
-
             plt.cla()
-            plt.plot(ppoints[0, :], ppoints[1, :], ".r")
-            plt.plot(cpoints[0, :], cpoints[1, :], ".b")
+            # for stopping simulation with the esc key.
+            plt.gcf().canvas.mpl_connect('key_release_event',
+                    lambda event: [exit(0) if event.key == 'escape' else None])
+            plt.plot(previous_points[0, :], previous_points[1, :], ".r")
+            plt.plot(current_points[0, :], current_points[1, :], ".b")
             plt.plot(0.0, 0.0, "xr")
             plt.axis("equal")
-            plt.pause(1.0)
-            plt.savefig("icp_test_{0}.png".format(count))
+            plt.pause(0.1)
 
-        inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
-        Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
+        indexes, error = nearest_neighbor_association(previous_points, current_points)
+        Rt, Tt = svd_motion_estimation(previous_points[:, indexes], current_points)
 
         # update current points
-        cpoints = (Rt @ cpoints) + Tt[:, np.newaxis]
+        current_points = (Rt @ current_points) + Tt[:, np.newaxis]
 
         H = update_homogeneous_matrix(H, Rt, Tt)
 
         dError = abs(preError - error)
         preError = error
-        #print("Residual:", error)
+        print("Residual:", error)
 
         if dError <= EPS:
-            #print("Converge", error, dError, count)
+            print("Converge", error, dError, count)
             break
-        elif MAXITER <= count:
+        elif MAX_ITER <= count:
             print("Not Converge...", error, dError, count)
             break
-    #pdb.set_trace()
+
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
     R = math.asin(R[0][0])
-
     return R, T
 
 
@@ -113,46 +112,35 @@ def update_homogeneous_matrix(Hin, R, T):
         return Hin @ H
 
 
-def nearest_neighbor_assosiation(ppoints, cpoints):
+def nearest_neighbor_association(previous_points, current_points):
 
     # calc the sum of residual errors
-    dcpoints = ppoints - cpoints
-    d = np.linalg.norm(dcpoints, axis=0)
+    delta_points = previous_points - current_points
+    d = np.linalg.norm(delta_points, axis=0)
     error = sum(d)
 
     # calc index with nearest neighbor assosiation
-    inds = []
-    for i in range(cpoints.shape[1]):
-        minid = -1
-        mind = float("inf")
-        for ii in range(ppoints.shape[1]):
-            d = np.linalg.norm(ppoints[:, ii] - cpoints[:, i])
+    d = np.linalg.norm(np.repeat(current_points, previous_points.shape[1], axis=1)
+                       - np.tile(previous_points, (1, current_points.shape[1])), axis=0)
+    indexes = np.argmin(d.reshape(current_points.shape[1], previous_points.shape[1]), axis=1)
 
-            if mind >= d:
-                mind = d
-                minid = ii
-
-        inds.append(minid)
-
-    return inds, error
+    return indexes, error
 
 
-def SVD_motion_estimation(ppoints, cpoints):
+def svd_motion_estimation(previous_points, current_points):
+    pm = np.mean(previous_points, axis=1)
+    cm = np.mean(current_points, axis=1)
 
-    pm = np.mean(ppoints, axis=1)
-    cm = np.mean(cpoints, axis=1)
+    p_shift = previous_points - pm[:, np.newaxis]
+    c_shift = current_points - cm[:, np.newaxis]
 
-    pshift = ppoints - pm[:, np.newaxis]
-    cshift = cpoints - cm[:, np.newaxis]
-
-    W = cshift @ pshift.T
+    W = c_shift @ p_shift.T
     u, s, vh = np.linalg.svd(W)
 
     R = (u @ vh).T
     t = pm - (R @ cm)
 
     return R, t
-
 
 
 
@@ -492,7 +480,7 @@ def make_coords_from_mask(data,flag):
 def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
-    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
+    path = ['redidual_1_an','redidual_2_an','redidual_3_an','redidual_4_an']
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
@@ -526,16 +514,16 @@ def detect_R_T(ann,anchor,path_num):
                     my_list_ann = []
                     my_list_anchor = []
                     
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
+                    anchor_len_0 = len(anchor[anchor_len][anchor_0_len][0])
+                    ann_len_0 = len(ann[ann_len][1][ann_0_len][1][0])
 
                     for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
+                        x = random.randint(0,ann_len_0-1)
+                        y = random.randint(0,anchor_len_0-1)
                         my_list_ann.append(x)
                         my_list_anchor.append(y)
 
-                    
+                    #pdb.set_trace()
                     ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
 
                     anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
@@ -603,7 +591,7 @@ def detect_R_T(ann,anchor,path_num):
                 """    
             #pdb.set_trace()
             iou = np.array(iou)
-
+            #pdb.set_trace()
             max_index = list()
             """
             for i in range(iou.shape[0]):
@@ -617,6 +605,7 @@ def detect_R_T(ann,anchor,path_num):
             T_list = list()
             #pdb.set_trace()
             anc = np.where(mask_[max_index]>0)
+            #pdb.set_trace()
             anchor_len_ = len(anc[0])
             #anchor_len_ = len(anchor[mod][q_][0])
             ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
@@ -630,9 +619,10 @@ def detect_R_T(ann,anchor,path_num):
                 my_list_ann.append(x)
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-            anchor_stack = np.vstack((anc[0][y],anc[1][y]))
+            anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
+            #pdb.set_trace()
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
-            R, T = ICP_matching(ann_stack,anchor_stack)
+            R, T = icp_matching(ann_stack,anchor_stack)
             #pdb.set_trace()     
             """                       
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
@@ -681,7 +671,7 @@ def detect_R_T(ann,anchor,path_num):
             """     
 
             ###############################
-            #pdb.set_trace()
+            pdb.set_trace()
             
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
@@ -821,7 +811,7 @@ if __name__ ==  '__main__':
 
 
 
-    if not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'):
+    if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
@@ -851,7 +841,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
