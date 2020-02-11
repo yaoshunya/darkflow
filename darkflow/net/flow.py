@@ -250,6 +250,7 @@ def predict(self):
     for j in range(n_batch):
         from_idx = j * batch
         to_idx = min(from_idx + batch, len(all_inps))
+        print(i)
         i = i+1
         # collect images input in the batch
         this_batch = all_inps[from_idx:to_idx]
