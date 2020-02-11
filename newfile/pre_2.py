@@ -1,8 +1,8 @@
 import os
 import sys
 import glob
-import matplotlib as mpl
-mpl.use('Agg')
+#import matplotlib as mpl
+#mpl.use('Agg')
 import matplotlib.pylab as plt
 import seaborn as sns
 import numpy as np
@@ -16,7 +16,7 @@ import shutil
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 #  ICP parameters
-EPS = 0.00001
+EPS = 0.0001
 MAXITER = 100
 
 show_animation = False
@@ -507,6 +507,7 @@ def detect_R_T(ann,anchor,path_num):
 
             error = list()
             iou = list()
+            X = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
             annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
@@ -521,7 +522,7 @@ def detect_R_T(ann,anchor,path_num):
             for anchor_len in range(len(anchor)):
                 error_parts = list()
                 iou_parts = list()
-
+                X_parts = list()
                 for anchor_0_len in range(len(anchor[anchor_len])):
                     my_list_ann = []
                     my_list_anchor = []
@@ -539,12 +540,8 @@ def detect_R_T(ann,anchor,path_num):
                     ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
 
                     anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints,axis=0)
-                    error_ = sum(d)
-                                      
-                    if error_ < 3000:
+                    error_ = np.sum(calic_dist_np(np.array(ann_stack).T,np.array(anchor_stack).T))   
+                    if error_ < 100000:
                     
                         mask_anchor[anchor_len][anchor_0_len][mask_anchor[anchor_len][anchor_0_len]>0] = 1
                         pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(200,200)),[-1])
@@ -560,51 +557,25 @@ def detect_R_T(ann,anchor,path_num):
                         FN = cm[1][0]
                         TP = cm[1][1]
                         iou_0 = TP/(TP+FP+FN)
-                        """
-                        intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
-                        union = mask_anchor[anchor_len][anchor_0_len] + mask_annotation
-                        intersection = len(np.where(intersection>0)[0])
-                        union = len(np.where(union>0)[0])
-                        iou_0 = intersection/union
-                        """
+                        
                     else:
                         iou_0 = 0
                     iou_parts.append(iou_0)
+                    #X_parts.append(error_)
                     #print(iou_0)
                 #print(iou_parts)
                 iou.append(iou_parts)
-                """                
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
-
-                    my_list_ann = []
-                    my_list_anchor = []
-
-                    for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
-                        my_list_ann.append(x)
-                        my_list_anchor.append(y)
-                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints, axis=0)
-                    
-                    error_0 = sum(d)
-                    error_parts.append(error_0)
-
-                error.append(error_parts)
-                """    
+                #X.append(X_parts)
+                
             #pdb.set_trace()
             iou = np.array(iou)
-
+            #X = np.array(X)
             max_index = list()
             """
             for i in range(iou.shape[0]):
                 max_index.append(np.argmin(iou[i]))
             """
+            #pdb.set_trace()
             max_index = np.argmax(np.reshape(iou,[-1]))
             print(max_index)
             q_,mod = divmod(max_index,361)
@@ -629,8 +600,7 @@ def detect_R_T(ann,anchor,path_num):
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
-            #pdb.set_trace()     
-            """                       
+            """               
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -638,22 +608,24 @@ def detect_R_T(ann,anchor,path_num):
             with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             #pdb.set_trace()
+            print(T[0])
+            print(T[1])
             X = np.zeros((1000,1000))
             X[ann[ann_len][1][ann_0_len][1]] = 255
-            #pdb.set_trace()
-            #X = cv2.resize(an,(1000,1000))*255
-            #X[ann[0][1][0][1]] = 255
-            #X[ann[0][1][0][1]] = 255
-            #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
+            
             an = cv2.resize(an,(1000,1000))*255
-            #pdb.set_trace()
+            
             
             an_ = anchor_[max_index]
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-            affine[0][2] = T[0]
-            affine[0][2] = T[1]
-            #pdb.set_trace()
+            affine = np.array([[1,0,T[1]],[0,1,T[0]]])
+            
             pre=cv2.warpAffine(an_, affine, (1000,1000))
+            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+            
+            pre=cv2.warpAffine(an_, affine, (1000,1000))
+            
+            
+            
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -674,11 +646,11 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('sample_img/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
 
             #cv2.imwrite('sample_ann.png',X)
-            """     
+            #pdb.set_trace()     
 
             ###############################
             #pdb.set_trace()
-            
+            """
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
@@ -696,6 +668,22 @@ def detect_R_T(ann,anchor,path_num):
             pickle.dump(dumps,f)
 
     return 0
+    
+def calic_dist_np(x,y):
+    try:
+        assert isinstance(x,np.ndarray)
+    except AssertionError:
+        x = np.array(x)
+    try:
+        assert isinstance(y,np.ndarray)
+    except AssertionError:
+        y = np.array(x)
+    assert x.shape == y.shape
+    z = x.reshape(x.shape[0],1,x.shape[1]) - y.reshape(1,x.shape[0],x.shape[1])
+    zz = np.sum(z**2, axis=2)
+    zz = np.sqrt(zz)
+    return zz
+
 
 def make_area():
     file = ['ann_coords_1','ann_coords_2','ann_coords_3','ann_coords_4']

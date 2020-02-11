@@ -521,7 +521,7 @@ def detect_R_T(ann,anchor,path_num):
             for anchor_len in range(len(anchor)):
                 error_parts = list()
                 iou_parts = list()
-
+                X_parts = list()
                 for anchor_0_len in range(len(anchor[anchor_len])):
                     my_list_ann = []
                     my_list_anchor = []
@@ -539,17 +539,9 @@ def detect_R_T(ann,anchor,path_num):
                     ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
 
                     anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints,axis=0)
-                    error_ = sum(d)
-                    #error.append(error_)
-                    #pdb.set_trace() 
-                    #print(error_)                   
-                    if error_ < 3000:
-                    #pdb.set_trace()
-                        #pdb.set_trace()
-                        
+                    error_ = np.sum(calic_dist_np(np.array(ann_stack).T,np.array(anchor_stack).T))   
+                    if error_ < 100000:
+                    
                         mask_anchor[anchor_len][anchor_0_len][mask_anchor[anchor_len][anchor_0_len]>0] = 1
                         pre_ = np.reshape(cv2.resize(mask_anchor[anchor_len][anchor_0_len],(200,200)),[-1])
                         pre_[pre_>0] = 1
@@ -564,51 +556,25 @@ def detect_R_T(ann,anchor,path_num):
                         FN = cm[1][0]
                         TP = cm[1][1]
                         iou_0 = TP/(TP+FP+FN)
-                        """
-                        intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
-                        union = mask_anchor[anchor_len][anchor_0_len] + mask_annotation
-                        intersection = len(np.where(intersection>0)[0])
-                        union = len(np.where(union>0)[0])
-                        iou_0 = intersection/union
-                        """
+                        
                     else:
                         iou_0 = 0
                     iou_parts.append(iou_0)
+                    #X_parts.append(error_)
                     #print(iou_0)
                 #print(iou_parts)
                 iou.append(iou_parts)
-                """                
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
-
-                    my_list_ann = []
-                    my_list_anchor = []
-
-                    for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
-                        my_list_ann.append(x)
-                        my_list_anchor.append(y)
-                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints, axis=0)
-                    
-                    error_0 = sum(d)
-                    error_parts.append(error_0)
-
-                error.append(error_parts)
-                """    
+                #X.append(X_parts)
+                
             #pdb.set_trace()
             iou = np.array(iou)
-
+            #X = np.array(X)
             max_index = list()
             """
             for i in range(iou.shape[0]):
                 max_index.append(np.argmin(iou[i]))
             """
+            #pdb.set_trace()
             max_index = np.argmax(np.reshape(iou,[-1]))
             print(max_index)
             q_,mod = divmod(max_index,361)
@@ -633,7 +599,6 @@ def detect_R_T(ann,anchor,path_num):
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
-            #pdb.set_trace()     
             """                       
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
@@ -700,7 +665,20 @@ def detect_R_T(ann,anchor,path_num):
             pickle.dump(dumps,f)
 
     return 0
-
+def calic_dist_np(x,y):
+    try:
+        assert isinstance(x,np.ndarray)
+    except AssertionError:
+        x = np.array(x)
+    try:
+        assert isinstance(y,np.ndarray)
+    except AssertionError:
+        y = np.array(x)
+    assert x.shape == y.shape
+    z = x.reshape(x.shape[0],1,x.shape[1]) - y.reshape(1,x.shape[0],x.shape[1])
+    zz = np.sum(z**2, axis=2)
+    zz = np.sqrt(zz)
+    return zz
 def make_area():
     file = ['ann_coords_1','ann_coords_2','ann_coords_3','ann_coords_4']
     for i in file:
