@@ -40,7 +40,7 @@ def detect_most_near(pre,annotations,image_name):
                 #pdb.set_trace()
                 pre_len_ = len(np.where(pre>0)[0])
                 ann_len_ = len(ann[1][0][1][0])
-                pre_coords = np.where(pre>0) 
+                pre_coords = np.where(pre>0)
                 for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,pre_len_-1)
@@ -49,7 +49,7 @@ def detect_most_near(pre,annotations,image_name):
 
                 ann_stack = np.vstack((ann[1][0][1][0][my_list_ann],ann[1][0][1][1][my_list_ann]))
                 pre_stack = np.vstack((pre_coords[0][y],pre_coords[1][y]))
-   
+
                 dcpoints = ann_stack - pre_stack
                 d = np.linalg.norm(dcpoints,axis=0)
                 error = sum(d)
@@ -100,6 +100,9 @@ def make_result(out,this_batch):
     iou_return = list()
     precision_return = list()
     recall_return = list()
+    iou_label =  [[] for i in range(6)]
+    precision_label = [[] for i in range(6)]
+    recall_label = [[] for i in range(6)]
     T_0_list = list()
     T_1_list = list()
     R_list = list()
@@ -126,7 +129,7 @@ def make_result(out,this_batch):
             #pdb.set_trace()
             if confidence[trast_conf[j]] < 0.4:
                 continue
-            print(confidence[trast_conf[j]])    
+            print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
             #print(R)
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
@@ -137,45 +140,44 @@ def make_result(out,this_batch):
             dest[0][2] = T_0
             dest[1][2] = T_1
             pre = cv2.warpAffine(anchor_now,dest,(1000,1000))
-            
+
+            where_pre = np.where(pre>0)
+            x_ = len(where_pre[0])/2
+            y_ = len(where_pre[1])/2
+            label = where_pre_label(x_,y_)
             #pre[np.where(anchor_now>0)] = 255
             #pdb.set_trace()
             pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]),[1,1,3])
-            
+
             pre[:,:,1] = 0
             pre[:,:,2]/255
             pre[:,:,2]*200
-            
+
             ann,iou_parts = detect_most_near(pre,annotations,image_name)
-            #pdb.set_trace()
-            #pdb.set_trace()
             T_0_list.append(T_0)
             T_1_list.append(T_1)
             R_list.append(R)
-            #with open('data/mask_ann/{0}_{1}.pickle'.format(this_batch[i][:6],),mode='rb') as f:
-            #   mask = pickle.load(f)
 
             mask = 1*(cv2.resize(ann[:,:,0],(1000,1000))>0)
             prediction = 1*(pre[:,:,0]>0)
-            """
-            overlap = np.sum(mask*prediction)
-            union = np.sum(1*((mask+prediction)>0))
-            """
-            #iou_parts = overlap/union
+
             precision_parts = precision_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
             recall_parts = recall_score(np.reshape(mask,[-1]),np.reshape(prediction,[-1]))
-            #pdb.set_trace()
+
             iou_return.append(iou_parts)
             precision_return.append(precision_parts)
             recall_return.append(recall_parts)
-            #pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]).astype(np.uint8),[1,1,3])
+            iou_label[label-1].append(iou_parts)
+            precision_label[label-1].append(precision_parts)
+            recall_label[label-1].append(recall_parts)
+
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
             cv2.imwrite('data/out_test/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
-    iou_return = np.nanmean(np.array(iou_return))
-    precision_return = np.nanmean(np.array(precision_return))
-    recall_return = np.nanmean(np.array(recall_return))
+    #iou_return = np.nanmean(np.array(iou_return))
+    #precision_return = np.nanmean(np.array(precision_return))
+    #recall_return = np.nanmean(np.array(recall_return))
     #plt.hist(np.array(T_0_list))
     #plt.savefig('../GoogleDrive/T_0_test.png')
     #plt.clf()
@@ -184,11 +186,27 @@ def make_result(out,this_batch):
     #plt.clf()
     #plt.hist(np.array(R))
     #plt.savefig('../GoogleDrive/R.png')
-    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
+    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,iou_label,precision_label,recall_label
 
 
 import math
 
+def where_pre_label(x,y):
+    if x < 500:
+        if y <325:
+            label = 1
+        elif 325 <= y < 650:
+            label = 2
+        else:
+            label = 3
+    else:
+        if y <325:
+            label = 4
+        elif 325 <= y < 650:
+            label = 5
+        else:
+            label = 6
+    return label
 
 
 def return_predict(self, im):
@@ -326,6 +344,11 @@ def predict(self):
     T_0_ = list()
     T_1_ = list()
     R_ = list()
+
+    iou_label_all =  [[] for i in range(6)]
+    precision_label_all = [[] for i in range(6)]
+    recall_label_all = [[] for i in range(6)]
+
     for j in range(n_batch):
         from_idx = j * batch
         to_idx = min(from_idx + batch, len(all_inps))
@@ -350,24 +373,28 @@ def predict(self):
         self.say('Post processing {} inputs ...'.format(len(inp_feed)))
         start = time.time()
 
-        iou,precision,recall,T_0,T_1,R = make_result(out,this_batch)
-        iou_.append(iou)
-        precision_.append(precision)
-        recall_.append(recall)
-        T_0_.append(T_0)
-        T_1_.append(T_1)
-        R_.append(R)
-    #pdb.set_trace() 
-    plt.hist(np.array(T_0_),color=['blue','blue','blue','blue'])
+        iou,precision,recall,T_0,T_1,R,iou_label,precision_label,recall_label = make_result(out,this_batch)
+        iou_.extend(iou)
+        precision_.extend(precision)
+        recall_.extend(recall)
+        T_0_.extend(T_0)
+        T_1_.extend(T_1)
+        R_.extend(R)
+
+        [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
+        [precision_label_all[i].extend(precision_label[i]) for i in range(6)]
+        [recall_label_all[i].extend(recall_label[i]) for i in range(6)]
+
+    plt.hist(np.array(T_0_),color='blue')
     plt.savefig('../GoogleDrive/T_0.png')
     plt.clf()
-    plt.hist(np.array(T_1_),color=['blue','blue','blue','blue'])
+    plt.hist(np.array(T_1_),color='blue')
     plt.savefig('../GoogleDrive/T_1.png')
     plt.clf()
-    plt.hist(np.array(R_),color=['blue','blue','blue','blue'])
+    plt.hist(np.array(R_),color='blue')
     plt.savefig('../GoogleDrive/R.png')
     plt.clf()
-    #pdb.set_trace()
+
     """
         pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
@@ -376,7 +403,6 @@ def predict(self):
     """
         #stop = time.time(); last = stop - start
 
-        # Timing
     """
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))

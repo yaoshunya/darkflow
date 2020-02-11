@@ -492,7 +492,7 @@ def make_coords_from_mask(data,flag):
 def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
-    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
+    path = ['redidual_1_an','redidual_2_an','redidual_3_an','redidual_4_an']
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
@@ -630,7 +630,7 @@ def detect_R_T(ann,anchor,path_num):
                 my_list_ann.append(x)
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-            anchor_stack = np.vstack((anc[0][y],anc[1][y]))
+            anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
             R, T = ICP_matching(ann_stack,anchor_stack)
             #pdb.set_trace()     
@@ -831,7 +831,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
 
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
