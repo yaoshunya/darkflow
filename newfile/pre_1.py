@@ -15,6 +15,7 @@ import random
 import shutil
 import pandas as pd
 from sklearn.metrics import confusion_matrix
+from statistics import mean
 #  ICP parameters
 EPS = 0.00001
 MAXITER = 100
@@ -86,10 +87,13 @@ def ICP_matching(ppoints, cpoints):
         elif MAXITER <= count:
             print("Not Converge...", error, dError, count)
             break
-
+    #pdb.set_trace()
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
-    R = math.asin(R[0][0])
+    try:
+        R = math.asin(R[0][0])
+    except:
+        R = math.asin(1.0)
 
     return R, T
 
@@ -503,6 +507,7 @@ def detect_R_T(ann,anchor,path_num):
         mask_parts[mask_parts>0] = 1
         mask_.append(mask_parts)
     mask_ = np.array(mask_)
+
     for ann_len in range(len(ann)):
 
         img_name = ann[ann_len][0]
@@ -512,7 +517,6 @@ def detect_R_T(ann,anchor,path_num):
 
             error = list()
             iou = list()
-            X = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
             annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
@@ -535,14 +539,12 @@ def detect_R_T(ann,anchor,path_num):
 
             max_index = np.argmax(iou)
             print(max_index)
-            q_,mod = divmod(max_index,361)
-            #pdb.set_trace()
+            
             R_list = list()
             T_list = list()
             #pdb.set_trace()
-            anc = np.where(mask_[max_index]>0)
+            anc = np.where(mask__[max_index]>0)
             anchor_len_ = len(anc[0])
-            #anchor_len_ = len(anchor[mod][q_][0])
             ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
             my_list_ann = []
@@ -556,8 +558,12 @@ def detect_R_T(ann,anchor,path_num):
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
+
             R, T = ICP_matching(ann_stack,anchor_stack)
             """
+            print(T)
+            #pdb.set_trace()
+            
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -565,24 +571,22 @@ def detect_R_T(ann,anchor,path_num):
             with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             #pdb.set_trace()
-            print(T[0])
-            print(T[1])
             X = np.zeros((1000,1000))
             X[ann[ann_len][1][ann_0_len][1]] = 255
-
+            #pdb.set_trace()
+            #X = cv2.resize(an,(1000,1000))*255
+            #X[ann[0][1][0][1]] = 255
+            #X[ann[0][1][0][1]] = 255
+            #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
             an = cv2.resize(an,(1000,1000))*255
-
+            #pdb.set_trace()
 
             an_ = anchor_[max_index]
             affine = np.array([[1,0,T[1]],[0,1,T[0]]])
-
             pre=cv2.warpAffine(an_, affine, (1000,1000))
             affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-
-            pre=cv2.warpAffine(an_, affine, (1000,1000))
-
-
-
+            pre = cv2.warpAffine(an_,affine,(1000,1000))
+            #pre = an_
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -600,10 +604,10 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('sample_img/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-
+            #cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             #cv2.imwrite('sample_ann.png',X)
-            #pdb.set_trace()
+            
 
             ###############################
             #pdb.set_trace()
@@ -640,6 +644,7 @@ def calic_dist_np(x,y):
     zz = np.sum(z**2, axis=2)
     zz = np.sqrt(zz)
     return zz
+
 
 def make_area():
     file = ['ann_coords_1','ann_coords_2','ann_coords_3','ann_coords_4']
@@ -765,9 +770,10 @@ if __name__ ==  '__main__':
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
-
-        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
+        #pdb.set_trace()
+        print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,1)
 
         print("finish 2")

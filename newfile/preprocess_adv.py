@@ -854,11 +854,11 @@ if __name__ ==  '__main__':
     if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
 
         dumps = list()
-        dumps_1,cur_dir = load_data('../data/redidual_1')
+        dumps_1,cur_dir = load_data('../data/redidual_1_an')
         os.chdir(cur_dir)
-        dumps_2,cur_dir = load_data('../data/redidual_2')
+        dumps_2,cur_dir = load_data('../data/redidual_2_an')
         os.chdir(cur_dir)
-        dumps_3,cur_dir = load_data('../data/redidual_3')
+        dumps_3,cur_dir = load_data('../data/redidual_3_an')
         os.chdir(cur_dir)
         dumps += dumps_1
         dumps += dumps_2
@@ -883,20 +883,21 @@ if __name__ ==  '__main__':
                 #pdb.set_trace()
                 R.append(dumps[i][1][0][j][1])
             #print(i)
-        pdb.set_trace()
+        #pdb.set_trace()
         #sns.set_style("whitegrid")
         T_0 = np.array(T_0)
         T_1 = np.array(T_1)
         R = np.array(R)
-        plt.hist(T_0,range(-100,100))
+        #pdb.set_trace()
+        plt.hist(T_0)
         #plt.plot(np.array(T_0))
         plt.savefig('../../GoogleDrive/T_0_not_nor_k.png')
         plt.clf()
-        plt.hist(T_1,range(-100,100))
+        plt.hist(T_1)
         #plt.plot(np.array(T_1))
         plt.savefig('../../GoogleDrive/T_1_not_nor_k.png')
         plt.clf()
-        plt.hist(R,bins=20)
+        plt.hist(R)
         plt.savefig('../../GoogleDrive/R_.png')
         plt.clf()
         #pdb.set_trace()
@@ -912,7 +913,7 @@ if __name__ ==  '__main__':
         print('T_0   mean:{0}  var:{1}'.format(T_0_mean,T_0_var))
         print('T_1   mean:{0}  var:{1}'.format(T_1_mean,T_1_var))
         print('R     mean:{0}  var:{1}'.format(R_mean,R_var))
-
+        pdb.set_trace()
         """
         for i in range(len(annotations)):
             for j in range(len(annotations[i][1][0])):
@@ -942,8 +943,8 @@ if __name__ ==  '__main__':
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
-        
-        with open('../data/ann_anchor_data/annotations_nor_iou_k.pickle',mode = 'wb') as f:
+        """ 
+        with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
         with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
@@ -954,7 +955,7 @@ if __name__ ==  '__main__':
             print("t_1_max = {0}".format(t_1_max),file = f)
             print("t_1_min = {0}".format(t_1_min),file = f)
         #make_area()
-        
+        """
         """
         annotations = glob.glob('../data/redidual_4/*.pickle')
         for i,file in enumerate(annotations):

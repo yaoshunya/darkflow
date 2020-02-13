@@ -19,4 +19,41 @@ if __name__ == "__main__":
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1.pickle","rb") as f:
         T_1 = pickle.load(f)
-    pdb.set_trace()
+    #pdb.set_trace()
+
+    iou_mean = list()
+    precision_mean = list()
+    recall_mean = list()
+    plt.xlabel('label')
+    plt.ylabel('IoU')
+    for i in range(6):
+        x = [i+1 for j in range(len(iou_label[i]))]
+        plt.scatter(x,iou_label[i],color = 'blue')
+        iou_mean.append(np.mean(iou_label[i]))
+        plt.scatter(i+1,iou_mean[i],color = 'red')
+    plt.savefig('../../GoogleDrive/iou_label.png')
+    plt.clf()
+    
+    plt.xlabel('label')
+    plt.ylabel('Precision')
+    for i in range(6):
+        x = [i+1 for j in range(len(precision_label[i]))]
+        plt.scatter(x,precision_label[i],color = 'blue')
+        precision_mean.append(np.mean(precision_label[i]))
+        plt.scatter(i+1,precision_mean[i],color = 'red')
+    plt.savefig('../../GoogleDrive/precision_label.png')
+    plt.clf()
+
+    plt.xlabel('label')
+    plt.ylabel('Recall')
+    for i in range(6):
+        x = [i+1 for j in range(len(recall_label[i]))]
+        plt.scatter(x,recall_label[i],color = 'blue')
+        recall_mean.append(np.mean(recall_label[i]))
+        plt.scatter(i+1,recall_mean[i],color = 'red')
+    plt.savefig('../../GoogleDrive/recall_label.png')
+    plt.clf()
+    
+    print('iou:{0}'.format(iou_mean))
+    print('precision:{0}'.format(precision_mean))
+    print('recall:{0}'.format(recall_mean))

@@ -87,10 +87,13 @@ def ICP_matching(ppoints, cpoints):
         elif MAXITER <= count:
             print("Not Converge...", error, dError, count)
             break
-
+    #pdb.set_trace()
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
-    R = math.asin(R[0][0])
+    try:
+        R = math.asin(R[0][0])
+    except:
+        R = math.asin(1.0)
 
     return R, T
 
@@ -536,14 +539,12 @@ def detect_R_T(ann,anchor,path_num):
 
             max_index = np.argmax(iou)
             print(max_index)
-            #q_,mod = divmod(max_index,361)
-            #pdb.set_trace()
+            
             R_list = list()
             T_list = list()
             #pdb.set_trace()
-            anc = np.where(mask_[max_index]>0)
+            anc = np.where(mask__[max_index]>0)
             anchor_len_ = len(anc[0])
-            #anchor_len_ = len(anchor[mod][q_][0])
             ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
             my_list_ann = []
@@ -556,11 +557,13 @@ def detect_R_T(ann,anchor,path_num):
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
-            #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
+            
 
             R, T = ICP_matching(ann_stack,anchor_stack)
-            #pdb.set_trace()
             """
+            print(T)
+            #pdb.set_trace()
+            
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -580,12 +583,10 @@ def detect_R_T(ann,anchor,path_num):
 
             an_ = anchor_[max_index]
             affine = np.array([[1,0,T[1]],[0,1,T[0]]])
-            #affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-            #affine[0][2] = T[0]
-            #affine[0][2] = T[1]
             pre=cv2.warpAffine(an_, affine, (1000,1000))
             affine = cv2.getRotationMatrix2D((0,0),R,1.0)
             pre = cv2.warpAffine(an_,affine,(1000,1000))
+            #pre = an_
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -603,14 +604,14 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            """
+            #cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             #cv2.imwrite('sample_ann.png',X)
-
+            
 
             ###############################
             #pdb.set_trace()
-
+            """
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)

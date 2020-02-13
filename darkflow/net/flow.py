@@ -144,7 +144,7 @@ def make_result(out,this_batch):
             #print(R)
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
-            
+            #pdb.set_trace()
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
             
             affine = np.array([[1,0,T_1],[0,1,T_0]])
@@ -156,18 +156,22 @@ def make_result(out,this_batch):
             pre=cv2.warpAffine(pre, affine, (1000,1000))
             
             
+            where_ = np.where(pre)
+            pre_1 = np.zeros((1000,1000))
+            pre_2 = np.zeros((1000,1000))
+            pre_1[where_] = 0
+            pre_2[where_] = 200
+            pre = pre[np.newaxis]
+            pre_1 = pre_1[np.newaxis]
+            pre_2 = pre_2[np.newaxis]
+            pre = np.append(pre,pre_1,0)
+            pre = np.append(pre,pre_2,0)
             
-            where_pre = np.where(pre>0)
-            x_ = mean(where_pre[0])/2
-            y_ = mean(where_pre[1])/2
-            label = where_pre_label(x_,y_)
+            pre = np.transpose(pre,[1,2,0])
             
-            pre = np.tile(np.transpose(pre[np.newaxis],[1,2,0]),[1,1,3])
-
-            pre[:,:,1] = 0
-            pre[:,:,2]/255
-            pre[:,:,2]*200
-            #pdb.set_trace()
+            x_ = mean(where_[0])
+            y_ = mean(where_[1])
+            label = where_pre_label(x_,y_,where_)
             ann,iou_parts = detect_most_near(pre,annotations,image_name)
             if iou_parts == 100:
                 continue
@@ -191,14 +195,14 @@ def make_result(out,this_batch):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            #cv2.imwrite('data/out_test/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
    
     return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,iou_label,precision_label,recall_label
 
 
 import math
 
-def where_pre_label(x,y):
+def where_pre_label(x,y,where_pre):
     if x < 500:
         if y <400:
             label = 1
@@ -213,6 +217,7 @@ def where_pre_label(x,y):
             label = 5
         else:
             label = 6
+    #pdb.set_trace()
     return label
 
 
