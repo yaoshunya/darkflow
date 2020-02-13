@@ -9,10 +9,10 @@ import matplotlib.pylab as plt
 if __name__ == "__main__":
     with open("../data/out_data/iou_label.pickle","rb") as f:
         iou_label = pickle.load(f)
-    with open("../data/out_data/precision_label.pickle","rb") as f:
-        precision_label = pickle.load(f)
-    with open("../data/out_data/recall_label.pickle","rb") as f:
-        recall_label = pickle.load(f)
+    with open("../data/out_data/precision.pickle","rb") as f:
+        precision = pickle.load(f)
+    with open("../data/out_data/recall.pickle","rb") as f:
+        recall = pickle.load(f)
     with open("../data/out_data/R.pickle","rb") as f:
         R = pickle.load(f)
     with open("../data/out_data/T_0.pickle","rb") as f:
@@ -22,8 +22,7 @@ if __name__ == "__main__":
     #pdb.set_trace()
 
     iou_mean = list()
-    precision_mean = list()
-    recall_mean = list()
+
     plt.xlabel('label')
     plt.ylabel('IoU')
     for i in range(6):
@@ -31,9 +30,9 @@ if __name__ == "__main__":
         plt.scatter(x,iou_label[i],color = 'blue')
         iou_mean.append(np.mean(iou_label[i]))
         plt.scatter(i+1,iou_mean[i],color = 'red')
-    plt.savefig('../../GoogleDrive/iou_label.png')
+    plt.savefig('../data/iou_label.png')
     plt.clf()
-    
+    """
     plt.xlabel('label')
     plt.ylabel('Precision')
     for i in range(6):
@@ -53,7 +52,10 @@ if __name__ == "__main__":
         plt.scatter(i+1,recall_mean[i],color = 'red')
     plt.savefig('../../GoogleDrive/recall_label.png')
     plt.clf()
-    
+    """
+    #pdb.set_trace()
+    precision_mean = np.mean(np.array(precision))
+    recall_mean = np.mean(np.array(recall))
     print('iou:{0}'.format(iou_mean))
     print('precision:{0}'.format(precision_mean))
     print('recall:{0}'.format(recall_mean))
