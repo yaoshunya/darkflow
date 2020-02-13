@@ -19,6 +19,15 @@ if __name__ == "__main__":
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1.pickle","rb") as f:
         T_1 = pickle.load(f)
+    with open("../data/out_data/precision_045.pickle","rb") as f:
+        precision_045 = pickle.load(f)
+    with open("../data/out_data/recall_045.pickle","rb") as f:
+        recall_045 = pickle.load(f)
+    with open("../data/out_data/precision_03.pickle","rb") as f:
+        precision_03 = pickle.load(f)
+    with open("../data/out_data/recall_03.pickle","rb") as f:
+        recall_03 = pickle.load(f)
+
     #pdb.set_trace()
 
     iou_mean = list()
@@ -53,9 +62,28 @@ if __name__ == "__main__":
     plt.savefig('../../GoogleDrive/recall_label.png')
     plt.clf()
     """
+    X = [0.3,0.45,0.6]
     #pdb.set_trace()
     precision_mean = np.mean(np.array(precision))
     recall_mean = np.mean(np.array(recall))
+    precision_045_mean = np.mean(np.array(precision_045))
+    recall_045_mean = np.mean(np.array(recall_045))
+    precision_03_mean = np.mean(np.array(precision_03))
+    recall_03_mean = np.mean(np.array(recall_03))
+
+
+    plt.plot(X,[precision_03_mean,precision_045_mean,precision_mean])
+    plt.xlabel('confidence')
+    plt.ylabel('precision')
+    plt.savefig('../data/precision.png')
+    plt.clf()
+
+    plt.plot(X,[recall_03_mean,recall_045_mean,recall_mean])
+    plt.xlabel('confidence')
+    plt.ylabel('recall')
+    plt.savefig('../data/recall.png')
+    plt.clf()
+
     print('iou:{0}'.format(iou_mean))
     print('precision:{0}'.format(precision_mean))
     print('recall:{0}'.format(recall_mean))
