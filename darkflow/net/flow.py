@@ -176,11 +176,19 @@ def make_result(out,this_batch):
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
             cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
-    #pdb.set_trace()
-    
-        for i in range(len(true_list)):
-            del ann_num[1][true_list[i]]
-       
+        #pdb.set_trace()
+        count_list = list()
+        for i in true_list:
+            if count_list.count(i)>0:
+                pass
+            else:
+                count_list.append(i)
+        #pdb.set_trace()
+        count_list.sort(reverse=True)
+
+        for i in count_list:
+                del ann_num[1][i]
+            
         [predict.append(0) for i in range(len(ann_num[1]))]
         [true.append(1) for i in range(len(ann_num[1]))] 
         precision = precision_score(np.array(predict),np.array(true))
