@@ -71,7 +71,7 @@ if __name__ == "__main__":
     precision_03_mean = np.mean(np.array(precision_03))
     recall_03_mean = np.mean(np.array(recall_03))
 
-
+    pdb.set_trace()
     plt.plot(X,[precision_03_mean,precision_045_mean,precision_mean])
     plt.xlabel('confidence')
     plt.ylabel('precision')
