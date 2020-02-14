@@ -7,11 +7,11 @@ mpl.use('Agg')
 import matplotlib.pylab as plt
 
 if __name__ == "__main__":
-    with open("../data/out_data/iou_label.pickle","rb") as f:
+    with open("../data/out_data/iou_label_01.pickle","rb") as f:
         iou_label = pickle.load(f)
-    with open("../data/out_data/precision.pickle","rb") as f:
+    with open("../data/out_data/precision_01.pickle","rb") as f:
         precision = pickle.load(f)
-    with open("../data/out_data/recall.pickle","rb") as f:
+    with open("../data/out_data/recall_01.pickle","rb") as f:
         recall = pickle.load(f)
     with open("../data/out_data/R.pickle","rb") as f:
         R = pickle.load(f)
@@ -19,9 +19,9 @@ if __name__ == "__main__":
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1.pickle","rb") as f:
         T_1 = pickle.load(f)
-    with open("../data/out_data/precision_045.pickle","rb") as f:
+    with open("../data/out_data/precision_05.pickle","rb") as f:
         precision_045 = pickle.load(f)
-    with open("../data/out_data/recall_045.pickle","rb") as f:
+    with open("../data/out_data/recall_05.pickle","rb") as f:
         recall_045 = pickle.load(f)
     with open("../data/out_data/precision_03.pickle","rb") as f:
         precision_03 = pickle.load(f)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     plt.savefig('../../GoogleDrive/recall_label.png')
     plt.clf()
     """
-    X = [0.3,0.45,0.6]
+    X = [0.1,0.3,0.5]
     #pdb.set_trace()
     precision_mean = np.mean(np.array(precision))
     recall_mean = np.mean(np.array(recall))
@@ -73,13 +73,13 @@ if __name__ == "__main__":
 
     pdb.set_trace()
     plt.plot(X,[precision_03_mean,precision_045_mean,precision_mean])
-    plt.xlabel('confidence')
+    plt.xlabel('IoU')
     plt.ylabel('precision')
     plt.savefig('../data/precision.png')
     plt.clf()
 
     plt.plot(X,[recall_03_mean,recall_045_mean,recall_mean])
-    plt.xlabel('confidence')
+    plt.xlabel('IoU')
     plt.ylabel('recall')
     plt.savefig('../data/recall.png')
     plt.clf()
