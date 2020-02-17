@@ -159,7 +159,7 @@ def make_result(out,this_batch):
             #print('iou:{0}'.format(iou_parts))
             if iou_parts == 100:
                 true.append(0)
-            if iou_parts > 0.5:
+            if iou_parts > 0.1:
                 true.append(1)
                 true_list.append(delete_index)
             else:
@@ -290,27 +290,27 @@ def predict(self):
             break
     
     
-    with open('data/out_data/iou_label_05.pickle',mode = 'wb') as f:
+    with open('data/out_data/iou_label_01.pickle',mode = 'wb') as f:
             pickle.dump(iou_label_all,f) 
-    with open('data/out_data/R_05.pickle',mode = 'wb') as f:
+    with open('data/out_data/R_01.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
-    with open('data/out_data/T_0_05.pickle',mode='wb') as f:
+    with open('data/out_data/T_0_01.pickle',mode='wb') as f:
             pickle.dump(T_0,f)
-    with open('data/out_data/T_1_05.pickle',mode='wb') as f:
+    with open('data/out_data/T_1_01.pickle',mode='wb') as f:
             pickle.dump(T_1,f)
-    with open('data/out_data/precision_05.pickle',mode='wb') as f:
+    with open('data/out_data/precision_01.pickle',mode='wb') as f:
             pickle.dump(precision_,f)
-    with open('data/out_data/recall_05.pickle',mode='wb') as f:
+    with open('data/out_data/recall_01.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
     
     plt.hist(np.array(T_0_),color='blue')
-    plt.savefig('../GoogleDrive/T_0_05.png')
+    plt.savefig('../GoogleDrive/T_0_01.png')
     plt.clf()
     plt.hist(np.array(T_1_),color='blue')
-    plt.savefig('../GoogleDrive/T_1_05.png')
+    plt.savefig('../GoogleDrive/T_1_01.png')
     plt.clf()
     plt.hist(np.array(R_),color='blue')
-    plt.savefig('../GoogleDrive/R_05.png')
+    plt.savefig('../GoogleDrive/R_01.png')
     plt.clf()
     
     """
