@@ -71,23 +71,26 @@ def loss(self, net_out):
     # Extract the coordinate prediction from net.out
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 2 + 1 + C)])
 
-    R = tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1])
-    T = tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2])
+    R = tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1]) #出力から回転角度Rを抽出
+    T = tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2]) #出力から回転角度Tを抽出
 
-    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3])
+    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3]) #出力からconfidenceを抽出
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
 
-    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:])
+    adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:]) #出力から各カテゴリに属する確率
     adjusted_prob = tf.reshape(adjusted_prob, [-1, H*W, B, C])
-    adjusted_net_out = tf.concat([T,adjusted_c, adjusted_prob], 3)
-    batch_size = tf.shape(adjusted_net_out)[0]
+    adjusted_net_out = tf.concat([T,adjusted_c, adjusted_prob], 3) #T,confidence,クラスをconcat
+    batch_size = tf.shape(adjusted_net_out)[0] #batch_sizeの取得
 
     min_ = float(-1)
     max_ = float(1)
-    T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min
-    T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min
+    T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min #正規化されたTをもとに戻す
+    T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min #正規化されたTをもとに戻す
 
     T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
+    """
+    #mask anchorのアフィン変換：アフィン変換したものと真値でIoUを計算した時に最も高いIoUを持つアンカーのconfを1に設定しほかのアンカーのconfを0に設定。
+    #教師データの与え方の工夫により必要ない。
     #anchors = tf.expand_dims(anchors,0)
     #anchors = tf.tile(anchors,[batch_size,1,1,1,1,1])
     #pdb.set_trace()
@@ -110,9 +113,10 @@ def loss(self, net_out):
     #best_box = tf.equal(iou, tf.reduce_max(iou, [2], True))
     #best_box = tf.to_float(best_box)
     #confs = tf.multiply(best_box, _confs)
+    """
     confs = _confs
     # take care of the weight terms
-    conid = snoob * (1. - confs) + sconf * confs
+    conid = snoob * (1. - confs) + sconf * confs #重みの計算
     weight_coo = tf.concat(2 * [tf.expand_dims(confs, -1)], 3)
     cooid = scoor * weight_coo
     weight_pro = tf.concat(C * [tf.expand_dims(confs, -1)], 3)
@@ -121,12 +125,12 @@ def loss(self, net_out):
     self.fetch += [_probs, confs, conid, cooid, proid]
 
     R = tf.reshape(R,[batch_size,361,5,1])
-    _R = tf.reshape(_R,[batch_size,361,5,1])
+    _R = tf.reshape(_R,[batch_size,361,5,1]) #Rの真値
 
-    true = tf.concat([_T,tf.expand_dims(confs, 3), _probs ], 3)
-    wght = tf.concat([cooid,tf.expand_dims(conid, 3), proid ], 3)
-    pre_angle = tf.concat([tf.math.sin(R),tf.math.cos(R)],3)
-    true_angle = tf.concat([tf.math.sin(_R),tf.math.cos(_R)],3)
+    true = tf.concat([_T,tf.expand_dims(confs, 3), _probs ], 3) #T,confidence,クラス確率の真値
+    wght = tf.concat([cooid,tf.expand_dims(conid, 3), proid ], 3) #T,confidence,クラス確率の予測データ
+    pre_angle = tf.concat([tf.math.sin(R),tf.math.cos(R)],3) #Rの予測データ
+    true_angle = tf.concat([tf.math.sin(_R),tf.math.cos(_R)],3)#Rの教師データ
 
     pre_norm = tf.reshape(tf.norm(pre_angle,axis=3),(batch_size,H*W,5,1))
     true_norm = tf.reshape(tf.norm(true_angle,axis=3),(batch_size,H*W,5,1))
@@ -134,11 +138,11 @@ def loss(self, net_out):
     vec_dot = tf.matmul(pre_angle,true_angle,transpose_b=True)
     vec_dot = vec_dot * np.reshape(np.eye(B,B), [1, 1, B, B])
     vec_dot = tf.reshape(tf.reduce_sum(vec_dot,axis=3),(batch_size,H*W,5,1))
-    vec_abs_fin = tf.add(tf.multiply(pre_norm,true_norm),0.00001)
+    vec_abs_fin = tf.add(tf.multiply(pre_norm,true_norm),0.00001)#biternion loss
 
     difal = tf.subtract(1., tf.divide(vec_dot, vec_abs_fin))
     weight_difal = tf.concat(1 * [tf.expand_dims(confs, -1)], 3)
-    difal = difal * weight_difal
+    difal = difal * weight_difal#biternion lossに重みをかける
 
     print('Building {} loss'.format(m['model']))
     loss = tf.pow(adjusted_net_out - true,2)
@@ -154,9 +158,9 @@ def loss(self, net_out):
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
 
 
-def mask_anchor(anchor,H):
-    img_x = 1000
-    img_y = 1000
+def mask_anchor(anchor,H):#mask anchorの作成
+    img_x = 1000#出力画像の高さ
+    img_y = 1000#出力画像の幅
 
     step_x=0
     step_y=0
@@ -204,10 +208,10 @@ def mask_anchor(anchor,H):
 
                 mask_base[ver_min:ver_max,side_min:side_max] = 255
                 #resize_mask = np.resize(mask_base,(70,70))
-                grid = get_projection_grid(b=500)
-                rot = rand_rotation_matrix(deflection=1.0)
-                grid = rotate_grid(rot,grid)
-                mask_base = project_2d_on_sphere(mask_base,grid)
+                grid = get_projection_grid(b=500)#球の作成
+                rot = rand_rotation_matrix(deflection=1.0)#球の回転変数の作成
+                grid = rotate_grid(rot,grid)#球の回転
+                mask_base = project_2d_on_sphere(mask_base,grid)#球に2次元画像の貼り付け
                 mask_base = cv2.resize(mask_base,(70,70))
                 resize_mask = mask_base.T
                 #resize_mask = np.resize(mask_base,(100,100)).T
@@ -272,7 +276,7 @@ def get_pixel_value(img, x, y):
     indices = tf.stack([b, y, x], 3)
 
     return tf.gather_nd(img, indices)
-
+"""#mask anchorのアフィン変換：教師データの与え方の工夫により必要ない。
 def spatial_transformer_network(input_fmap, R, T, out_dims=None, **kwargs):
 
 
@@ -288,7 +292,7 @@ def spatial_transformer_network(input_fmap, R, T, out_dims=None, **kwargs):
     input_fmap = tf.reshape(input_fmap,[361*5,H,W,-1])
 
     # grab input dimensions
-    B = tf.shape(input_fmap)[0] 
+    B = tf.shape(input_fmap)[0]
     H = tf.shape(input_fmap)[1]
     W = tf.shape(input_fmap)[2]
 
@@ -350,7 +354,7 @@ def affine_grid_generator(height, width, theta):
     batch_grids = tf.reshape(batch_grids, [num_batch, 2, height, width])
 
     return batch_grids
-
+"""
 def bilinear_sampler(img, x, y):
 
     #img = tf.transpose(img,[0,2,3,1])

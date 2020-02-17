@@ -12,18 +12,18 @@ from PIL import Image
 def _batch(self, chunk):
     """
     Takes a chunk of parsed annotations
-    returns value for placeholders of net's 
+    returns value for placeholders of net's
     input & loss layer correspond to this chunk
     """
     meta = self.meta
     labels = meta['labels']
-    
+
     H, W, _ = meta['out_size']
     C, B = meta['classes'], meta['num']
     anchors = meta['anchors']
 
     # preprocess
-    
+
     jpg = chunk[0]
     w = 1000
     h = 1000
@@ -44,17 +44,17 @@ def _batch(self, chunk):
         cy = centery / celly #どこのセルにあるかの番号
         #pdb.set_trace()
         if cx >= W or cy >= H: return None, None #１３以上なら画面外になってしまうから
-        
+
         obj += [int(np.floor(cy) * W + np.floor(cx))]
     """
     # show(im, allobj, S, w, h, cellx, celly) # unit test
-    
+
 
     # Calculate placeholders' values
-    probs = np.zeros([H*W*B,C])  #169x5x2セルごとの各クラスへの所属確率
-    confs = np.zeros([H*W*B]) #169x5 セルごとの各BBの信頼度
-    R = np.zeros([H*W*B,1])
-    T = np.zeros([H*W*B,2])
+    probs = np.zeros([H*W*B,C])  #361x5x2セルごとの各クラスへの所属確率
+    confs = np.zeros([H*W*B]) #361x5 セルごとの各BBの信頼度
+    R = np.zeros([H*W*B,1]) #回転角度
+    T = np.zeros([H*W*B,2])#並進ベクトルT
     proid = np.zeros([H*W*B,C])
     prear = np.zeros([H*W,4])
     areas = np.zeros([H*W*B,70,70])
@@ -67,40 +67,39 @@ def _batch(self, chunk):
         os.chdir('../../')
         k = k+1
         #pdb.set_trace()
-        
-        areas[obj[7], :] = area*255    
+
+        areas[obj[7], :] = area*255#真値のマスク：confidenceの与え方の変更により、使用しない。
         probs[obj[7], :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
         probs[obj[7], labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
         proid[obj[7], :] = [[1.]*C][0]
         #pdb.set_trace()
         R[obj[7], :] = np.array(obj[1])[np.newaxis].T
-        T[obj[7], :] = np.array(obj[2])        
+        T[obj[7], :] = np.array(obj[2])
         confs[obj[7]] = 1.  #物体が存在するセルの各BBの信頼度を１とする
-        #pdb.set_trace()
+        #obj[7]には、最も真値に近いアンカーのindexが入っている。
     areas = np.reshape(areas,[H*W,B,70,70])
     probs = np.reshape(probs,[H*W,B,C])
     proid = np.reshape(proid,[H*W,B,C])
     R = np.reshape(R,[H*W,B,1])
     T = np.reshape(T,[H*W,B,2])
     confs = np.reshape(confs,[H*W,B])
-    """    
+    """
     os.chdir('data/mask_ann')
     #pdb.set_trace()
     with open('./{0}.pickle'.format(jpg[:6]),mode = 'rb') as f:
             area = pickle.load(f)
     os.chdir('../../')
-    
+
     areas = np.tile(area,(361,5,1,1))
     """
     # value for placeholder at input layer
     inp_feed_val = img
-    # value for placeholder at loss layer 
+    # value for placeholder at loss layer
     #pdb.set_trace()
     loss_feed_val = {
-        'probs': probs, 'confs': confs, 
+        'probs': probs, 'confs': confs,
         'R': R, 'T': T, 'proid': proid,
         'areas': areas
     }
 
     return inp_feed_val, loss_feed_val
-

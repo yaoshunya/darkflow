@@ -71,14 +71,14 @@ if __name__ == "__main__":
     precision_03_mean = np.mean(np.array(precision_03))
     recall_03_mean = np.mean(np.array(recall_03))
 
-    pdb.set_trace()
-    plt.plot(X,[precision_03_mean,precision_045_mean,precision_mean])
+    #pdb.set_trace()
+    plt.plot(X,[precision_mean,precision_03_mean,precision_045_mean])
     plt.xlabel('IoU')
     plt.ylabel('precision')
     plt.savefig('../data/precision.png')
     plt.clf()
 
-    plt.plot(X,[recall_03_mean,recall_045_mean,recall_mean])
+    plt.plot(X,[recall_mean,recall_03_mean,recall_045_mean])
     plt.xlabel('IoU')
     plt.ylabel('recall')
     plt.savefig('../data/recall.png')

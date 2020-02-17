@@ -28,16 +28,17 @@ train_stats = (
 pool = ThreadPool()
 
 def detect_most_near(pre,ann):
-   
+#予測と真値を比較し、最もIoUが高いものを真値として採用する
         if len(ann[1]) == 0:
-            return np.zeros((1000,1000,3)),100,ann[0]
-        iou_list = list()    
+            #予測しているにも関わらず、その画像に物体が存在しない場合は、iou_list=1000とする
+            return np.zeros((1000,1000,3)),1000,ann[0]
+        iou_list = list()
         for i in range(len(ann[1])):
             pre_ = np.zeros((1000,1000))
-            pre_[pre[:,:,0]>0] = 1
+            pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
             pre_ = np.reshape(pre_,[-1])
             X = np.zeros((1000,1000))
-            X[ann[1][i][1]] = 1
+            X[ann[1][i][1]] = 1#真値をマスクにする
             cm = confusion_matrix(np.reshape(X,[-1]),pre_)
 
             TP = cm[0][0]
@@ -46,13 +47,13 @@ def detect_most_near(pre,ann):
             TP = cm[1][1]
             iou = TP/(TP+FP+FN)
             iou_list.append(iou)
-        max_index = np.argmax(np.array(iou_list))
+        max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
         X = np.zeros((1000,1000))
         X[ann[1][max_index][1]] = 255
         X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
         #pdb.set_trace()
         return X,iou_list[max_index],max_index
-    
+
 
 def make_result(out,this_batch):
 
@@ -68,13 +69,10 @@ def make_result(out,this_batch):
 
 
     t_0_max = np.array(X[0])
-    #t_0_max = np.array(547.0)
     t_0_min = np.array(X[1])
     t_1_max = np.array(X[2])
-    #t_1_max = np.array(486.0)
-    #t_1_min = np.array(-64.0)
     t_1_min = np.array(X[3])
-    #pdb.set_trace()
+
     iou_return = list()
     precision_return = list()
     recall_return = list()
@@ -86,25 +84,24 @@ def make_result(out,this_batch):
     R_list = list()
     for i in range(batch_size):
         #pdb.set_trace()
-        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1])
-        image_name = this_batch[i]
+        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1]) #networkの出力をreshape
+        image_name = this_batch[i]#画像の名前
 
-        out_conf = np.reshape(out_now[3],[-1])
+        out_conf = np.reshape(out_now[3],[-1])#confidenceの抽出
 
-        confidence = (1/(1+np.exp(-out_conf)))
-        
-        trast_conf = np.where(confidence>0.45)[0]
-        #pdb.set_trace()        
+        confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
+
+        trast_conf = np.where(confidence>0.45)[0]#一定数以上のものを予測とすし、trast_confとする
+        #pdb.set_trace()
         """
+        #confidenceが上位k個のものをtrast_confとする場合
         K = 3
         X = np.argpartition(-confidence,K)[:K]
         y = confidence[X]
         indices = np.argsort(-y)
         trast_conf = X[indices]
         """
-        #print(trast_conf[0])
         pre = np.zeros((1000,1000))
-        #pdb.set_trace()
         if len(trast_conf) == 0:
             continue
         predict = list()
@@ -112,32 +109,28 @@ def make_result(out,this_batch):
         true_list = list()
         for ann in annotations:
             if ann[0] == image_name:
+                #annotationsから入力された画像と同じ名前のものを選択
                 ann_num = ann
                 break
-                
+
         for j in range(len(trast_conf)):
-            #pdb.set_trace()
-            """
-            if confidence[trast_conf[j]] < 0.4:
-                continue
-            """
             print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
-            #print(R)
-            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min
-            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min
-            #pdb.set_trace()
-            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]
-            
-            affine = np.array([[1,0,T_1],[0,1,T_0]])
-            
+
+            T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min #T_0の正規化をもとの値に戻す
+            T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min #T_1の正規化をもとの値に戻す
+
+            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
+
+            affine = np.array([[1,0,T_1],[0,1,T_0]])#並進
+
             pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
-            
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-            
+
+            affine = cv2.getRotationMatrix2D((0,0),R,1.0)#回転
+
             pre=cv2.warpAffine(pre, affine, (1000,1000))
-            
-            pre = anchor_now
+
+            #pre = anchor_now
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -148,37 +141,37 @@ def make_result(out,this_batch):
             pre_2 = pre_2[np.newaxis]
             pre = np.append(pre,pre_1,0)
             pre = np.append(pre,pre_2,0)
-            
+
             pre = np.transpose(pre,[1,2,0])
-            
+
             x_ = mean(where_[0])
             y_ = mean(where_[1])
             label = where_pre_label(x_,y_,where_)
-            ann,iou_parts,delete_index = detect_most_near(pre,ann_num)
-            predict.append(1)
+            ann,iou_parts,delete_index = detect_most_near(pre,ann_num)#ann:予測に最も近い真値 iou_parts:最も大きいiou delete_index:選択された真値
+            predict.append(1)#予測配列に1をappend
             #print('iou:{0}'.format(iou_parts))
-            if iou_parts == 100:
-                true.append(0)
+            if iou_parts == 1000:
+                true.append(0)#画像上に物体が存在しないため、予測失敗
             if iou_parts > 0.1:
-                true.append(1)
-                true_list.append(delete_index)
+                true.append(1)#iouが閾値より大きいため、予測成功
+                true_list.append(delete_index)#選択された真値は、あとでdelete
             else:
-                true.append(0)
-                   
+                true.append(0)#iouが閾値より小さいため、予測失敗
+
             T_0_list.append(T_0)
             T_1_list.append(T_1)
             R_list.append(R)
 
             iou_return.append(iou_parts)
             iou_label[label-1].append(iou_parts)
-            
+
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
             #cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
         #pdb.set_trace()
         count_list = list()
-        for i in true_list:
+        for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
             if count_list.count(i)>0:
                 pass
             else:
@@ -186,13 +179,13 @@ def make_result(out,this_batch):
         #pdb.set_trace()
         count_list.sort(reverse=True)
 
-        for i in count_list:
+        for i in count_list:#ann_numから既に選択された真値を消去
                 del ann_num[1][i]
-            
-        [predict.append(0) for i in range(len(ann_num[1]))]
-        [true.append(1) for i in range(len(ann_num[1]))] 
-        precision = precision_score(np.array(predict),np.array(true))
-        recall = recall_score(np.array(predict),np.array(true))
+
+        [predict.append(0) for i in range(len(ann_num[1]))]#残った真値の数だけ、predictに0をappend
+        [true.append(1) for i in range(len(ann_num[1]))]#残った真値の数だけ、trueに1をappend
+        precision = precision_score(np.array(predict),np.array(true))#precisionの計算
+        recall = recall_score(np.array(predict),np.array(true))#recallの計算
         precision_return.append(precision)
         recall_return.append(recall)
     return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,iou_label
@@ -215,7 +208,7 @@ def where_pre_label(x,y,where_pre):
             label = 5
         else:
             label = 6
-    
+
     return label
 
 
@@ -266,7 +259,7 @@ def predict(self):
         self.say('Forwarding {} inputs ...'.format(len(inp_feed)))
         start = time.time()
         out = self.sess.run(self.out, feed_dict)
-        
+
         stop = time.time(); last = stop - start
         self.say('Total time = {}s / {} inps = {} ips'.format(
             last, len(inp_feed), len(inp_feed) / last))
@@ -284,14 +277,14 @@ def predict(self):
         R_.extend(R)
 
         [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-        
+
         #pdb.set_trace()
         if i == 30:
             break
-    
-    
+
+
     with open('data/out_data/iou_label_01.pickle',mode = 'wb') as f:
-            pickle.dump(iou_label_all,f) 
+            pickle.dump(iou_label_all,f)
     with open('data/out_data/R_01.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
     with open('data/out_data/T_0_01.pickle',mode='wb') as f:
@@ -302,7 +295,7 @@ def predict(self):
             pickle.dump(precision_,f)
     with open('data/out_data/recall_01.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
-    
+
     plt.hist(np.array(T_0_),color='blue')
     plt.savefig('../GoogleDrive/T_0_01.png')
     plt.clf()
@@ -312,7 +305,7 @@ def predict(self):
     plt.hist(np.array(R_),color='blue')
     plt.savefig('../GoogleDrive/R_01.png')
     plt.clf()
-    
+
     """
         pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
