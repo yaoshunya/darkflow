@@ -425,10 +425,16 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             #mask_parts = np.reshape(mask_parts,[1000,1000])
             #pdb.set_trace()
             mask_ = mask_parts[np.newaxis]
+            """
+            image_sample = cv2.imread('../sphere_data/{0}'.format(jpg))
+            mask_tile = np.transpose(np.tile(mask_,[3,1,1]),[2,1,0])
+            image_sample = cv2.addWeighted(image_sample,0.5,mask_tile,0.5,0)
+            cv2.imwrite('../../../../GoogleDrive/{0}_{1}.png'.format(jpg,t),image_sample)
             #pdb.set_trace()
+            """
             current = [name,mask_]
             all += [current]
-
+            t = t + 1
         add = [[jpg,all]]
         #pdb.set_trace()
         dumps += add
@@ -759,7 +765,7 @@ if __name__ ==  '__main__':
     #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
     #
-    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/ann_coords_1_.pickle'):
         print("make mask annotations_1")
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体

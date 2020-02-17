@@ -394,8 +394,8 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
         tree=ET.parse(in_file)
         root = tree.getroot()
         jpg = str(root.find('filename').text)
-        t = 0
-
+        t = 1
+        #pdb.set_trace()
         all = list()
 
         for obj in root.iter('object'):
@@ -512,7 +512,7 @@ def detect_R_T(ann,anchor,path_num):
 
         img_name = ann[ann_len][0]
         all = list()
-
+        #pdb.set_trace()
         for ann_0_len in range(len(ann[ann_len][1])):
 
             error = list()
@@ -770,7 +770,7 @@ if __name__ ==  '__main__':
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
-        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
         #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")
