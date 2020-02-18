@@ -19,7 +19,7 @@ if __name__ == "__main__":
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1_conf_05.pickle","rb") as f:
         T_1 = pickle.load(f)
-    """
+
     with open("../data/out_data/precision_conf_04.pickle","rb") as f:
         precision_04 = pickle.load(f)
     with open("../data/out_data/recall_conf_04.pickle","rb") as f:
@@ -28,8 +28,8 @@ if __name__ == "__main__":
         precision_03 = pickle.load(f)
     with open("../data/out_data/recall_conf_03.pickle","rb") as f:
         recall_03 = pickle.load(f)
-    """
-    pdb.set_trace()
+
+    #pdb.set_trace()
 
     iou_mean = list()
 
