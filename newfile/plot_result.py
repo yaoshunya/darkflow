@@ -7,28 +7,29 @@ mpl.use('Agg')
 import matplotlib.pylab as plt
 
 if __name__ == "__main__":
-    with open("../data/out_data/iou_label_01.pickle","rb") as f:
+    with open("../data/out_data/iou_label_conf_05.pickle","rb") as f:
         iou_label = pickle.load(f)
-    with open("../data/out_data/precision_01.pickle","rb") as f:
+    with open("../data/out_data/precision_conf_05.pickle","rb") as f:
         precision = pickle.load(f)
-    with open("../data/out_data/recall_01.pickle","rb") as f:
+    with open("../data/out_data/recall_conf_05.pickle","rb") as f:
         recall = pickle.load(f)
-    with open("../data/out_data/R.pickle","rb") as f:
+    with open("../data/out_data/R_conf_05.pickle","rb") as f:
         R = pickle.load(f)
-    with open("../data/out_data/T_0.pickle","rb") as f:
+    with open("../data/out_data/T_0_conf_05.pickle","rb") as f:
         T_0 = pickle.load(f)
-    with open("../data/out_data/T_1.pickle","rb") as f:
+    with open("../data/out_data/T_1_conf_05.pickle","rb") as f:
         T_1 = pickle.load(f)
-    with open("../data/out_data/precision_05.pickle","rb") as f:
-        precision_045 = pickle.load(f)
-    with open("../data/out_data/recall_05.pickle","rb") as f:
-        recall_045 = pickle.load(f)
-    with open("../data/out_data/precision_03.pickle","rb") as f:
+    """
+    with open("../data/out_data/precision_conf_04.pickle","rb") as f:
+        precision_04 = pickle.load(f)
+    with open("../data/out_data/recall_conf_04.pickle","rb") as f:
+        recall_04 = pickle.load(f)
+    with open("../data/out_data/precision_conf_03.pickle","rb") as f:
         precision_03 = pickle.load(f)
-    with open("../data/out_data/recall_03.pickle","rb") as f:
+    with open("../data/out_data/recall_conf_03.pickle","rb") as f:
         recall_03 = pickle.load(f)
-
-    #pdb.set_trace()
+    """
+    pdb.set_trace()
 
     iou_mean = list()
 
@@ -62,23 +63,23 @@ if __name__ == "__main__":
     plt.savefig('../../GoogleDrive/recall_label.png')
     plt.clf()
     """
-    X = [0.1,0.3,0.5]
+    X = [0.3,0.4,0.5]
     #pdb.set_trace()
     precision_mean = np.mean(np.array(precision))
     recall_mean = np.mean(np.array(recall))
-    precision_045_mean = np.mean(np.array(precision_045))
-    recall_045_mean = np.mean(np.array(recall_045))
+    precision_04_mean = np.mean(np.array(precision_04))
+    recall_04_mean = np.mean(np.array(recall_04))
     precision_03_mean = np.mean(np.array(precision_03))
     recall_03_mean = np.mean(np.array(recall_03))
 
     #pdb.set_trace()
-    plt.plot(X,[precision_mean,precision_03_mean,precision_045_mean])
-    plt.xlabel('IoU')
+    plt.plot(X,[precision_03_mean,precision_04_mean,precision_mean])
+    plt.xlabel('confidence')
     plt.ylabel('precision')
     plt.savefig('../data/precision.png')
     plt.clf()
 
-    plt.plot(X,[recall_mean,recall_03_mean,recall_045_mean])
+    plt.plot(X,[recall_03_mean,recall_04_mean,recall_mean])
     plt.xlabel('IoU')
     plt.ylabel('recall')
     plt.savefig('../data/recall.png')

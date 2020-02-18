@@ -560,10 +560,10 @@ def detect_R_T(ann,anchor,path_num):
             #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
 
             R, T = ICP_matching(ann_stack,anchor_stack)
-            """
+            
             print(T)
             #pdb.set_trace()
-            
+            """ 
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -604,8 +604,8 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            #cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('../../GoogleDrive/messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             #cv2.imwrite('sample_ann.png',X)
             
 

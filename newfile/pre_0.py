@@ -560,7 +560,7 @@ def detect_R_T(ann,anchor,path_num):
             
 
             R, T = ICP_matching(ann_stack,anchor_stack)
-            """
+            """ 
             print(T)
             #pdb.set_trace()
             
@@ -604,8 +604,8 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            #cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             #cv2.imwrite('sample_ann.png',X)
             
 
@@ -615,7 +615,7 @@ def detect_R_T(ann,anchor,path_num):
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
-        #pdb.set_trace()
+        pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
         #pdb.set_trace()
