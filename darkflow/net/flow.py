@@ -91,8 +91,7 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
 
-        trast_conf = np.where(confidence>0.2)[0]#一定数以上のものを予測とすし、trast_confとする
-        #pdb.set_trace()
+        trast_conf = np.where(confidence>0.425)[0]#一定数以上のものを予測とすし、trast_confとする
         """
         #confidenceが上位k個のものをtrast_confとする場合
         K = 3
@@ -107,14 +106,48 @@ def make_result(out,this_batch):
         predict = list()
         true = list()
         true_list = list()
+        trast_conf_new = list()
         for ann in annotations:
             if ann[0] == image_name:
                 #annotationsから入力された画像と同じ名前のものを選択
                 ann_num = ann
                 break
-
+                
+                
         for j in range(len(trast_conf)):
-            print(confidence[trast_conf[j]])
+            trast_conf_new.append(trast_conf[j])
+            if j == 0:
+                mask_anchor_all = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]][np.newaxis]
+            else:  
+                mask_anchor_all = np.append(mask_anchor_all,np.reshape(anchor,[1805,1000,1000])[trast_conf[j]][np.newaxis],axis=0)
+        ma = mask_anchor_all
+        for j in range(len(trast_conf)):
+            anchor_now = np.tile(np.reshape(anchor,[1805,1000,1000])[trast_conf[j]][np.newaxis],[len(trast_conf),1,1])
+            
+            or_ = np.logical_or(anchor_now,mask_anchor_all).astype(np.int)
+            and_ = np.logical_and(anchor_now,mask_anchor_all).astype(np.int)
+            or__ = np.sum(np.sum(or_,1),1)
+            and_ = np.sum(np.sum(and_,1),1)
+            iou = and_/or__
+            for x in range(len(iou)):
+                if iou[x] == 1:
+                    continue
+                elif iou[x] > 0.3:
+                    ma = np.append(ma,or_[x][np.newaxis],axis=0)
+                    trast_conf_new.append(trast_conf[x])
+                    print(x)
+        ma = ma.tolist()
+        mask_anchor_all = list()
+        trast_conf = list()
+        for j in range(len(ma)):#同じ真値が選択されていた場合true_listの重複を消去
+            if mask_anchor_all.count(ma[j])>0:
+                pass
+            else:
+                mask_anchor_all.append(ma[j])
+                trast_conf.append(trast_conf_new[j])
+        #pdb.set_trace()                
+        for j in range(len(mask_anchor_all)):
+            #print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
 
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min #T_0の正規化をもとの値に戻す
@@ -278,30 +311,31 @@ def predict(self):
         R_.extend(R)
 
         [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-
+        if i == 15:
+            break
         #pdb.set_trace()
 
-    with open('data/out_data/iou_label_conf_all.pickle',mode = 'wb') as f:
+    with open('data/out_data/iou_label_conf_0425.pickle',mode = 'wb') as f:
             pickle.dump(iou_label_all,f)
-    with open('data/out_data/R_conf_all.pickle',mode = 'wb') as f:
+    with open('data/out_data/R_conf_0425.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
-    with open('data/out_data/T_0_conf_all.pickle',mode='wb') as f:
+    with open('data/out_data/T_0_conf_0425.pickle',mode='wb') as f:
             pickle.dump(T_0,f)
-    with open('data/out_data/T_1_conf_all.pickle',mode='wb') as f:
+    with open('data/out_data/T_1_conf_0425.pickle',mode='wb') as f:
             pickle.dump(T_1,f)
-    with open('data/out_data/precision_conf_all.pickle',mode='wb') as f:
+    with open('data/out_data/precision_conf_0425.pickle',mode='wb') as f:
             pickle.dump(precision_,f)
-    with open('data/out_data/recall_conf_all.pickle',mode='wb') as f:
+    with open('data/out_data/recall_conf_0425.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
 
     plt.hist(np.array(T_0_),color='blue')
-    plt.savefig('../GoogleDrive/T_0_conf_all.png')
+    plt.savefig('../GoogleDrive/T_0_conf_035.png')
     plt.clf()
     plt.hist(np.array(T_1_),color='blue')
-    plt.savefig('../GoogleDrive/T_1_conf_all.png')
+    plt.savefig('../GoogleDrive/T_1_conf_035.png')
     plt.clf()
     plt.hist(np.array(R_),color='blue')
-    plt.savefig('../GoogleDrive/R_conf_all.png')
+    plt.savefig('../GoogleDrive/R_conf_035.png')
     plt.clf()
 
     """
