@@ -91,7 +91,7 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
 
-        trast_conf = np.where(confidence>0.3)[0]#一定数以上のものを予測とすし、trast_confとする
+        trast_conf = np.where(confidence>0.2)[0]#一定数以上のものを予測とすし、trast_confとする
         #pdb.set_trace()
         """
         #confidenceが上位k個のものをtrast_confとする場合
@@ -167,7 +167,7 @@ def make_result(out,this_batch):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            #cv2.imwrite('../GoogleDrive/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
         #pdb.set_trace()
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
@@ -280,31 +280,28 @@ def predict(self):
         [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
 
         #pdb.set_trace()
-        if i == 30:
-            break
 
-
-    with open('data/out_data/iou_label_conf_03.pickle',mode = 'wb') as f:
+    with open('data/out_data/iou_label_conf_all.pickle',mode = 'wb') as f:
             pickle.dump(iou_label_all,f)
-    with open('data/out_data/R_conf_03.pickle',mode = 'wb') as f:
+    with open('data/out_data/R_conf_all.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
-    with open('data/out_data/T_0_conf_03.pickle',mode='wb') as f:
+    with open('data/out_data/T_0_conf_all.pickle',mode='wb') as f:
             pickle.dump(T_0,f)
-    with open('data/out_data/T_1_conf_03.pickle',mode='wb') as f:
+    with open('data/out_data/T_1_conf_all.pickle',mode='wb') as f:
             pickle.dump(T_1,f)
-    with open('data/out_data/precision_conf_03.pickle',mode='wb') as f:
+    with open('data/out_data/precision_conf_all.pickle',mode='wb') as f:
             pickle.dump(precision_,f)
-    with open('data/out_data/recall_conf_03.pickle',mode='wb') as f:
+    with open('data/out_data/recall_conf_all.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
 
     plt.hist(np.array(T_0_),color='blue')
-    plt.savefig('../GoogleDrive/T_0_conf_03.png')
+    plt.savefig('../GoogleDrive/T_0_conf_all.png')
     plt.clf()
     plt.hist(np.array(T_1_),color='blue')
-    plt.savefig('../GoogleDrive/T_1_conf_03.png')
+    plt.savefig('../GoogleDrive/T_1_conf_all.png')
     plt.clf()
     plt.hist(np.array(R_),color='blue')
-    plt.savefig('../GoogleDrive/R_conf_03.png')
+    plt.savefig('../GoogleDrive/R_conf_all.png')
     plt.clf()
 
     """
