@@ -507,12 +507,13 @@ def detect_R_T(ann,anchor,path_num):
         mask_parts[mask_parts>0] = 1
         mask_.append(mask_parts)
     mask_ = np.array(mask_)
-
+    iou_list = list()
+    iou_affine_list = list()
     for ann_len in range(len(ann)):
 
         img_name = ann[ann_len][0]
         all = list()
-
+        print(img_name)
         for ann_0_len in range(len(ann[ann_len][1])):
 
             error = list()
@@ -538,8 +539,10 @@ def detect_R_T(ann,anchor,path_num):
             iou = and_/or_
 
             max_index = np.argmax(iou)
-            print(max_index)
-            
+            print(ann_0_len)
+            print('index: {0}'.format(max_index))
+            print('iou  : {0}'.format(iou[max_index]))
+            iou_list.append(iou[max_index])
             R_list = list()
             T_list = list()
             #pdb.set_trace()
@@ -550,7 +553,7 @@ def detect_R_T(ann,anchor,path_num):
             my_list_ann = []
             my_list_anchor = []
 
-            for k in range(30):
+            for k in range(100):
                 x = random.randint(0,ann_len_-1)
                 y = random.randint(0,anchor_len_-1)
                 my_list_ann.append(x)
@@ -558,12 +561,8 @@ def detect_R_T(ann,anchor,path_num):
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
             
-
             R, T = ICP_matching(ann_stack,anchor_stack)
-            """ 
-            print(T)
-            #pdb.set_trace()
-            
+             
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -582,11 +581,22 @@ def detect_R_T(ann,anchor,path_num):
             #pdb.set_trace()
 
             an_ = anchor_[max_index]
-            affine = np.array([[1,0,T[1]],[0,1,T[0]]])
+            affine = np.array([[1,0,-T[1]],[0,1,-T[0]]])
             pre=cv2.warpAffine(an_, affine, (1000,1000))
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+            affine = cv2.getRotationMatrix2D((0,0),-R,1.0)
             pre = cv2.warpAffine(an_,affine,(1000,1000))
+            pre_resize = cv2.resize(pre,(250,250))
+            pre_resize[pre_resize>0] = 1
+
+            or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
+            and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
+            iou_affine = and_/or_
+            #pdb.set_trace()
+            iou_affine_list.append(iou_affine)
+            print('affine iou:{0}'.format(iou_affine))
+            #pdb.set_trace()
             #pre = an_
+            """
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -612,19 +622,24 @@ def detect_R_T(ann,anchor,path_num):
             ###############################
             #pdb.set_trace()
             """
+
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
             #pdb.set_trace()
             all.append(current)
-        pdb.set_trace()
+        #pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
         #pdb.set_trace()
+        if ann_len == 5:
+            print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
+            print('iou_affine_mean:{0}'.format(np.mean(np.array(iou_affine_list))))
+            pdb.set_trace()
         print("finish:{0}_{1}".format(ann_len,path_num))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
-
+        
     with open('../data/{0}/redidual_1.pickle'.format(path[path_num]),mode = 'wb') as f:
             pickle.dump(dumps,f)
 

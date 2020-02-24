@@ -91,7 +91,7 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
 
-        trast_conf = np.where(confidence>0.475)[0]#一定数以上のものを予測とすし、trast_confとする
+        trast_conf = np.where(confidence>0.3)[0]#一定数以上のものを予測とすし、trast_confとする
         """
         #confidenceが上位k個のものをtrast_confとする場合
         K = 3
@@ -155,11 +155,11 @@ def make_result(out,this_batch):
 
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
 
-            affine = np.array([[1,0,T_1],[0,1,T_0]])#並進
+            affine = np.array([[1,0,-T_1],[0,1,-T_0]])#並進
 
             pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
             
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)#回転
+            affine = cv2.getRotationMatrix2D((0,0),-R,1.0)#回転
 
             pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
             where_ = np.where(pre)
@@ -184,7 +184,7 @@ def make_result(out,this_batch):
             if iou_parts == 1000:
                 true.append(0)#画像上に物体が存在しないため、予測失敗
                 iou_parts = 0
-            elif iou_parts > 0.4:
+            elif iou_parts > 0.3:
                 true.append(1)#iouが閾値より大きいため、予測成功
                 true_list.append(delete_index)#選択された真値は、あとでdelete
             else:
@@ -315,19 +315,19 @@ def predict(self):
             break
         #pdb.set_trace()
 
-    with open('data/out_data/iou_label_conf_0475.pickle',mode = 'wb') as f:
+    with open('data/out_data/iou_label_conf_03.pickle',mode = 'wb') as f:
             pickle.dump(iou_label_all,f)
-    with open('data/out_data/R_conf_0475.pickle',mode = 'wb') as f:
+    with open('data/out_data/R_conf_03.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
-    with open('data/out_data/T_0_conf_0475.pickle',mode='wb') as f:
+    with open('data/out_data/T_0_conf_03.pickle',mode='wb') as f:
             pickle.dump(T_0,f)
-    with open('data/out_data/T_1_conf_0475.pickle',mode='wb') as f:
+    with open('data/out_data/T_1_conf_03.pickle',mode='wb') as f:
             pickle.dump(T_1,f)
-    with open('data/out_data/precision_conf_0475.pickle',mode='wb') as f:
+    with open('data/out_data/precision_conf_03.pickle',mode='wb') as f:
             pickle.dump(precision_,f)
-    with open('data/out_data/recall_conf_0475.pickle',mode='wb') as f:
+    with open('data/out_data/recall_conf_03.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
-
+    """
     plt.hist(np.array(T_0_),color='blue')
     plt.savefig('../GoogleDrive/T_0_conf_035.png')
     plt.clf()
@@ -337,7 +337,7 @@ def predict(self):
     plt.hist(np.array(R_),color='blue')
     plt.savefig('../GoogleDrive/R_conf_035.png')
     plt.clf()
-
+    """
     """
         pool.map(lambda p: (lambda i, prediction:
             self.framework.postprocess(
