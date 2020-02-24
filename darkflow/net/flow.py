@@ -91,7 +91,7 @@ def make_result(out,this_batch):
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
 
-        trast_conf = np.where(confidence>0.425)[0]#一定数以上のものを予測とすし、trast_confとする
+        trast_conf = np.where(confidence>0.475)[0]#一定数以上のものを予測とすし、trast_confとする
         """
         #confidenceが上位k個のものをtrast_confとする場合
         K = 3
@@ -311,21 +311,21 @@ def predict(self):
         R_.extend(R)
 
         [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-        if i == 15:
+        if i == 10:
             break
         #pdb.set_trace()
 
-    with open('data/out_data/iou_label_conf_0425.pickle',mode = 'wb') as f:
+    with open('data/out_data/iou_label_conf_0475.pickle',mode = 'wb') as f:
             pickle.dump(iou_label_all,f)
-    with open('data/out_data/R_conf_0425.pickle',mode = 'wb') as f:
+    with open('data/out_data/R_conf_0475.pickle',mode = 'wb') as f:
             pickle.dump(R_,f)
-    with open('data/out_data/T_0_conf_0425.pickle',mode='wb') as f:
+    with open('data/out_data/T_0_conf_0475.pickle',mode='wb') as f:
             pickle.dump(T_0,f)
-    with open('data/out_data/T_1_conf_0425.pickle',mode='wb') as f:
+    with open('data/out_data/T_1_conf_0475.pickle',mode='wb') as f:
             pickle.dump(T_1,f)
-    with open('data/out_data/precision_conf_0425.pickle',mode='wb') as f:
+    with open('data/out_data/precision_conf_0475.pickle',mode='wb') as f:
             pickle.dump(precision_,f)
-    with open('data/out_data/recall_conf_0425.pickle',mode='wb') as f:
+    with open('data/out_data/recall_conf_0475.pickle',mode='wb') as f:
             pickle.dump(recall_,f)
 
     plt.hist(np.array(T_0_),color='blue')

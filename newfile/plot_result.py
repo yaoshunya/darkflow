@@ -40,11 +40,14 @@ if __name__ == "__main__":
     with open('../data/out_data/recall_conf_035.pickle','rb') as f:
         recall_035 = pickle.load(f)
     
-    with open('../data/out_data/precision_0425.pickle','rb') as f:
+    with open('../data/out_data/precision_conf_0425.pickle','rb') as f:
         precision_0425 = pickle.load(f)
-    with open('../data/out_data/recall_0425.pickle','rb') as f:
+    with open('../data/out_data/recall_conf_0425.pickle','rb') as f:
         recall_0425 = pickle.load(f)
-    
+    with open('../data/out_data/precision_conf_0475.pickle','rb') as f:
+        precision_0475 = pickle.load(f)
+    with open('../data/out_data/recall_conf_0475.pickle','rb') as f:
+        recall_0475 = pickle.load(f)
     iou_mean = list()
     """
     plt.xlabel('label')
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     plt.savefig('../data/iou_label.png')
     plt.clf()
     """
-    X = [0.3,0.35,0.4,0.425,0.45,0.5]
+    X = [0.3,0.35,0.4,0.425,0.45,0.475,0.5]
     #pdb.set_trace()
     p_05 = np.mean(np.array(precision))
     r_05 = np.mean(np.array(recall))
@@ -71,8 +74,10 @@ if __name__ == "__main__":
     r_035 = np.mean(np.array(recall_035))
     p_0425 = np.mean(np.array(precision_0425))
     r_0425 = np.mean(np.array(recall_0425))
+    p_0475 = np.mean(np.array(precision_0475))
+    r_0475 = np.mean(np.array(recall_0475))
     #pdb.set_trace()
-    plt.plot([r_03,r_035,r_04,r_0425,r_045,r_05],[p_03,p_035,p_04,p_0425,p_045,p_05])
+    plt.plot([r_03,r_035,r_04,r_0425,r_045,r_0475,r_05],[p_03,p_035,p_04,p_0425,p_045,p_0475,p_05])
     plt.xlabel('recall')
     plt.ylabel('precision')
     plt.savefig('../../GoogleDrive/precision_recall.png')
@@ -81,13 +86,13 @@ if __name__ == "__main__":
 
     #pdb.set_trace()
     
-    plt.plot(X,[p_03,p_035,p_04,p_0425,p_045,p_05])
+    plt.plot(X,[p_03,p_035,p_04,p_0425,p_045,p_0475,p_05])
     plt.xlabel('confidence')
     plt.ylabel('precision')
     plt.savefig('../../GoogleDrive/precision.png')
     plt.clf()
 
-    plt.plot(X,[r_03,r_035,r_04,r_0425,r_045,r_05])
+    plt.plot(X,[r_03,r_035,r_04,r_0425,r_045,r_0475,r_05])
     plt.xlabel('confidence')
     plt.ylabel('recall')
     plt.savefig('../../GoogleDrive/recall.png')
