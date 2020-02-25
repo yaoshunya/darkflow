@@ -384,7 +384,6 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
         bar_arg += [file]
         sys.stdout.write('[{}>{}]{:.0f}%  {}'.format(*bar_arg))
         sys.stdout.flush()
-
         # actual parsing
         in_file = open(file)
         tree=ET.parse(in_file)
@@ -442,7 +441,8 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     all = list()
     current = list()
     add = list()
-    return np.array(dumps)
+    #pdb.set_trace()
+    return dumps
 
 def make_coords_from_mask(data,flag):
 
@@ -465,17 +465,19 @@ def make_coords_from_mask(data,flag):
         annotations = data
 
         #pdb.set_trace()
-        for i in range(annotations.shape[0]):
+        for i in range(len(annotations)):
             #pdb.set_trace()
             jpg = annotations[i][0]
             all = []
+            #pdb.set_trace()
             for j in range(len(annotations[i][1])):
                 #pdb.set_trace()
                 #print(j)
                 name = annotations[i][1][j][0]
                 current = list()
                 ann_coords_parts = np.where(np.reshape(annotations[i][1][j][1],[1000,1000])>0)
-                ann_coords_parts = (ann_coords_parts[1],ann_coords_parts[0])
+                ann_coords_parts = (ann_coords_parts[0],ann_coords_parts[1])
+                #pdb.set_trace()
                 current = [name,ann_coords_parts]
                 #pdb.set_trace()
                 all += [current]
@@ -680,7 +682,7 @@ if __name__ ==  '__main__':
     #----------------------------------------
     #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/ann_coords_1_.pickle'):
         print("make mask annotations_1")
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体
@@ -691,7 +693,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)#mask annotationsを座標系に変換
 
-        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_1_T.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -705,7 +707,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('../data/ann_anchor_data/ann_coords_2.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_2_T.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -719,7 +721,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('../data/ann_anchor_data/ann_coords_3.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_3_T.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -733,7 +735,7 @@ if __name__ ==  '__main__':
 
         ann_coords=make_coords_from_mask(annotations,1)
 
-        with open('../data/ann_anchor_data/ann_coords_4.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/ann_coords_4_T.pickle',mode = 'wb') as f:
             pickle.dump(ann_coords,f)
         print("finish making mask annotations coords")
 
@@ -775,7 +777,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
     #Tの正規化
     #正規化しなければ、Rの学習が進みません
 

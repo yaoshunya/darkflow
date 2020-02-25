@@ -67,7 +67,7 @@ def ICP_matching(ppoints, cpoints):
             plt.plot(0.0, 0.0, "xr")
             plt.axis("equal")
             plt.pause(1.0)
-            plt.savefig("icp_test_{0}.png".format(count))
+            plt.savefig("../../GoogleDrive/icp_test_{0}.png".format(count))
 
         inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
         Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
@@ -520,8 +520,10 @@ def detect_R_T(ann,anchor,path_num):
             iou = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
+
             annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
             annotations_y = np.array(ann[ann_len][1][ann_0_len][1][1])
+            
             x_max = np.max(annotations_x)
             x_min = np.min(annotations_x)
             y_max = np.max(annotations_y)
@@ -531,38 +533,47 @@ def detect_R_T(ann,anchor,path_num):
             mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
             mask_annotation = cv2.resize(mask_annotation,(250,250))
             mask_annotation[mask_annotation>0] = 1
-            mask_annotation = np.tile(mask_annotation[np.newaxis],[1805,1,1])
-            or_ = np.logical_or(mask_,mask_annotation).astype(np.int)
-            and_ = np.logical_and(mask_,mask_annotation).astype(np.int)
-            or_ = np.sum(np.sum(or_,1),1)
-            and_ = np.sum(np.sum(and_,1),1)
+            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[361,5,1,1])
+            or_ = np.logical_or(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
+            and_ = np.logical_and(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
+            #pdb.set_trace()
+            or_ = np.sum(np.sum(np.sum(or_,2),2),1)
+            and_ = np.sum(np.sum(np.sum(and_,2),2),1)
             iou = and_/or_
-
+            #pdb.set_trace()
             max_index = np.argmax(iou)
+            len_ann = len(annotations_x)
+            len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
+            idx = np.abs(np.array(len_anc)-len_ann).argmin()
+            iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-            print('index: {0}'.format(max_index))
-            print('iou  : {0}'.format(iou[max_index]))
-            iou_list.append(iou[max_index])
+            print('iou  : {0}'.format(iou))
+            iou_list.append(iou)
             R_list = list()
             T_list = list()
             #pdb.set_trace()
-            anc = np.where(mask__[max_index]>0)
+            anc = np.where(mask_anchor[max_index][idx]>0)
+            #anc = (anc[1],anc[0])
             anchor_len_ = len(anc[0])
             ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
             my_list_ann = []
             my_list_anchor = []
 
-            for k in range(100):
+            for k in range(150):
                 x = random.randint(0,ann_len_-1)
                 y = random.randint(0,anchor_len_-1)
                 my_list_ann.append(x)
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
-            
-            R, T = ICP_matching(ann_stack,anchor_stack)
-             
+            if iou>0.75:
+                R = 0
+                T = [0.0,0.0]
+            else:
+                R, T = ICP_matching(ann_stack,anchor_stack)
+            print(R)
+            print(T)
             with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
                 anchor_ = pickle.load(f)
             anchor_ = np.reshape(anchor_,(1805,1000,1000))
@@ -580,8 +591,8 @@ def detect_R_T(ann,anchor,path_num):
             an = cv2.resize(an,(1000,1000))*255
             #pdb.set_trace()
 
-            an_ = anchor_[max_index]
-            affine = np.array([[1,0,-T[1]],[0,1,-T[0]]])
+            an_ = mask_anchor[max_index][idx]
+            affine = np.array([[1,0,T[0]],[0,1,-T[1]]])
             pre=cv2.warpAffine(an_, affine, (1000,1000))
             affine = cv2.getRotationMatrix2D((0,0),-R,1.0)
             pre = cv2.warpAffine(an_,affine,(1000,1000))
@@ -596,7 +607,7 @@ def detect_R_T(ann,anchor,path_num):
             print('affine iou:{0}'.format(iou_affine))
             #pdb.set_trace()
             #pre = an_
-            """
+            
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -615,22 +626,30 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            #cv2.imwrite('sample_ann.png',X)
-            
-
+            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('sample_ann.png',X)
+            """
+            not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
+            pre_2 = np.zeros((1000,1000))
+            pre_2[np.where(an_>0)]= 200
+            pre_2 = pre_2[np.newaxis]
+            not_affine = np.transpose(np.append(not_affine,pre_2,0),[1,2,0])
+            #pdb.set_trace()
+            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(not_affine,np.float64),0.3,0)
+            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
+            cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             #pdb.set_trace()
             """
 
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
             #pdb.set_trace()
             all.append(current)
         #pdb.set_trace()
         add = [[img_name,[all]]]
         dumps += add
         #pdb.set_trace()
-        if ann_len == 5:
+        if ann_len == 0:
             print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
             print('iou_affine_mean:{0}'.format(np.mean(np.array(iou_affine_list))))
             pdb.set_trace()
