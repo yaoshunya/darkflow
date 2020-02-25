@@ -20,7 +20,7 @@ from statistics import mean
 EPS = 0.00001
 MAXITER = 100
 
-show_animation = False
+show_animation = True
 def load_data(path):
 
     cur_dir = os.getcwd()
@@ -54,8 +54,8 @@ def ICP_matching(ppoints, cpoints):
     dError = 1000.0
     preError = 1000.0
     count = 0
-    ppoints = np.array([ppoints[1],ppoints[0]])
-    cpoints = np.array([cpoints[1],cpoints[0]])
+    ppoints = np.array([ppoints[0],ppoints[1]])
+    cpoints = np.array([cpoints[0],cpoints[1]])
     while dError >= EPS:
         count += 1
 
@@ -571,6 +571,7 @@ def detect_R_T(ann,anchor,path_num):
                 R = 0
                 T = [0.0,0.0]
             else:
+                #pdb.set_trace()
                 R, T = ICP_matching(ann_stack,anchor_stack)
             print(R)
             print(T)
