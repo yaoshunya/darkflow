@@ -17,10 +17,10 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 from statistics import mean
 #  ICP parameters
-EPS = 0.00001
+EPS = 0.00000001
 MAXITER = 100
 
-show_animation = True
+show_animation = False
 def load_data(path):
 
     cur_dir = os.getcwd()
@@ -90,12 +90,13 @@ def ICP_matching(ppoints, cpoints):
     #pdb.set_trace()
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
-    try:
-        R = math.asin(R[0][0])
-    except:
-        R = math.asin(1.0)
-
-    return R, T
+    print(R)
+    print(T)
+    #m_1 = np.append(R[0],T[0])
+    #m_2 = np.append(R[1],T[1])
+    #return_m = np.append(m_1[np.newaxis],m_2[np.newaxis],0)
+    #pdb.set_trace()
+    return R,T
 
 
 def update_homogeneous_matrix(Hin, R, T):
@@ -285,88 +286,7 @@ def project_sphere_on_xy_plane(grid, projection_origin):
     ry = (qy - ymin) / (2 * np.abs(ymin))
 
     return rx, ry
-
-def mask_anchor(anchor,H):
-    img_x = 1000
-    img_y = 1000
-
-    step_x=0
-    step_y=0
-    S = H
-    #anchor = np.reshape(anchor,(5,2))
-    anchor_size = anchor.shape[0]
-    step_size = int(img_x/S)
-
-
-    mask = np.array([])
-
-    for i in range(S):
-        for t in range(S):
-            if t==0:
-                step_x = 0
-            center_x = int((step_x + (step_x + step_size))/2)
-            center_y = int((step_y + (step_y + step_size))/2)
-            for l in range(anchor_size):
-                #pdb.set_trace()
-                w_ = float(x[l].split(",")[0])
-                h_ = float(x[l].split(",")[1])
-
-                mask_base = np.zeros((img_x,img_y),dtype=int)
-
-                #side = int(w_*1224/488)
-                #ver = int(h_*370/488)
-                side = int(h_)/2
-                ver = int(w_)/2
-
-                side_min = center_x - side
-                side_max = center_x + side
-                ver_min = center_y - ver
-                ver_max = center_y + ver
-
-                if side_min < 0:
-                    side_min = 0
-                if side_max > img_x:
-                    side_max = img_x
-                if ver_min < 0:
-                    ver_min = 0
-                if ver_max > img_y:
-                    ver_max = img_y
-
-
-                mask_base[ver_min:ver_max,side_min:side_max] = 255
-                #mask_base = np.resize(mask_base,(500,500))
-                #-------------------------------------------------
-                #アンカーの球面写像
-                grid = get_projection_grid(b=500)
-                rot = rand_rotation_matrix(deflection=1.0)
-                grid = rotate_grid(rot,grid)
-                mask_base = project_2d_on_sphere(mask_base,grid)
-                #-------------------------------------------------
-
-
-                resize_mask = mask_base.T
-                if l == 0:
-                    mask = resize_mask[np.newaxis]
-                else:
-                    mask = np.append(mask,resize_mask[np.newaxis],axis=0)
-
-
-            step_x += step_size
-            if t == 0:
-                mask_ = mask[np.newaxis]
-            else:
-                mask_ = np.append(mask_,mask[np.newaxis],axis=0)
-        print(i)
-        step_y += step_size
-        if i == 0:
-            mask_fi = mask_[np.newaxis]
-            #mask_fi_row = mask__row[np.newaxis]
-        else:
-            mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
-            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-
-    return mask_fi
-
+        
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     print('Parsing for {} {}'.format(
             pick, 'exclusively' * int(exclusive)))
@@ -500,6 +420,7 @@ def detect_R_T(ann,anchor,path_num):
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
+    #mask_anchor_T = np.transpose(np.reshape(mask_anchor,[361,5,1000,1000]),[0,1,3,2])
     mask__ = np.reshape(mask_anchor,[1805,1000,1000])
     mask_ = list()
     for i in range(1805):
@@ -509,6 +430,7 @@ def detect_R_T(ann,anchor,path_num):
     mask_ = np.array(mask_)
     iou_list = list()
     iou_affine_list = list()
+    kernel = [[1,1,1],[1,-8,1],[1,1,1]]
     for ann_len in range(len(ann)):
 
         img_name = ann[ann_len][0]
@@ -545,13 +467,14 @@ def detect_R_T(ann,anchor,path_num):
             len_ann = len(annotations_x)
             len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
             idx = np.abs(np.array(len_anc)-len_ann).argmin()
+            #pdb.set_trace()
             iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-            print('iou  : {0}'.format(iou))
-            iou_list.append(iou)
+            
             R_list = list()
             T_list = list()
             #pdb.set_trace()
+            """
             anc = np.where(mask_anchor[max_index][idx]>0)
             #anc = (anc[1],anc[0])
             anchor_len_ = len(anc[0])
@@ -567,36 +490,55 @@ def detect_R_T(ann,anchor,path_num):
                 my_list_anchor.append(y)
             ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
             anchor_stack = np.vstack((anc[0][my_list_anchor],anc[1][my_list_anchor]))
-            if iou>0.75:
-                R = 0
-                T = [0.0,0.0]
-            else:
-                #pdb.set_trace()
-                R, T = ICP_matching(ann_stack,anchor_stack)
-            print(R)
-            print(T)
-            with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
-                anchor_ = pickle.load(f)
-            anchor_ = np.reshape(anchor_,(1805,1000,1000))
+            #pdb.set_trace()
+            #pdb.set_trace()
+            """
+            ann_now = ann[ann_len][1][ann_0_len][1]
+            A = np.zeros((1000,1000),dtype = 'uint8')
+            A[ann_now] = 255
+            ann_now = A
+            anchor_now = mask_anchor[max_index][idx]
+            #pdb.set_trace()
+            dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0)
+            dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
+
+            ann_len_ = len(dst_ann[0])
+            anchor_len_ = len(dst_anchor[0])
+
+            my_list_ann = []
+            my_list_anchor = []
+
+            for k in range(150):
+                x = random.randint(0,ann_len_-1)
+                y = random.randint(0,anchor_len_-1)
+                my_list_ann.append(x)
+                my_list_anchor.append(y)
+            #pdb.set_trace()
+            ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
+            anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
+
+
+            R,T  = ICP_matching(ann_stack,anchor_stack)
+            
             img = cv2.imread('../data/VOC2012/sphere_data/{0}'.format(img_name))
             with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
-            #pdb.set_trace()
+            
             X = np.zeros((1000,1000))
             X[ann[ann_len][1][ann_0_len][1]] = 255
-            #pdb.set_trace()
-            #X = cv2.resize(an,(1000,1000))*255
-            #X[ann[0][1][0][1]] = 255
-            #X[ann[0][1][0][1]] = 255
-            #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
             an = cv2.resize(an,(1000,1000))*255
             #pdb.set_trace()
 
             an_ = mask_anchor[max_index][idx]
-            affine = np.array([[1,0,T[0]],[0,1,-T[1]]])
-            pre=cv2.warpAffine(an_, affine, (1000,1000))
-            affine = cv2.getRotationMatrix2D((0,0),-R,1.0)
+            #affine = np.array([[1,0,T[0]],[0,1,T[1]]])
+            #pre=cv2.warpAffine(an_, affine, (1000,1000))
+            affine = cv2.getRotationMatrix2D((0,0),math.degrees(math.acos(R[0][0])),1.0)
+            affine[0][2] += T[1]
+            affine[1][2] += T[0]
+
             pre = cv2.warpAffine(an_,affine,(1000,1000))
+            #affine = np.array([[1,0,T[1]],[0,1,T[1]]])
+            #pre = cv2.warpAffine(pre,affine,(1000,1000))
             pre_resize = cv2.resize(pre,(250,250))
             pre_resize[pre_resize>0] = 1
 
@@ -604,7 +546,9 @@ def detect_R_T(ann,anchor,path_num):
             and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
             iou_affine = and_/or_
             #pdb.set_trace()
+            iou_list.append(iou)
             iou_affine_list.append(iou_affine)
+            print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
             #pdb.set_trace()
             #pre = an_
@@ -628,8 +572,9 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            cv2.imwrite('sample_ann.png',X)
-            """
+            #cv2.imwrite('sample_ann.png',X)
+            #pdb.set_trace()
+            """ 
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))
             pre_2[np.where(an_>0)]= 200
@@ -805,7 +750,7 @@ if __name__ ==  '__main__':
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
-        with open('../data/ann_anchor_data/ann_coords_1.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/ann_coords_1_T.pickle',mode = 'rb') as f:
             ann_1 = pickle.load(f)
         #pdb.set_trace()
         print("start detect the redidual between anchors and annotations")

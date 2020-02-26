@@ -780,7 +780,7 @@ if __name__ ==  '__main__':
     #実行に1日くらいかかるのでプログラム分割して実行可能。
     #detect_R_Tの説明は本プログラムを参考に動作を確認してください
     #pre_0.py,pre_1.py,pre_2.py,pre_3.py
-    if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
+    if not os.path.exists('../data/redidual_1/redidual_parts_1.pickle'):
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
