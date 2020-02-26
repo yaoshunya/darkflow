@@ -90,8 +90,8 @@ def ICP_matching(ppoints, cpoints):
 
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
-    print(R)
-    print(T)
+    #print(R)
+    #print(T)
 
     return R,T
 
@@ -246,14 +246,16 @@ def detect_R_T(ann,anchor,path_num):
 
             ann_len_ = len(dst_ann[0])
             anchor_len_ = len(dst_anchor[0])
-
-            my_list_ann = []
-            my_list_anchor = []
+ 
             iou_affine = 0
             count = 0
-            while(iou > iou_affine):
+            while(iou > iou_affine or iou_affine < 0.5):
+                my_list_ann = []
+                my_list_anchor = []
+                if iou_affine > 0.8:
+                    break
                 count += 1
-                if count == 50:
+                if count == 100:
                     break
                 for k in range(50):
                     x = random.randint(0,ann_len_-1)
@@ -294,7 +296,7 @@ def detect_R_T(ann,anchor,path_num):
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-
+            """
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -313,7 +315,7 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-
+            """
             """
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))
@@ -333,10 +335,10 @@ def detect_R_T(ann,anchor,path_num):
         add = [[img_name,[all]]]
         dumps += add
 
-        if ann_len == 0:
+        if ann_len == 8:
             print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
             print('iou_affine_mean:{0}'.format(np.mean(np.array(iou_affine_list))))
-
+            pdb.set_trace()
         print("finish:{0}_{1}".format(ann_len,path_num))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:

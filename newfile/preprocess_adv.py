@@ -432,8 +432,6 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
         #pdb.set_trace()
         dumps += add
         in_file.close()
-        if i == 10:
-            break
         ###################################################################
 
 
