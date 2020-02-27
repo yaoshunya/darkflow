@@ -713,7 +713,7 @@ if __name__ ==  '__main__':
     #----------------------------------------
     #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
     #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/ann_coords_1_.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
         print("make mask annotations_1")
         path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
         pick = ['car','Truck'] #見つけたい物体
@@ -808,7 +808,7 @@ if __name__ ==  '__main__':
 
         print("finish 4")
 
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor.pickle'):
+    if not os.path.exists('../data/ann_anchor_data/annotations_nor_.pickle'):
     #Tの正規化
     #正規化しなければ、Rの学習が進みません
 
@@ -848,7 +848,7 @@ if __name__ ==  '__main__':
         T_1 = np.array(T_1)
         R = np.array(R)
         #pdb.set_trace()
-
+        """        
         #Tの正規化前の分布確認用
         plt.hist(T_0)
         #plt.plot(np.array(T_0))
@@ -861,7 +861,7 @@ if __name__ ==  '__main__':
         plt.hist(R)
         plt.savefig('../../GoogleDrive/R_.png')
         plt.clf()
-
+        """
         #pdb.set_trace()
         T_0_mean = np.mean(T_0)
         T_0_var = np.var(T_0)

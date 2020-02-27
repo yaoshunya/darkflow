@@ -291,8 +291,8 @@ def detect_R_T(ann,anchor,path_num):
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
 
-            iou_list.append(iou)
-            iou_affine_list.append(iou_affine)
+            #iou_list.append(iou)
+            #iou_affine_list.append(iou_affine)
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
@@ -334,11 +334,12 @@ def detect_R_T(ann,anchor,path_num):
 
         add = [[img_name,[all]]]
         dumps += add
-
+        """
         if ann_len == 8:
             print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
             print('iou_affine_mean:{0}'.format(np.mean(np.array(iou_affine_list))))
             pdb.set_trace()
+        """
         print("finish:{0}_{1}".format(ann_len,path_num))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
