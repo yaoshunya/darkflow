@@ -92,7 +92,9 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-
+    R = math.degrees(math.acos(R[0][0]))
+    print(R)
+    print(T)
     return R,T
 
 
@@ -249,6 +251,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou_affine = 0
             count = 0
+
             while(iou > iou_affine or iou_affine < 0.5):
                 my_list_ann = []
                 my_list_anchor = []
@@ -278,7 +281,7 @@ def detect_R_T(ann,anchor,path_num):
 
 
                 an_ = mask_anchor[max_index][idx]
-                affine = cv2.getRotationMatrix2D((0,0),math.degrees(math.acos(R[0][0])),1.0)
+                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
 
@@ -327,7 +330,6 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
 
             all.append(current)
@@ -363,4 +365,4 @@ if __name__ ==  '__main__':
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,1)
 
-        print("finish 2")
+        print("finish 1")

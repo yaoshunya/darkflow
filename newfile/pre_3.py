@@ -92,7 +92,9 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-
+    R = math.degrees(math.acos(R[0][0]))
+    print(R)
+    print(T)
     return R,T
 
 
@@ -249,6 +251,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou_affine = 0
             count = 0
+
             while(iou > iou_affine or iou_affine < 0.5):
                 my_list_ann = []
                 my_list_anchor = []
@@ -278,7 +281,7 @@ def detect_R_T(ann,anchor,path_num):
 
 
                 an_ = mask_anchor[max_index][idx]
-                affine = cv2.getRotationMatrix2D((0,0),math.degrees(math.acos(R[0][0])),1.0)
+                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
 
@@ -291,8 +294,8 @@ def detect_R_T(ann,anchor,path_num):
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
 
-            iou_list.append(iou)
-            iou_affine_list.append(iou_affine)
+            #iou_list.append(iou)
+            #iou_affine_list.append(iou_affine)
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
@@ -327,18 +330,18 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
 
             all.append(current)
 
         add = [[img_name,[all]]]
         dumps += add
-
+        """
         if ann_len == 8:
             print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
             print('iou_affine_mean:{0}'.format(np.mean(np.array(iou_affine_list))))
             pdb.set_trace()
+        """
         print("finish:{0}_{1}".format(ann_len,path_num))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
