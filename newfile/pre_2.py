@@ -363,4 +363,4 @@ if __name__ ==  '__main__':
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,2)
 
-        print("finish 1")
+        print("finish 3")

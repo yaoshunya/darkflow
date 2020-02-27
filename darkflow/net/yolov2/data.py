@@ -74,7 +74,10 @@ def _batch(self, chunk):
         probs[obj[7], labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
         proid[obj[7], :] = [[1.]*C][0]
         #pdb.set_trace()
-        R[obj[7], :] = np.array(math.acos(obj[1][0][0]))
+        try:
+            R[obj[7], :] = np.array(math.acos(obj[1][0][0]))
+        except:
+            pdb.set_trace()
         T[obj[7], :] = np.array(obj[2])
         confs[obj[7]] = 1.  #物体が存在するセルの各BBの信頼度を１とする
         #obj[7]には、最も真値に近いアンカーのindexが入っている。
