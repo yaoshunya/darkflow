@@ -889,10 +889,6 @@ if __name__ ==  '__main__':
                 X_0 = ((X_0-t_0_min)/(t_0_max-t_0_min))*2 - 1#最大値を1,最小値-1に設定
                 X_1 = ((X_1-t_1_min)/(t_1_max-t_1_min))*2 - 1
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
-                try:
-                    annotations[i][1][0][j][1] = np.array(math.acos(annotations[i][1][0][j][1][0][0]))
-                except:
-                    pdb.set_trace()
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
         with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
