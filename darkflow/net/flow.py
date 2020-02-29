@@ -107,13 +107,14 @@ def make_result(out,this_batch,threshold):
         true = list()
         true_list = list()
         trast_conf_new = list()
+
         for ann in annotations:
             if ann[0] == image_name:
                 #annotationsから入力された画像と同じ名前のものを選択
                 ann_num = ann
                 break
 
-
+        """
         for j in range(len(trast_conf)):
             trast_conf_new.append(trast_conf[j])
             if j == 0:
@@ -135,7 +136,9 @@ def make_result(out,this_batch,threshold):
                 elif iou[x] > 0.3:
                     ma = np.append(ma,or_[x][np.newaxis],axis=0)
                     trast_conf_new.append(trast_conf[x])
-                    print(x)
+                    #print(x)
+            if j == 5:
+                break
         ma = ma.tolist()
         mask_anchor_all = list()
         trast_conf = list()
@@ -145,8 +148,9 @@ def make_result(out,this_batch,threshold):
             else:
                 mask_anchor_all.append(ma[j])
                 trast_conf.append(trast_conf_new[j])
+        """
         #pdb.set_trace()
-        for j in range(len(mask_anchor_all)):
+        for j in range(len(trast_conf)):
             #print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
 
@@ -201,7 +205,8 @@ def make_result(out,this_batch,threshold):
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
             cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
-        #pdb.set_trace()
+            
+        pdb.set_trace()
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
             if count_list.count(i)>0:
@@ -217,7 +222,10 @@ def make_result(out,this_batch,threshold):
         [predict.append(0) for i in range(len(ann_num[1]))]#残った真値の数だけ、predictに0をappend
         [true.append(1) for i in range(len(ann_num[1]))]#残った真値の数だけ、trueに1をappend
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
-        recall = recall_score(np.array(true),np.array(predict))#recallの計算
+        if np.sum(np.array(true)) == 0:
+            recall = 1
+        else:
+            recall = recall_score(np.array(true),np.array(predict))#recallの計算
         precision_return.append(precision)
         recall_return.append(recall)
         #pdb.set_trace()
@@ -266,10 +274,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    threshold = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-    iou_label_ = ['iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09']
-    precision_label = ['precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07','precision_conf_08','precision_conf_09']
-    recall_label = ['recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07','recall_conf_08','recall_conf_09']
+    #threshold = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+    threshold = [0.5]
+    iou_label_ = ['iou_label_conf_05']
+    precision_label = ['precision_conf_05']
+    recall_label = ['recall_conf_05']
+    #iou_label_ = ['iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09']
+    #precision_label = ['precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07','precision_conf_08','precision_conf_09']
+    #recall_label = ['recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07','recall_conf_08','recall_conf_09']
 
     for k in range(len(threshold)):
 
@@ -283,13 +295,15 @@ def predict(self):
         iou_label_all =  [[] for i in range(6)]
         precision_label_all = [[] for i in range(6)]
         recall_label_all = [[] for i in range(6)]
-        i=0
-
+        X=0
+        print(threshold[k])
+        #pdb.set_trace()
+        the = threshold[k]
         for j in range(n_batch):
             from_idx = j * batch
             to_idx = min(from_idx + batch, len(all_inps))
-            print(i)
-            i = i+1
+            #print(X)
+            X = X+1
             # collect images input in the batch
             this_batch = all_inps[from_idx:to_idx]
             inp_feed = pool.map(lambda inp: (
@@ -298,7 +312,7 @@ def predict(self):
 
             # Feed to the net
             feed_dict = {self.inp : np.concatenate(inp_feed, 0)}
-            self.say('Forwarding {0} inputs ...threshold:{1}'.format(len(inp_feed),threshold[k]))
+            self.say('Forwarding {0} inputs ...threshold:{1}'.format(len(inp_feed),the))
             start = time.time()
             out = self.sess.run(self.out, feed_dict)
 
@@ -310,7 +324,7 @@ def predict(self):
             self.say('Post processing {} inputs ...'.format(len(inp_feed)))
             start = time.time()
 
-            iou,precision,recall,T_0,T_1,R,iou_label = make_result(out,this_batch,threshold[k])
+            iou,precision,recall,T_0,T_1,R,iou_label = make_result(out,this_batch,the)
             iou_.extend(iou)
             precision_.extend(precision)
             recall_.extend(recall)
@@ -319,30 +333,25 @@ def predict(self):
             R_.extend(R)
 
             [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if i == 10:
+            if X == 1:
                 break
-            #pdb.set_trace()
-
-        with open('data/out_data/{0}.pickle'.format(iou_label_[k]),mode = 'wb') as f:
-                pickle.dump(iou_label_all,f)
-        """
-        with open('data/out_data/R_conf_02.pickle',mode = 'wb') as f:
-                pickle.dump(R_,f)
-        with open('data/out_data/T_0_conf_02.pickle',mode='wb') as f:
-                pickle.dump(T_0,f)
-        with open('data/out_data/T_1_conf_02.pickle',mode='wb') as f:
-                pickle.dump(T_1,f)
-        """
-        with open('data/out_data/{0}.pickle'.format(precision_label[k]),mode='wb') as f:
+        iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
+        precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
+        recall_index = 'data/out_data'+recall_label[k]+'.pickle'
+        #pdb.set_trace()
+        with open(iou_index,mode = 'wb') as f:
+                pickle.dump(iou_label_all,f) 
+        with open(precision_index,mode='wb') as f:
                 pickle.dump(precision_,f)
-        with open('data/out_data/{0}.pickle'.format(recall_label[k]),mode='wb') as f:
+        with open(recall_index,mode='wb') as f:
                 pickle.dump(recall_,f)
-
+        print("finish threshold:{0}".format(threshold[k]))
         print("iou:{0}".format(np.nanmean(iou_)))
         print("precision:{0}".format(np.nanmean(precision_)))
         print("recall:{0}".format(np.nanmean(recall_)))
         #pdb.set_trace()
-
+        
+    pdb.set_trace()
 def _save_ckpt(self, step, loss_profile):
     file = '{}-{}{}'
     model = self.meta['name']
