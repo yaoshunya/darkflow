@@ -85,6 +85,7 @@ def make_result(out,this_batch,threshold):
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1]) #networkの出力をreshape
+        pdb.set_trace()
         image_name = this_batch[i]#画像の名前
 
         out_conf = np.reshape(out_now[3],[-1])#confidenceの抽出
@@ -100,6 +101,9 @@ def make_result(out,this_batch,threshold):
         indices = np.argsort(-y)
         trast_conf = X[indices]
         """
+        print('size trast conf:{0}'.format(len(trast_conf)))
+        print('trast conf:{0}'.format(trast_conf))
+        #pdb.set_trace()
         pre = np.zeros((1000,1000))
         if len(trast_conf) == 0:
             continue
@@ -107,7 +111,7 @@ def make_result(out,this_batch,threshold):
         true = list()
         true_list = list()
         trast_conf_new = list()
-
+        
         for ann in annotations:
             if ann[0] == image_name:
                 #annotationsから入力された画像と同じ名前のものを選択
@@ -159,13 +163,19 @@ def make_result(out,this_batch,threshold):
 
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
 
-            affine = np.array([[1,0,-T_1],[0,1,-T_0]])#並進
+            #affine = np.array([[1,0,-T_1],[0,1,-T_0]])#並進
 
-            pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
+            #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
 
-            affine = cv2.getRotationMatrix2D((0,0),-R,1.0)#回転
+            #affine = cv2.getRotationMatrix2D((0,0),-R,1.0)#回転
 
-            pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
+            #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
+            #pdb.set_trace()
+            affine = cv2.getRotationMatrix2D((0,0),math.degrees(R),1.0)
+            affine[0][2] += T_1
+            affine[1][2] += T_0
+            print('T0:{0}   T1:{1}'.format(T_0,T_1))
+            pre = cv2.warpAffine(anchor_now,affine,(1000,1000))
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -204,9 +214,9 @@ def make_result(out,this_batch,threshold):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            cv2.imwrite('data/out_test_new/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
             
-        pdb.set_trace()
+        #pdb.set_trace()
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
             if count_list.count(i)>0:
@@ -275,7 +285,7 @@ def predict(self):
 
 
     #threshold = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-    threshold = [0.5]
+    threshold = [0.2]
     iou_label_ = ['iou_label_conf_05']
     precision_label = ['precision_conf_05']
     recall_label = ['recall_conf_05']
@@ -351,7 +361,7 @@ def predict(self):
         print("recall:{0}".format(np.nanmean(recall_)))
         #pdb.set_trace()
         
-    pdb.set_trace()
+    #pdb.set_trace()
 def _save_ckpt(self, step, loss_profile):
     file = '{}-{}{}'
     model = self.meta['name']

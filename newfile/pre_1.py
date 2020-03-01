@@ -92,7 +92,10 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-    R = math.degrees(math.acos(R[0][0]))
+    try:
+        R = math.degrees(math.acos(R[0][0]))
+    except:
+        R = 0
     print(R)
     print(T)
     return R,T
@@ -258,7 +261,7 @@ def detect_R_T(ann,anchor,path_num):
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count == 100:
+                if count == 200:
                     break
                 for k in range(50):
                     x = random.randint(0,ann_len_-1)
@@ -299,7 +302,7 @@ def detect_R_T(ann,anchor,path_num):
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-            """
+            """            
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -316,7 +319,7 @@ def detect_R_T(ann,anchor,path_num):
 
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('../../GoogleDrive/make_data/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             """
             """
@@ -330,7 +333,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index+361*idx]
 
             all.append(current)
 
@@ -347,7 +350,7 @@ def detect_R_T(ann,anchor,path_num):
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
-
+        #pdb.set_trace()
     with open('../data/{0}/redidual_1.pickle'.format(path[path_num]),mode = 'wb') as f:
             pickle.dump(dumps,f)
 

@@ -92,7 +92,10 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-    R = math.degrees(math.acos(R[0][0]))
+    try:
+        R = math.degrees(math.acos(R[0][0]))
+    except:
+        R = 0
     print(R)
     print(T)
     return R,T
@@ -330,7 +333,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index+361*idx]
 
             all.append(current)
 

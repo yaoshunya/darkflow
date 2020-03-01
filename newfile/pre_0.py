@@ -92,7 +92,11 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-    R = math.degrees(math.acos(R[0][0]))
+    #pdb.set_trace()
+    try:
+        R = math.degrees(math.acos(R[0][0]))
+    except:
+        R = 0
     print(R)
     print(T)
     return R,T
@@ -215,7 +219,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-
+            print('max index:{0}'.format(max_index+361*idx))
             R_list = list()
             T_list = list()
 
@@ -258,7 +262,7 @@ def detect_R_T(ann,anchor,path_num):
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count == 100:
+                if count == 200:
                     break
                 for k in range(50):
                     x = random.randint(0,ann_len_-1)
@@ -330,7 +334,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index+361*idx]
 
             all.append(current)
 
