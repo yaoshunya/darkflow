@@ -64,8 +64,7 @@ def loss(self, net_out):
     _T        =    tf.placeholder(tf.float32, size2 + [2])
 
     self.placeholders = {
-        'probs':_probs, 'confs':_confs, 'R':_R, 'T':_T, 'proid':_proid,
-        'areas':_areas
+        'probs':_probs, 'confs':_confs, 'R':_R, 'T':_T, 'proid':_proid
     }
 
     # Extract the coordinate prediction from net.out

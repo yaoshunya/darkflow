@@ -17,7 +17,7 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 from statistics import mean
 #  ICP parameters
-EPS = 0.00000001
+EPS = 0.000001
 MAXITER = 100
 
 show_animation = False
@@ -164,7 +164,7 @@ def SVD_motion_estimation(ppoints, cpoints):
 def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
-    path = ['redidual_1_an','redidual_2_an','redidual_3_an','redidual_4_an']
+    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
@@ -333,7 +333,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index+361*idx]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index,idx]
 
             all.append(current)
 

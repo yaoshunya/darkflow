@@ -189,9 +189,9 @@ def make_result(out,this_batch,threshold):
 
             pre = np.transpose(pre,[1,2,0])
 
-            x_ = mean(where_[0])
-            y_ = mean(where_[1])
-            label = where_pre_label(x_,y_,where_)
+            #x_ = mean(where_[0])
+            #y_ = mean(where_[1])
+            #label = where_pre_label(x_,y_,where_)
             ann,iou_parts,delete_index = detect_most_near(pre,ann_num)#ann:予測に最も近い真値 iou_parts:最も大きいiou delete_index:選択された真値
             predict.append(1)#予測配列に1をappend
             #print('iou:{0}'.format(iou_parts))
@@ -209,7 +209,7 @@ def make_result(out,this_batch,threshold):
             R_list.append(R)
 
             iou_return.append(iou_parts)
-            iou_label[label-1].append(iou_parts)
+            #iou_label[label-1].append(iou_parts)
 
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
@@ -239,7 +239,7 @@ def make_result(out,this_batch,threshold):
         precision_return.append(precision)
         recall_return.append(recall)
         #pdb.set_trace()
-    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,iou_label
+    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
 
 
 import math
@@ -284,14 +284,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    threshold = [0.3,0.4,0.5,0.6,0.7]
-    #threshold = [0.3]
-    #iou_label_ = ['iou_label_conf_05']
-    #precision_label = ['precision_conf_05']
-    #recall_label = ['recall_conf_05']
-    iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
-    precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
-    recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
+    #threshold = [0.3,0.4,0.5,0.6,0.7]
+    threshold = [0.3]
+    iou_label_ = ['iou_label_conf_05']
+    precision_label = ['precision_conf_05']
+    recall_label = ['recall_conf_05']
+    #iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
+    #precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
+    #recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
 
     for k in range(len(threshold)):
 
