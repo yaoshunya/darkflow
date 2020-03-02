@@ -176,6 +176,7 @@ def make_result(out,this_batch,threshold):
             affine[1][2] += T_0
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
             pre = cv2.warpAffine(anchor_now,affine,(1000,1000))
+            #pre = anchor_now
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -232,7 +233,7 @@ def make_result(out,this_batch,threshold):
         [predict.append(0) for i in range(len(ann_num[1]))]#残った真値の数だけ、predictに0をappend
         [true.append(1) for i in range(len(ann_num[1]))]#残った真値の数だけ、trueに1をappend
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
-        pdb.set_trace()
+        #pdb.set_trace()
         if np.sum(np.array(true)) == 0:
             recall = 1
         else:

@@ -96,8 +96,8 @@ def ICP_matching(ppoints, cpoints):
         R = math.degrees(math.acos(R[0][0]))
     except:
         R = 0
-    print(R)
-    print(T)
+    #print(R)
+    #print(T)
     return R,T
 
 
@@ -255,15 +255,18 @@ def detect_R_T(ann,anchor,path_num):
             iou_affine = 0
             count = 0
 
-            while(iou > iou_affine or iou_affine < 0.5):
+            while(iou > iou_affine or iou_affine < 0.4):
                 my_list_ann = []
                 my_list_anchor = []
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count == 200:
-                    break
-                for k in range(50):
+                if count==200:
+                    if iou>0.4:
+                        R = 0.0
+                        T = [0.0,0.0]
+                        break
+                for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1)
                     my_list_ann.append(x)

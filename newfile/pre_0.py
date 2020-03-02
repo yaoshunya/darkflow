@@ -97,8 +97,8 @@ def ICP_matching(ppoints, cpoints):
         R = math.degrees(math.acos(R[0][0]))
     except:
         R = 0
-    print(R)
-    print(T)
+    #print(R)
+    #print(T)
     return R,T
 
 
@@ -255,16 +255,26 @@ def detect_R_T(ann,anchor,path_num):
  
             iou_affine = 0
             count = 0
-            
-            while(iou > iou_affine or iou_affine < 0.5):
+            best_iou = 0
+            while(iou > iou_affine or iou_affine < 0.4):
                 my_list_ann = []
                 my_list_anchor = []
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count == 200:
-                    break
-                for k in range(50):
+                if count==200:
+                    if iou>iou_affine:
+                        R = 0.0
+                        T = [0.0,0.0]
+                        iou_affine = iou
+                        break
+                    else:
+                        R = best_R
+                        T = best_T
+                        iou_affine = best_iou
+                        break
+                        #pdb.set_trace()
+                for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1)
                     my_list_ann.append(x)
@@ -297,7 +307,10 @@ def detect_R_T(ann,anchor,path_num):
                 or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
-
+                if best_iou>iou_affine:
+                    best_iou = iou_affine
+                    best_R = R
+                    best_T = T
             #iou_list.append(iou)
             #iou_affine_list.append(iou_affine)
             print('iou       :{0}'.format(iou))
