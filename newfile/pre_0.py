@@ -252,7 +252,7 @@ def detect_R_T(ann,anchor,path_num):
 
             ann_len_ = len(dst_ann[0])
             anchor_len_ = len(dst_anchor[0])
- 
+
             iou_affine = 0
             count = 0
             best_iou = 0
@@ -383,4 +383,4 @@ if __name__ ==  '__main__':
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,0)
 
-        print("finish 1")
+        print("finish 0")

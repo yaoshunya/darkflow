@@ -92,6 +92,7 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
+    #pdb.set_trace()
     try:
         R = math.degrees(math.acos(R[0][0]))
     except:
@@ -218,7 +219,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-
+            print('max index:{0}  {1}'.format(max_index,idx))
             R_list = list()
             T_list = list()
 
@@ -254,7 +255,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou_affine = 0
             count = 0
-
+            best_iou = 0
             while(iou > iou_affine or iou_affine < 0.4):
                 my_list_ann = []
                 my_list_anchor = []
@@ -262,10 +263,17 @@ def detect_R_T(ann,anchor,path_num):
                     break
                 count += 1
                 if count==200:
-                    if iou>0.4:
+                    if iou>iou_affine:
                         R = 0.0
                         T = [0.0,0.0]
+                        iou_affine = iou
                         break
+                    else:
+                        R = best_R
+                        T = best_T
+                        iou_affine = best_iou
+                        break
+                        #pdb.set_trace()
                 for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1)
@@ -299,13 +307,16 @@ def detect_R_T(ann,anchor,path_num):
                 or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
-
+                if best_iou>iou_affine:
+                    best_iou = iou_affine
+                    best_R = R
+                    best_T = T
             #iou_list.append(iou)
             #iou_affine_list.append(iou_affine)
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-            """            
+            """
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -322,7 +333,7 @@ def detect_R_T(ann,anchor,path_num):
 
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/make_data/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             """
             """
@@ -336,6 +347,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
+            #pdb.set_trace()
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index,idx]
 
             all.append(current)
@@ -353,7 +365,7 @@ def detect_R_T(ann,anchor,path_num):
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
-        #pdb.set_trace()
+
     with open('../data/{0}/redidual_1.pickle'.format(path[path_num]),mode = 'wb') as f:
             pickle.dump(dumps,f)
 

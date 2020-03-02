@@ -17,7 +17,7 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 from statistics import mean
 #  ICP parameters
-EPS = 0.00000001
+EPS = 0.000001
 MAXITER = 100
 
 show_animation = False
@@ -92,9 +92,13 @@ def ICP_matching(ppoints, cpoints):
     T = np.array(H[0:2, 2])
     #print(R)
     #print(T)
-    R = math.degrees(math.acos(R[0][0]))
-    print(R)
-    print(T)
+    #pdb.set_trace()
+    try:
+        R = math.degrees(math.acos(R[0][0]))
+    except:
+        R = 0
+    #print(R)
+    #print(T)
     return R,T
 
 
@@ -161,7 +165,7 @@ def SVD_motion_estimation(ppoints, cpoints):
 def detect_R_T(ann,anchor,path_num):
 
     dumps = list()
-    path = ['redidual_1_an','redidual_2_an','redidual_3_an','redidual_4_an']
+    path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
@@ -215,7 +219,7 @@ def detect_R_T(ann,anchor,path_num):
 
             iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-
+            print('max index:{0}  {1}'.format(max_index,idx))
             R_list = list()
             T_list = list()
 
@@ -251,16 +255,26 @@ def detect_R_T(ann,anchor,path_num):
 
             iou_affine = 0
             count = 0
-
-            while(iou > iou_affine or iou_affine < 0.5):
+            best_iou = 0
+            while(iou > iou_affine or iou_affine < 0.4):
                 my_list_ann = []
                 my_list_anchor = []
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count == 100:
-                    break
-                for k in range(50):
+                if count==200:
+                    if iou>iou_affine:
+                        R = 0.0
+                        T = [0.0,0.0]
+                        iou_affine = iou
+                        break
+                    else:
+                        R = best_R
+                        T = best_T
+                        iou_affine = best_iou
+                        break
+                        #pdb.set_trace()
+                for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1)
                     my_list_ann.append(x)
@@ -293,7 +307,10 @@ def detect_R_T(ann,anchor,path_num):
                 or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
-
+                if best_iou>iou_affine:
+                    best_iou = iou_affine
+                    best_R = R
+                    best_T = T
             #iou_list.append(iou)
             #iou_affine_list.append(iou_affine)
             print('iou       :{0}'.format(iou))
@@ -330,7 +347,8 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
             """
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index*idx]
+            #pdb.set_trace()
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index,idx]
 
             all.append(current)
 
@@ -365,4 +383,4 @@ if __name__ ==  '__main__':
         print("start detect the redidual between anchors and annotations")
         ann_1 = detect_R_T(ann_1,anchor,3)
 
-        print("finish 1")
+        print("finish 3")
