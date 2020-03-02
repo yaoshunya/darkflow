@@ -214,7 +214,7 @@ def make_result(out,this_batch,threshold):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            #cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
             
         #pdb.set_trace()
         count_list = list()
@@ -232,6 +232,7 @@ def make_result(out,this_batch,threshold):
         [predict.append(0) for i in range(len(ann_num[1]))]#残った真値の数だけ、predictに0をappend
         [true.append(1) for i in range(len(ann_num[1]))]#残った真値の数だけ、trueに1をappend
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
+        pdb.set_trace()
         if np.sum(np.array(true)) == 0:
             recall = 1
         else:
@@ -285,7 +286,7 @@ def predict(self):
 
 
     #threshold = [0.3,0.4,0.5,0.6,0.7]
-    threshold = [0.3]
+    threshold = [0.2]
     iou_label_ = ['iou_label_conf_05']
     precision_label = ['precision_conf_05']
     recall_label = ['recall_conf_05']
@@ -334,7 +335,7 @@ def predict(self):
             self.say('Post processing {} inputs ...'.format(len(inp_feed)))
             start = time.time()
 
-            iou,precision,recall,T_0,T_1,R,iou_label = make_result(out,this_batch,the)
+            iou,precision,recall,T_0,T_1,R = make_result(out,this_batch,the)
             iou_.extend(iou)
             precision_.extend(precision)
             recall_.extend(recall)
@@ -342,7 +343,7 @@ def predict(self):
             T_1_.extend(T_1)
             R_.extend(R)
 
-            [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
+            #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
             if X == 3:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'

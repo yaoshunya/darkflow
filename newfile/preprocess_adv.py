@@ -880,6 +880,8 @@ if __name__ ==  '__main__':
         t_0_min = np.min(np.array(T_0))
         t_1_max = np.max(np.array(T_1))
         t_1_min = np.min(np.array(T_1))
+        max_index = list()
+        idx = list()
         for i in range(len(annotations)):
             for j in range(len(annotations[i][1][0])):
                 #pdb.set_trace()
@@ -892,8 +894,20 @@ if __name__ ==  '__main__':
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
                 annotations[i][1][0][j][1] = np.array(R)
                 #pdb.set_trace()
-        max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
+                max_index.append(annotations[i][1][0][j][7]%361)
+                idx.append(annotations[i][1][0][j][7]//361)
 
+        max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
+        """
+        plt.hist(max_index)
+        plt.savefig('../../GoogleDrive/max_index.png')
+        plt.clf()
+
+        plt.hist(idx)
+        plt.savefig('../../GoogleDrive/idx.png')
+        plt.clf()
+        """
+        """
         with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
         with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
@@ -910,6 +924,7 @@ if __name__ ==  '__main__':
             print("t_0_min = {0}".format(t_0_min),file = f)
             print("t_1_max = {0}".format(t_1_max),file = f)
             print("t_1_min = {0}".format(t_1_min),file = f)
+        """
 
         """#test_dataの分割
         annotations = glob.glob('../data/redidual_4/*.pickle')

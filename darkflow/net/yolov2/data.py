@@ -69,18 +69,18 @@ def _batch(self, chunk):
         """
         k = k+1
         #pdb.set_trace()
-        q = obj[7]//361
+        q_ = obj[7]//361
         mod = obj[7]%361
         #print(mod)
         #print(q)
         #areas[mod,q, :] = area*255#真値のマスク：confidenceの与え方の変更により、使用しない。
-        probs[mod,q, :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
-        probs[mod,q, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
-        proid[mod,q, :] = [[1.]*C][0]
+        probs[mod,q_, :] = [[0.]*C][0]  #物体があるセルにクラスの数だけ要素を設けている
+        probs[mod,q_, labels.index(obj[0])] = 1.  #そのうち入力された物体の方の確率を１とする
+        proid[mod,q_, :] = [[1.]*C][0]
         #pdb.set_trace()
-        R[mod,q, :] = np.array(math.radians(obj[1]))
-        T[mod,q, :] = np.array(obj[2])
-        confs[mod,q] = 1.  #物体が存在するセルの各BBの信頼度を１とする
+        R[mod,q_, :] = np.array(math.radians(obj[1]))
+        T[mod,q_, :] = np.array(obj[2])
+        confs[mod,q_] = 1.  #物体が存在するセルの各BBの信頼度を１とする
         #obj[7]には、最も真値に近いアンカーのindexが入っている。
     #areas = np.reshape(areas,[H*W,B,70,70])
     probs = np.reshape(probs,[H*W,B,C])
