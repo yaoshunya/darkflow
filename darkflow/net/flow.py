@@ -85,7 +85,7 @@ def make_result(out,this_batch,threshold):
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1]) #networkの出力をreshape
-        pdb.set_trace()
+        #pdb.set_trace()
         image_name = this_batch[i]#画像の名前
 
         out_conf = np.reshape(out_now[3],[-1])#confidenceの抽出
@@ -214,7 +214,7 @@ def make_result(out,this_batch,threshold):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
+            #cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
             
         #pdb.set_trace()
         count_list = list()
@@ -284,14 +284,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    #threshold = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-    threshold = [0.2]
-    iou_label_ = ['iou_label_conf_05']
-    precision_label = ['precision_conf_05']
-    recall_label = ['recall_conf_05']
-    #iou_label_ = ['iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09']
-    #precision_label = ['precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07','precision_conf_08','precision_conf_09']
-    #recall_label = ['recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07','recall_conf_08','recall_conf_09']
+    threshold = [0.3,0.4,0.5,0.6,0.7]
+    #threshold = [0.3]
+    #iou_label_ = ['iou_label_conf_05']
+    #precision_label = ['precision_conf_05']
+    #recall_label = ['recall_conf_05']
+    iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
+    precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
+    recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
 
     for k in range(len(threshold)):
 
@@ -343,7 +343,7 @@ def predict(self):
             R_.extend(R)
 
             [iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if X == 1:
+            if X == 3:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
