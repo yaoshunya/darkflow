@@ -213,7 +213,9 @@ def detect_R_T(ann,anchor,path_num):
             iou = np.reshape(and_/or_,[-1])
             #pdb.set_trace()
             iou_trast = np.where(iou>0.3)
-            max_index = np.argmax(iou)
+            if len(iou_trast) == 0:
+                iou_trast = np.argmax(iou)
+
             #len_ann = len(annotations_x)
             #len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
             #idx = np.abs(np.array(len_anc)-len_ann).argmin()
@@ -246,101 +248,104 @@ def detect_R_T(ann,anchor,path_num):
             A = np.zeros((1000,1000),dtype = 'uint8')
             A[ann_now] = 255
             ann_now = A
-
-            anchor_now = mask_anchor[max_index][idx]
-
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0)
-            dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
-
             ann_len_ = len(dst_ann[0])
-            anchor_len_ = len(dst_anchor[0])
 
-            iou_affine = 0
-            count = 0
-            best_iou = 0
-            best_R = 0.0
-            best_T = [0.0,0.0]
-            while(iou > iou_affine or iou_affine < 0.4):
-                my_list_ann = []
-                my_list_anchor = []
-                if iou_affine > 0.8:
-                    break
-                count += 1
-                if count==300:
-                    if iou>iou_affine:
-                        R = 0.0
-                        T = [0.0,0.0]
-                        iou_affine = iou
+            img = cv2.imread('../data/VOC2012/sphere_data/{0}'.format(img_name))
+            with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
+                an = pickle.load(f)
+
+            for i in range(len(iou_trast)):
+
+                anchor_now = mask__[iou_trast[i]]
+                dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
+
+                anchor_len_ = len(dst_anchor[0])
+
+                iou_affine = 0
+                count = 0
+                best_iou = 0
+                best_R = 0.0
+                best_T = [0.0,0.0]
+                while(iou[iou_trast[i]] > iou_affine or iou_affine < 0.4):
+                    my_list_ann = []
+                    my_list_anchor = []
+                    if iou_affine > 0.8:
                         break
-                    else:
-                        R = best_R
-                        T = best_T
-                        iou_affine = best_iou
-                        break
-                        #peedb.set_trace()
-                for k in range(30):
-                    x = random.randint(0,ann_len_-1)
-                    y = random.randint(0,anchor_len_-1)
-                    my_list_ann.append(x)
-                    my_list_anchor.append(y)
+                    count += 1
+                    if count==300:
+                        if iou>iou_affine:
+                            R = 0.0
+                            T = [0.0,0.0]
+                            iou_affine = iou[iou_trast[i]]
+                            break
+                        else:
+                            R = best_R
+                            T = best_T
+                            iou_affine = best_iou
+                            break
+                            #peedb.set_trace()
+                    for k in range(30):
+                        x = random.randint(0,ann_len_-1)
+                        y = random.randint(0,anchor_len_-1)
+                        my_list_ann.append(x)
+                        my_list_anchor.append(y)
 
-                ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
-                anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
+                    ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
+                    anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
 
-                R,T  = ICP_matching(ann_stack,anchor_stack)
+                    R,T  = ICP_matching(ann_stack,anchor_stack)
 
-                img = cv2.imread('../data/VOC2012/sphere_data/{0}'.format(img_name))
-                with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
-                    an = pickle.load(f)
-
-                X = np.zeros((1000,1000))
-                X[ann[ann_len][1][ann_0_len][1]] = 255
-                an = cv2.resize(an,(1000,1000))*255
+                    X = np.zeros((1000,1000))
+                    X[ann[ann_len][1][ann_0_len][1]] = 255
+                    an = cv2.resize(an,(1000,1000))*255
 
 
-                an_ = mask_anchor[max_index][idx]
-                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-                affine[0][2] += T[1]
-                affine[1][2] += T[0]
+                    an_ = mask_anchor[max_index][idx]
+                    affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                    affine[0][2] += T[1]
+                    affine[1][2] += T[0]
 
-                pre = cv2.warpAffine(an_,affine,(1000,1000))
+                    pre = cv2.warpAffine(an_,affine,(1000,1000))
 
-                pre_resize = cv2.resize(pre,(250,250))
-                pre_resize[pre_resize>0] = 1
-                #pdb.set_trace()
-                or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
-                and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
-                iou_affine = and_/or_
-                #pdb.set_trace()
-                if best_iou>iou_affine:
-                    best_iou = iou_affine
-                    best_R = R
-                    best_T = T
-            #iou_list.append(iou)
-            #iou_affine_list.append(iou_affine)
-            print('iou       :{0}'.format(iou))
-            print('affine iou:{0}'.format(iou_affine))
+                    pre_resize = cv2.resize(pre,(250,250))
+                    pre_resize[pre_resize>0] = 1
+                    #pdb.set_trace()
+                    or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
+                    and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
+                    iou_affine = and_/or_
+                    #pdb.set_trace()
+                    if best_iou>iou_affine:
+                        best_iou = iou_affine
+                        best_R = R
+                        best_T = T
+                R_list.append(R)
+                T_list.append(T)
+                #iou_list.append(iou)
+                #iou_affine_list.append(iou_affine)
+                print('iou       :{0}'.format(iou))
+                print('affine iou:{0}'.format(iou_affine))
 
-            
-            where_ = np.where(pre)
-            pre_1 = np.zeros((1000,1000))
-            pre_2 = np.zeros((1000,1000))
-            pre_1[where_] = 0
-            pre_2[where_] = 200
-            pre = pre[np.newaxis]
-            pre_1 = pre_1[np.newaxis]
-            pre_2 = pre_2[np.newaxis]
-            pre = np.append(pre,pre_1,0)
-            pre = np.append(pre,pre_2,0)
+                """
+                where_ = np.where(pre)
+                pre_1 = np.zeros((1000,1000))
+                pre_2 = np.zeros((1000,1000))
+                pre_1[where_] = 0
+                pre_2[where_] = 200
+                pre = pre[np.newaxis]
+                pre_1 = pre_1[np.newaxis]
+                pre_2 = pre_2[np.newaxis]
+                pre = np.append(pre,pre_1,0)
+                pre = np.append(pre,pre_2,0)
 
-            pre = np.transpose(pre,[1,2,0])
-            X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
+                pre = np.transpose(pre,[1,2,0])
+                X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
 
-            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
-            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('affine_img/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            
+                prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
+                prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
+                cv2.imwrite('affine_img/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+                #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+                """
             """
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))
@@ -353,7 +358,7 @@ def detect_R_T(ann,anchor,path_num):
             ###############################
             """
             #pdb.set_trace()
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index,idx]
+            current = [name,R_list,T_list,x_min,y_min,x_max,y_min,iou_trast]
 
             all.append(current)
 
