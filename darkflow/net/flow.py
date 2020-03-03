@@ -65,12 +65,12 @@ def make_result(out,this_batch,threshold):
         X = pickle.load(f)
     with open('data/ann_anchor_data/ann_coords_4_T.pickle','rb') as f:
         annotations = pickle.load(f)
-
+    
     t_0_max = np.array(X[0])
     t_0_min = np.array(X[1])
     t_1_max = np.array(X[2])
     t_1_min = np.array(X[3])
-
+    #pdb.set_trace()
     iou_return = list()
     precision_return = list()
     recall_return = list()
@@ -150,6 +150,7 @@ def make_result(out,this_batch,threshold):
                 mask_anchor_all.append(ma[j])
                 trast_conf.append(trast_conf_new[j])
         """
+        
         #trast_confの数だけ予測とする
         for j in range(len(trast_conf)):
             #print(confidence[trast_conf[j]])
@@ -277,7 +278,7 @@ def predict(self):
 
 
     #threshold = [0.3,0.4,0.5,0.6,0.7]
-    threshold = [0.2]
+    threshold = [0.4]
     iou_label_ = ['iou_label_conf_05']
     precision_label = ['precision_conf_05']
     recall_label = ['recall_conf_05']
@@ -337,7 +338,7 @@ def predict(self):
             max_.extend(max__)
             id_.extend(id__)
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if X == 100:
+            if X == 2:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
@@ -349,7 +350,7 @@ def predict(self):
         plt.hist(id_,range=(0,350))
         plt.savefig('../GoogleDrive/id_.png')
         plt.clf()
-        pdb.set_trace()
+        #pdb.set_trace()
 
         with open(iou_index,mode = 'wb') as f:
                 pickle.dump(iou_label_all,f)
