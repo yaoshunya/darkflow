@@ -207,19 +207,20 @@ def detect_R_T(ann,anchor,path_num):
             mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[361,5,1,1])
             or_ = np.logical_or(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
             and_ = np.logical_and(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
-
-            or_ = np.sum(np.sum(np.sum(or_,2),2),1)
-            and_ = np.sum(np.sum(np.sum(and_,2),2),1)
-            iou = and_/or_
-
+            #pdb.set_trace()
+            or_ = np.sum(np.sum(or_,2),2)
+            and_ = np.sum(np.sum(and_,2),2)
+            iou = np.reshape(and_/or_,[-1])
+            #pdb.set_trace()
+            iou_trast = np.where(iou>0.3)
             max_index = np.argmax(iou)
-            len_ann = len(annotations_x)
-            len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
-            idx = np.abs(np.array(len_anc)-len_ann).argmin()
+            #len_ann = len(annotations_x)
+            #len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
+            #idx = np.abs(np.array(len_anc)-len_ann).argmin()
 
-            iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
+            #iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
             print(ann_0_len)
-            print('max index:{0}  {1}'.format(max_index,idx))
+            #print('max index:{0}  {1}'.format(max_index,idx))
             R_list = list()
             T_list = list()
 
@@ -245,6 +246,7 @@ def detect_R_T(ann,anchor,path_num):
             A = np.zeros((1000,1000),dtype = 'uint8')
             A[ann_now] = 255
             ann_now = A
+
             anchor_now = mask_anchor[max_index][idx]
 
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0)
@@ -275,7 +277,7 @@ def detect_R_T(ann,anchor,path_num):
                         T = best_T
                         iou_affine = best_iou
                         break
-                        #pdb.set_trace()
+                        #peedb.set_trace()
                 for k in range(30):
                     x = random.randint(0,ann_len_-1)
                     y = random.randint(0,anchor_len_-1)
