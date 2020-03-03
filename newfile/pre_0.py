@@ -305,10 +305,11 @@ def detect_R_T(ann,anchor,path_num):
 
                 pre_resize = cv2.resize(pre,(250,250))
                 pre_resize[pre_resize>0] = 1
-
+                #pdb.set_trace()
                 or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
                 and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
                 iou_affine = and_/or_
+                #pdb.set_trace()
                 if best_iou>iou_affine:
                     best_iou = iou_affine
                     best_R = R
@@ -318,7 +319,7 @@ def detect_R_T(ann,anchor,path_num):
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-            """
+            
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -335,9 +336,9 @@ def detect_R_T(ann,anchor,path_num):
 
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-            """
+            cv2.imwrite('affine_img/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            
             """
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))

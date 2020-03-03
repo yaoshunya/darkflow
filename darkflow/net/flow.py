@@ -64,7 +64,7 @@ def make_result(out,this_batch,threshold):
     with open('data/ann_anchor_data/max_min_k.pickle','rb') as f:
         X = pickle.load(f)
 
-    with open('data/ann_anchor_data/ann_coords_4.pickle','rb') as f:
+    with open('data/ann_anchor_data/ann_coords_4_T.pickle','rb') as f:
         annotations = pickle.load(f)
 
 
@@ -91,7 +91,7 @@ def make_result(out,this_batch,threshold):
         out_conf = np.reshape(out_now[3],[-1])#confidenceの抽出
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
-
+        #pdb.set_trace()
         trast_conf = np.where(confidence>threshold)[0]#一定数以上のものを予測とすし、trast_confとする
         """
         #confidenceが上位k個のものをtrast_confとする場合
@@ -162,7 +162,7 @@ def make_result(out,this_batch,threshold):
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min #T_1の正規化をもとの値に戻す
 
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
-
+            
             #affine = np.array([[1,0,-T_1],[0,1,-T_0]])#並進
 
             #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
@@ -176,6 +176,7 @@ def make_result(out,this_batch,threshold):
             affine[1][2] += T_0
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
             pre = cv2.warpAffine(anchor_now,affine,(1000,1000))
+            pre = anchor_now
             #pre = anchor_now
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
@@ -345,7 +346,7 @@ def predict(self):
             R_.extend(R)
 
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if X == 3:
+            if X == 1:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'

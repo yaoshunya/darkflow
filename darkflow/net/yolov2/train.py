@@ -81,12 +81,12 @@ def loss(self, net_out):
     adjusted_net_out = tf.concat([T,adjusted_c, adjusted_prob], 3) #T,confidence,クラスをconcat
     batch_size = tf.shape(adjusted_net_out)[0] #batch_sizeの取得
 
-    min_ = float(-1)
-    max_ = float(1)
-    T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min #正規化されたTをもとに戻す
-    T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min #正規化されたTをもとに戻す
+    #min_ = float(-1)
+    #max_ = float(1)
+    #T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min #正規化されたTをもとに戻す
+    #T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min #正規化されたTをもとに戻す
 
-    T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
+    #T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
     """
     #mask anchorのアフィン変換：アフィン変換したものと真値でIoUを計算した時に最も高いIoUを持つアンカーのconfを1に設定しほかのアンカーのconfを0に設定。
     #教師データの与え方の工夫により必要ない。
