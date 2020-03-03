@@ -82,6 +82,8 @@ def make_result(out,this_batch,threshold):
     T_0_list = list()
     T_1_list = list()
     R_list = list()
+    max_index = list()
+    idx = list()
     for i in range(batch_size):
         #pdb.set_trace()
         out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1]) #networkの出力をreshape
@@ -93,14 +95,7 @@ def make_result(out,this_batch,threshold):
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
         #pdb.set_trace()
         trast_conf = np.where(confidence>threshold)[0]#一定数以上のものを予測とすし、trast_confとする
-        """
-        #confidenceが上位k個のものをtrast_confとする場合
-        K = 3
-        X = np.argpartition(-confidence,K)[:K]
-        y = confidence[X]
-        indices = np.argsort(-y)
-        trast_conf = X[indices]
-        """
+        
         print('size trast conf:{0}'.format(len(trast_conf)))
         print('trast conf:{0}'.format(trast_conf))
         #pdb.set_trace()
@@ -117,6 +112,8 @@ def make_result(out,this_batch,threshold):
                 #annotationsから入力された画像と同じ名前のものを選択
                 ann_num = ann
                 break
+        max_index.extend(trast_conf//361)
+        idx.extend(trast_conf%361)
 
         """
         for j in range(len(trast_conf)):
@@ -153,6 +150,7 @@ def make_result(out,this_batch,threshold):
                 mask_anchor_all.append(ma[j])
                 trast_conf.append(trast_conf_new[j])
         """
+        """
         #pdb.set_trace()
         for j in range(len(trast_conf)):
             #print(confidence[trast_conf[j]])
@@ -172,11 +170,11 @@ def make_result(out,this_batch,threshold):
             #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
             #pdb.set_trace()
             affine = cv2.getRotationMatrix2D((0,0),math.degrees(R),1.0)
-            affine[0][2] += T_1
-            affine[1][2] += T_0
+            affine[0][2] += T_0
+            affine[1][2] += T_1
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
             pre = cv2.warpAffine(anchor_now,affine,(1000,1000))
-            pre = anchor_now
+            #pre = anchor_now
             #pre = anchor_now
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
@@ -242,7 +240,8 @@ def make_result(out,this_batch,threshold):
         precision_return.append(precision)
         recall_return.append(recall)
         #pdb.set_trace()
-    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
+        """
+    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,max_index,idx
 
 
 import math
@@ -304,7 +303,8 @@ def predict(self):
         T_0_ = list()
         T_1_ = list()
         R_ = list()
-
+        max_ = list()
+        id_ = list()
         iou_label_all =  [[] for i in range(6)]
         precision_label_all = [[] for i in range(6)]
         recall_label_all = [[] for i in range(6)]
@@ -337,21 +337,30 @@ def predict(self):
             self.say('Post processing {} inputs ...'.format(len(inp_feed)))
             start = time.time()
 
-            iou,precision,recall,T_0,T_1,R = make_result(out,this_batch,the)
+            iou,precision,recall,T_0,T_1,R,max__,id__ = make_result(out,this_batch,the)
             iou_.extend(iou)
             precision_.extend(precision)
             recall_.extend(recall)
             T_0_.extend(T_0)
             T_1_.extend(T_1)
             R_.extend(R)
-
+            max_.extend(max__)
+            id_.extend(id__)
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if X == 1:
+            if X == 100:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
         recall_index = 'data/out_data'+recall_label[k]+'.pickle'
         #pdb.set_trace()
+        plt.hist(max_)
+        plt.savefig('../GoogleDrive/max_.png')
+        plt.clf()
+        plt.hist(id_,range=(0,350))
+        plt.savefig('../GoogleDrive/id_.png')
+        plt.clf()
+        pdb.set_trace()
+
         with open(iou_index,mode = 'wb') as f:
                 pickle.dump(iou_label_all,f) 
         with open(precision_index,mode='wb') as f:
