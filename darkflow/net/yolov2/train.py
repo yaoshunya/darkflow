@@ -73,7 +73,7 @@ def loss(self, net_out):
     R = tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1]) #出力から回転角度Rを抽出
     T = tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2]) #出力から回転角度Tを抽出
 
-    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3]) #出力からconfidenceを抽出
+    adjusted_c = expit_tensor(net_out_reshape[:, :, :, :, 3]) #出力からconfidenceを抽出 expit_tensorによって0~1で表現
     adjusted_c = tf.reshape(adjusted_c, [-1, H*W, B, 1])
 
     adjusted_prob = tf.nn.softmax(net_out_reshape[:, :, :, :, 4:]) #出力から各カテゴリに属する確率
@@ -83,8 +83,8 @@ def loss(self, net_out):
 
     #min_ = float(-1)
     #max_ = float(1)
-    #T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min #正規化されたTをもとに戻す
-    #T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min #正規化されたTをもとに戻す
+    #T_new_0 = ((T[:,:,:,0]-min_)*(t_0_max-t_0_min)/(max_-min_))+t_0_min #正規化されたTをもとに戻す　trainではアフィン変換行わないため必要なし
+    #T_new_1 = ((T[:,:,:,1]-min_)*(t_1_max-t_1_min)/(max_-min_))+t_1_min #正規化されたTをもとに戻す　trainではアフィン変換行わないため必要なし
 
     #T_new = tf.concat([tf.expand_dims(T_new_0,3),tf.expand_dims(T_new_1,3)],3)
     """
@@ -155,91 +155,6 @@ def loss(self, net_out):
     loss = tf.reduce_sum(loss, 1)
     self.loss = .5 * tf.reduce_mean(loss)
     tf.summary.scalar('{} loss'.format(m['model']), self.loss)
-
-
-def mask_anchor(anchor,H):#mask anchorの作成
-    img_x = 1000#出力画像の高さ
-    img_y = 1000#出力画像の幅
-
-    step_x=0
-    step_y=0
-    S = H
-    #anchor = np.reshape(anchor,(5,2))
-    anchor_size = np.array(anchor).shape[0]
-    step_size = int(img_x/S)
-    if os.path.exists('data/ann_anchor_data/mask_anchor_train_.pickle'):
-        with open('data/ann_anchor_data/maskanchor_train.pickle',mode = 'rb') as f:
-            mask_anchor = pickle.load(f)
-        return mask_anchor
-
-    mask = np.array([])
-
-    for i in range(S):
-        for t in range(S):
-            if t==0:
-                step_x = 0
-            center_x = int((step_x + (step_x + step_size))/2)
-            center_y = int((step_y + (step_y + step_size))/2)
-            for l in range(0,anchor_size,2):
-                #pdb.set_trace()
-                w_ = anchor[l]
-                h_ = anchor[l+1]
-
-                mask_base = np.zeros((img_x,img_y),dtype=int)
-
-                side = int(w_)
-                ver = int(h_)
-
-                side_min = center_x - side
-                side_max = center_x + side
-                ver_min = center_y - ver
-                ver_max = center_y + ver
-
-                if side_min < 0:
-                    side_min = 0
-                if side_max > img_x:
-                    side_max = img_x
-                if ver_min < 0:
-                    ver_min = 0
-                if ver_max > img_y:
-                    ver_max = img_y
-
-
-                mask_base[ver_min:ver_max,side_min:side_max] = 255
-                #resize_mask = np.resize(mask_base,(70,70))
-                grid = get_projection_grid(b=500)#球の作成
-                rot = rand_rotation_matrix(deflection=1.0)#球の回転変数の作成
-                grid = rotate_grid(rot,grid)#球の回転
-                mask_base = project_2d_on_sphere(mask_base,grid)#球に2次元画像の貼り付け
-                mask_base = cv2.resize(mask_base,(70,70))
-                resize_mask = mask_base.T
-                #resize_mask = np.resize(mask_base,(100,100)).T
-                if l == 0:
-                    mask = resize_mask[np.newaxis]
-                    #mask_row = mask_base[np.newaxis]
-                else:
-                    mask = np.append(mask,resize_mask[np.newaxis],axis=0)
-                    #mask_row = np.append(mask_row,mask_base[np.newaxis],axis=0)
-
-
-            step_x += step_size
-            if t == 0:
-                mask_ = mask[np.newaxis]
-                #mask__row=mask_row[np.newaxis]
-            else:
-                mask_ = np.append(mask_,mask[np.newaxis],axis=0)
-                #mask__row = np.append(mask__row,mask_row[np.newaxis],axis=0)
-        print(i)
-        step_y += step_size
-        if i == 0:
-            mask_fi = mask_[np.newaxis]
-            #mask_fi_row = mask__row[np.newaxis]
-        else:
-            mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
-            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-    with open('data/ann_anchor_data/mask_anchor_train.pickle',mode='wb') as f:
-        pickle.dump(mask_fi,f)
-    return mask_fi
 
 
 

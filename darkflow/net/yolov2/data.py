@@ -36,19 +36,7 @@ def _batch(self, chunk):
     # Calculate regression target
     cellx = 1. * w / W #画像の横幅を１グリッドあたりのピクセル数
     celly = 1. * h / H #画像の縦幅１グリッドあたりのピクセル数
-    """
-    for obj in allobj:
-        #pdb.set_trace()
-        centerx = .5*(obj[3]+obj[5]) #xmin, xmax 物体の中心座標
-        centery = .5*(obj[4]+obj[6]) #ymin, ymax 物体の中心座標
-        cx = centerx / cellx #どこのセルにあるかの番号
-        cy = centery / celly #どこのセルにあるかの番号
-        #pdb.set_trace()
-        if cx >= W or cy >= H: return None, None #１３以上なら画面外になってしまうから
 
-        obj += [int(np.floor(cy) * W + np.floor(cx))]
-    """
-    # show(im, allobj, S, w, h, cellx, celly) # unit test
 
 
     # Calculate placeholders' values
@@ -57,18 +45,10 @@ def _batch(self, chunk):
     R = np.zeros([H*W,B,1]) #回転角度
     T = np.zeros([H*W,B,2])#並進ベクトルT
     proid = np.zeros([H*W,B,C])
-    prear = np.zeros([H*W,4])
-    #areas = np.zeros([H*W,B,70,70])
-    k = 0
+
+
     for obj in allobj:
-        """
-        os.chdir('data/mask_ann')
-        with open('./{0}_{1}.pickle'.format(jpg[:6],k),mode = 'rb') as f:
-            area = pickle.load(f)
-        os.chdir('../../')
-        """
-        k = k+1
-        #pdb.set_trace()
+
         q_ = obj[8]
         mod = obj[7]
         #print(mod)

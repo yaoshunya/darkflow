@@ -56,17 +56,15 @@ def detect_most_near(pre,ann):
 
 
 def make_result(out,this_batch,threshold):
-
+#予測をもとにアンカーのアフィン変換を行い、画像として保存する
     batch_size = len(this_batch)
 
     with open('data/ann_anchor_data/mask_anchor_k.pickle', 'rb') as f:
         anchor = pickle.load(f)
     with open('data/ann_anchor_data/max_min_k.pickle','rb') as f:
         X = pickle.load(f)
-
     with open('data/ann_anchor_data/ann_coords_4_T.pickle','rb') as f:
         annotations = pickle.load(f)
-
 
     t_0_max = np.array(X[0])
     t_0_min = np.array(X[1])
@@ -95,7 +93,7 @@ def make_result(out,this_batch,threshold):
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
         #pdb.set_trace()
         trast_conf = np.where(confidence>threshold)[0]#一定数以上のものを予測とすし、trast_confとする
-        
+
         print('size trast conf:{0}'.format(len(trast_conf)))
         print('trast conf:{0}'.format(trast_conf))
         #pdb.set_trace()
@@ -106,7 +104,7 @@ def make_result(out,this_batch,threshold):
         true = list()
         true_list = list()
         trast_conf_new = list()
-        
+
         for ann in annotations:
             if ann[0] == image_name:
                 #annotationsから入力された画像と同じ名前のものを選択
@@ -116,6 +114,8 @@ def make_result(out,this_batch,threshold):
         idx.extend(trast_conf%361)
 
         """
+        #疑似的なnms
+        #現在、予測がそもそもできていないためコメントアウト
         for j in range(len(trast_conf)):
             trast_conf_new.append(trast_conf[j])
             if j == 0:
@@ -150,8 +150,7 @@ def make_result(out,this_batch,threshold):
                 mask_anchor_all.append(ma[j])
                 trast_conf.append(trast_conf_new[j])
         """
-        """
-        #pdb.set_trace()
+        #trast_confの数だけ予測とする
         for j in range(len(trast_conf)):
             #print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
@@ -160,22 +159,13 @@ def make_result(out,this_batch,threshold):
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min #T_1の正規化をもとの値に戻す
 
             anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
-            
-            #affine = np.array([[1,0,-T_1],[0,1,-T_0]])#並進
 
-            #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
-
-            #affine = cv2.getRotationMatrix2D((0,0),-R,1.0)#回転
-
-            #pre=cv2.warpAffine(anchor_now, affine, (1000,1000))
-            #pdb.set_trace()
-            affine = cv2.getRotationMatrix2D((0,0),math.degrees(R),1.0)
-            affine[0][2] += T_0
-            affine[1][2] += T_1
+            affine = cv2.getRotationMatrix2D((0,0),math.degrees(R),1.0)#回転Rの行列
+            affine[0][2] += T_1#並進ベクトルの追加
+            affine[1][2] += T_0#
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
-            pre = cv2.warpAffine(anchor_now,affine,(1000,1000))
-            #pre = anchor_now
-            #pre = anchor_now
+            pre = cv2.warpAffine(anchor_now,affine,(1000,1000))#アンカーをアフィン変換
+            #予測はピンクにするので(1000,1000)から(1000,1000,3)にする
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -214,8 +204,8 @@ def make_result(out,this_batch,threshold):
             imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
             prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)
-            
+            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)#予測を画像として保存
+
         #pdb.set_trace()
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
@@ -240,7 +230,7 @@ def make_result(out,this_batch,threshold):
         precision_return.append(precision)
         recall_return.append(recall)
         #pdb.set_trace()
-        """
+        
     return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,max_index,idx
 
 
@@ -362,7 +352,7 @@ def predict(self):
         pdb.set_trace()
 
         with open(iou_index,mode = 'wb') as f:
-                pickle.dump(iou_label_all,f) 
+                pickle.dump(iou_label_all,f)
         with open(precision_index,mode='wb') as f:
                 pickle.dump(precision_,f)
         with open(recall_index,mode='wb') as f:
@@ -372,7 +362,7 @@ def predict(self):
         print("precision:{0}".format(np.nanmean(precision_)))
         print("recall:{0}".format(np.nanmean(recall_)))
         #pdb.set_trace()
-        
+
     #pdb.set_trace()
 def _save_ckpt(self, step, loss_profile):
     file = '{}-{}{}'
