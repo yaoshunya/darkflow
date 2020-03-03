@@ -813,16 +813,16 @@ if __name__ ==  '__main__':
     #正規化しなければ、Rの学習が進みません
 
         dumps = list()
-        dumps_1,cur_dir = load_data('../data/redidual_1_an')
+        dumps_1,cur_dir = load_data('../data/redidual_1')
         os.chdir(cur_dir)
-        dumps_2,cur_dir = load_data('../data/redidual_2_an')
+        dumps_2,cur_dir = load_data('../data/redidual_2')
         os.chdir(cur_dir)
-        dumps_3,cur_dir = load_data('../data/redidual_3_an')
+        dumps_3,cur_dir = load_data('../data/redidual_3')
         os.chdir(cur_dir)
         dumps += dumps_1
         dumps += dumps_2
         dumps += dumps_3
-
+        #pdb.set_trace()
         t_0_max = -100000
         t_0_min = 100000
         t_1_max = -100000
@@ -894,8 +894,8 @@ if __name__ ==  '__main__':
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
                 annotations[i][1][0][j][1] = np.array(R)
                 #pdb.set_trace()
-                max_index.append(annotations[i][1][0][j][7]%361)
-                idx.append(annotations[i][1][0][j][7]//361)
+                #max_index.append(annotations[i][1][0][j][7]%361)
+                #idx.append(annotations[i][1][0][j][7]//361)
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
         """
@@ -907,7 +907,7 @@ if __name__ ==  '__main__':
         plt.savefig('../../GoogleDrive/idx.png')
         plt.clf()
         """
-        """
+        
         with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
         with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
@@ -924,7 +924,7 @@ if __name__ ==  '__main__':
             print("t_0_min = {0}".format(t_0_min),file = f)
             print("t_1_max = {0}".format(t_1_max),file = f)
             print("t_1_min = {0}".format(t_1_min),file = f)
-        """
+        
 
         """#test_dataの分割
         annotations = glob.glob('../data/redidual_4/*.pickle')

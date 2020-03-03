@@ -256,13 +256,15 @@ def detect_R_T(ann,anchor,path_num):
             iou_affine = 0
             count = 0
             best_iou = 0
+            best_R = 0.0
+            best_T = [0.0,0.0]
             while(iou > iou_affine or iou_affine < 0.4):
                 my_list_ann = []
                 my_list_anchor = []
                 if iou_affine > 0.8:
                     break
                 count += 1
-                if count==200:
+                if count==300:
                     if iou>iou_affine:
                         R = 0.0
                         T = [0.0,0.0]

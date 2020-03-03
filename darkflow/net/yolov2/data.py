@@ -69,8 +69,8 @@ def _batch(self, chunk):
         """
         k = k+1
         #pdb.set_trace()
-        q_ = obj[7]//361
-        mod = obj[7]%361
+        q_ = obj[8]
+        mod = obj[7]
         #print(mod)
         #print(q)
         #areas[mod,q, :] = area*255#真値のマスク：confidenceの与え方の変更により、使用しない。
