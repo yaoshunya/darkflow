@@ -225,7 +225,7 @@ def make_result(out,this_batch,threshold):
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
         #pdb.set_trace()
         if np.sum(np.array(true)) == 0:
-            recall = 1
+            recall = 2
         else:
             recall = recall_score(np.array(true),np.array(predict))#recallの計算
         precision_return.append(precision)
@@ -277,14 +277,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    #threshold = [0.3,0.4,0.5,0.6,0.7]
-    threshold = [0.4]
-    iou_label_ = ['iou_label_conf_05']
-    precision_label = ['precision_conf_05']
-    recall_label = ['recall_conf_05']
-    #iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
-    #precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
-    #recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
+    threshold = [0.3,0.4,0.5,0.6,0.7]
+    #threshold = [0.4]
+    #iou_label_ = ['iou_label_conf_05']
+    #precision_label = ['precision_conf_05']
+    #recall_label = ['recall_conf_05']
+    iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
+    precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
+    recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
 
     for k in range(len(threshold)):
 
@@ -338,7 +338,7 @@ def predict(self):
             max_.extend(max__)
             id_.extend(id__)
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
-            if X == 2:
+            if X == 10:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'

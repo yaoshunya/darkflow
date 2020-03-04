@@ -682,9 +682,10 @@ if __name__ ==  '__main__':
     #教師データが作成される
 
     #教師データ作成後
-    #再度　python preprocess_ad.py
+    #python preprocess_ad.py final
     #Tの正規化を行う
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
+    num_list = ['0','1','2','3']
     if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
@@ -731,7 +732,7 @@ if __name__ ==  '__main__':
         make_area()
 
 
-    else:
+    elif sys.argv[1] in num_list
 
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
@@ -749,7 +750,7 @@ if __name__ ==  '__main__':
         print("finish {0}".format(index))
 
 
-    if os.path.exists('../data/redidual_1.pickle'):
+    elif sys.argv[1] == 'final'
     #Tの正規化
     #正規化しなければ、Rの学習が進みません
         dumps = list()
