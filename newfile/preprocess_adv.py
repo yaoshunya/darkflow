@@ -522,7 +522,7 @@ def detect_R_T(ann,anchor,path_num):
             and_ = np.sum(np.sum(and_,2),2)
             iou = and_/or_
 
-            max_index = np.argmax(iou)
+            max_index = np.argmax(iou) #361*5のアンカーの中から最もiouが高いものを選択
 
             iou = iou[0][max_index]
             print('max index:{0}'.format(max_index))
@@ -535,7 +535,7 @@ def detect_R_T(ann,anchor,path_num):
             ann_now = A
             anchor_now = mask__[max_index]
 
-            dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0)
+            dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0) #エッジ検出
             dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
 
             ann_len_ = len(dst_ann[0])
@@ -551,6 +551,7 @@ def detect_R_T(ann,anchor,path_num):
                 an = pickle.load(f)
 
             while(iou > iou_affine or iou_affine < 0.4):
+            #条件を満たすまでicpマッチングを行い、最適なR,Tを求める
                 my_list_ann = []
                 my_list_anchor = []
                 if iou_affine > 0.8:
@@ -672,7 +673,17 @@ def make_area():
             print("finish : {0}".format(name))
 
 if __name__ ==  '__main__':
+    #python preprocess_ad.py
+    #mask anchorの作成
+    #mask annotationsの作成
 
+    #python preprocess_ad.py 0
+    #引数として0,1,2,3を指定
+    #教師データが作成される
+
+    #教師データ作成後
+    #再度　python preprocess_ad.py
+    #Tの正規化を行う
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
         with open("anchor_kmeans.txt") as f:
