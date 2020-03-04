@@ -211,7 +211,7 @@ def detect_R_T(ann,anchor,path_num):
             or_ = np.sum(np.sum(or_,2),2)
             and_ = np.sum(np.sum(and_,2),2)
             iou = and_/or_
-            
+
             max_index = np.argmax(iou)
             #pdb.set_trace()
             iou = iou[0][max_index]
@@ -267,7 +267,7 @@ def detect_R_T(ann,anchor,path_num):
                     break
                 count += 1
                 print("count:{0}".format(count))
-                if count==300:
+                if count==200:
                     if iou>iou_affine:
                         R = 0.0
                         T = [0.0,0.0]
@@ -321,7 +321,7 @@ def detect_R_T(ann,anchor,path_num):
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-            
+            """
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -341,7 +341,8 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             """
-            
+            """
+
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))
             pre_2[np.where(an_>0)]= 200
@@ -351,7 +352,7 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
-            """ 
+            """
             #pdb.set_trace()
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
 
