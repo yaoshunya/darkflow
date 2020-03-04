@@ -199,27 +199,29 @@ def detect_R_T(ann,anchor,path_num):
             x_min = np.min(annotations_x)
             y_max = np.max(annotations_y)
             y_min = np.min(annotations_y)
-
+            #pdb.set_trace()
             mask_annotation = np.zeros([1000,1000])
             mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
             mask_annotation = cv2.resize(mask_annotation,(250,250))
             mask_annotation[mask_annotation>0] = 1
-            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[361,5,1,1])
-            or_ = np.logical_or(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
-            and_ = np.logical_and(np.reshape(mask_,[361,5,250,250]),mask_annotation).astype(np.int)
-
-            or_ = np.sum(np.sum(np.sum(or_,2),2),1)
-            and_ = np.sum(np.sum(np.sum(and_,2),2),1)
+            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[1805,1,1])
+            or_ = np.logical_or(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
+            and_ = np.logical_and(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
+            #pdb.set_trace()
+            or_ = np.sum(np.sum(or_,2),2)
+            and_ = np.sum(np.sum(and_,2),2)
             iou = and_/or_
-
+            
             max_index = np.argmax(iou)
-            len_ann = len(annotations_x)
-            len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
-            idx = np.abs(np.array(len_anc)-len_ann).argmin()
+            #pdb.set_trace()
+            iou = iou[0][max_index]
+            #pdb.set_trace()
+            #len_ann = len(annotations_x)
+            #len_anc = [len(np.where(mask_anchor[max_index][i]>0)[0]) for i in range(5)]
+            #idx = np.abs(np.array(len_anc)-len_ann).argmin()
 
-            iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
-            print(ann_0_len)
-            print('max index:{0}  {1}'.format(max_index,idx))
+            #iou = np.sum(np.logical_and(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))/np.sum(np.logical_or(np.reshape(mask_,[361,5,250,250])[max_index][idx],mask_annotation[0][0]))
+            print('max index:{0}'.format(max_index))
             R_list = list()
             T_list = list()
 
@@ -245,7 +247,7 @@ def detect_R_T(ann,anchor,path_num):
             A = np.zeros((1000,1000),dtype = 'uint8')
             A[ann_now] = 255
             ann_now = A
-            anchor_now = mask_anchor[max_index][idx]
+            anchor_now = mask__[max_index]
 
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0)
             dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
@@ -264,6 +266,7 @@ def detect_R_T(ann,anchor,path_num):
                 if iou_affine > 0.8:
                     break
                 count += 1
+                print("count:{0}".format(count))
                 if count==300:
                     if iou>iou_affine:
                         R = 0.0
@@ -296,7 +299,7 @@ def detect_R_T(ann,anchor,path_num):
                 an = cv2.resize(an,(1000,1000))*255
 
 
-                an_ = mask_anchor[max_index][idx]
+                an_ = mask__[max_index]
                 affine = cv2.getRotationMatrix2D((0,0),R,1.0)
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
@@ -318,7 +321,7 @@ def detect_R_T(ann,anchor,path_num):
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
 
-            """
+            
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -338,7 +341,7 @@ def detect_R_T(ann,anchor,path_num):
             cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             """
-            """
+            
             not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
             pre_2 = np.zeros((1000,1000))
             pre_2[np.where(an_>0)]= 200
@@ -348,14 +351,15 @@ def detect_R_T(ann,anchor,path_num):
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
             cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
-            """
+            """ 
             #pdb.set_trace()
-            current = [name,R,T,x_min,y_min,x_max,y_min,max_index,idx]
+            current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
 
             all.append(current)
 
         add = [[img_name,[all]]]
         dumps += add
+        #pdb.set_trace()
         """
         if ann_len == 8:
             print('iou_mean:{0}'.format(np.mean(np.array(iou_list))))
