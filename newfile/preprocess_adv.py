@@ -848,7 +848,7 @@ if __name__ ==  '__main__':
         T_1 = np.array(T_1)
         R = np.array(R)
         #pdb.set_trace()
-        """        
+                
         #Tの正規化前の分布確認用
         plt.hist(T_0)
         #plt.plot(np.array(T_0))
@@ -858,10 +858,10 @@ if __name__ ==  '__main__':
         #plt.plot(np.array(T_1))
         plt.savefig('../../GoogleDrive/T_1_not_nor_k.png')
         plt.clf()
-        plt.hist(R)
-        plt.savefig('../../GoogleDrive/R_.png')
-        plt.clf()
-        """
+        #plt.hist(R)
+        #plt.savefig('../../GoogleDrive/R_.png')
+        #plt.clf()
+        pdb.set_trace() 
         #pdb.set_trace()
         T_0_mean = np.mean(T_0)
         T_0_var = np.var(T_0)
