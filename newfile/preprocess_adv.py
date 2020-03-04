@@ -333,7 +333,7 @@ def mask_anchor(anchor,H):
                     ver_max = img_y
 
 
-                mask_base[ver_min:ver_max,side_min:side_max] = 255#mask anchor(歪みなし)の作成
+                mask_base[int(ver_min):int(ver_max),int(side_min):int(side_max)] = 255#mask anchor(歪みなし)の作成
                 #mask_base = np.resize(mask_base,(500,500))
                 #-------------------------------------------------
                 #アンカーの球面写像
@@ -674,8 +674,7 @@ def make_area():
 if __name__ ==  '__main__':
 
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
-
-    if len(sys.argv) == 0:#mask anchorが存在しない場合、mask anchorの作成
+    if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
@@ -722,20 +721,21 @@ if __name__ ==  '__main__':
 
 
     else:
-        path = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
+
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
         #教師データの作成
         #anchor coordsとannotation coordsを用いてICPマッチング
         #実行に1日くらいかかるのでプログラム分割して実行可能。
-        index = sys.argv[0]
+        index = int(sys.argv[1])
+        #pdb.set_trace()
         file_path = '../data/ann_anchor_data/'+ path_coords[index] + '.pickle'
-            with open(file_path,mode = 'rb') as f:
-                ann_1 = pickle.load(f)
-            print("start detect the redidual between anchors and annotations")
-            ann_1 = detect_R_T(ann_1,anchor,index)#最もIoUが高いアンカーを選択し、ICPマッチングを行う
+        with open(file_path,mode = 'rb') as f:
+            ann_1 = pickle.load(f)
+        print("start detect the redidual between anchors and annotations")
+        ann_1 = detect_R_T(ann_1,anchor,index)#最もIoUが高いアンカーを選択し、ICPマッチングを行う
 
-            print("finish {0}".format(index))
+        print("finish {0}".format(index))
 
 
     if os.path.exists('../data/redidual_1.pickle'):

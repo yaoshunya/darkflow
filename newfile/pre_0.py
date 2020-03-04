@@ -266,7 +266,7 @@ def detect_R_T(ann,anchor,path_num):
                 if iou_affine > 0.8:
                     break
                 count += 1
-                print("count:{0}".format(count))
+                #print("count:{0}".format(count))
                 if count==200:
                     if iou>iou_affine:
                         R = 0.0
