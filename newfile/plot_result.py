@@ -7,24 +7,21 @@ mpl.use('Agg')
 import matplotlib.pylab as plt
 
 if __name__ == "__main__":
-    with open("../data/out_data/iou_label_conf_01.pickle","rb") as f:
-        iou_label_01 = pickle.load(f)
-    with open("../data/out_data/precision_conf_01.pickle","rb") as f:
-        precision_01 = pickle.load(f)
-    with open("../data/out_data/recall_conf_01.pickle","rb") as f:
-        recall_01 = pickle.load(f)
+
     with open("../data/out_data/R_conf_05.pickle","rb") as f:
         R = pickle.load(f)
     with open("../data/out_data/T_0_conf_05.pickle","rb") as f:
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1_conf_05.pickle","rb") as f:
         T_1 = pickle.load(f)
-
-    with open("../data/out_data/precision_conf_02.pickle","rb") as f:
+    with open('../data/out_data/precision_conf_01.pickle','rb') as f:
+        precision_01 = pickle.load(f)
+    with open('../data/out_data/recall_conf_01.pickle','rb') as f:
+        recall_01 = pickle.load(f)
+    with open('../data/out_data/precision_conf_02.pickle','rb') as f:
         precision_02 = pickle.load(f)
-    with open("../data/out_data/recall_conf_02.pickle","rb") as f:
+    with open('../data/out_data/recall_conf_02.pickle','rb') as f:
         recall_02 = pickle.load(f)
-    
     with open("../data/out_data/precision_conf_03.pickle","rb") as f:
         precision_03 = pickle.load(f)
     with open("../data/out_data/recall_conf_03.pickle","rb") as f:

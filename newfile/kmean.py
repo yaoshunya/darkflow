@@ -113,7 +113,7 @@ if __name__ == '__main__':
             XY = (x_coord,y_coord)
             all.append(XY)
 
-    cls  = KMeans(n_clusters = 5)
+    cls  = KMeans(n_clusters = 10)
     pred = cls.fit_predict(all)
     centers = cls.cluster_centers_
     print(centers)

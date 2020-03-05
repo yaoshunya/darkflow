@@ -14,7 +14,7 @@ import math
 import random
 import shutil
 import pandas as pd
-
+from sklearn.metrics import confusion_matrix
 #  ICP parameters
 EPS = 0.00001
 MAXITER = 100
@@ -53,8 +53,8 @@ def ICP_matching(ppoints, cpoints):
     dError = 1000.0
     preError = 1000.0
     count = 0
-    ppoints = np.array([ppoints[1],ppoints[0]])
-    cpoints = np.array([cpoints[1],cpoints[0]])
+    ppoints = np.array([ppoints[0],ppoints[1]])
+    cpoints = np.array([cpoints[0],cpoints[1]])
     while dError >= EPS:
         count += 1
 
@@ -66,7 +66,7 @@ def ICP_matching(ppoints, cpoints):
             plt.plot(0.0, 0.0, "xr")
             plt.axis("equal")
             plt.pause(1.0)
-            plt.savefig("icp_test_{0}.png".format(count))
+            plt.savefig("../../GoogleDrive/icp_test_{0}.png".format(count))
 
         inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
         Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
@@ -89,9 +89,13 @@ def ICP_matching(ppoints, cpoints):
 
     R = np.array(H[0:2, 0:2])
     T = np.array(H[0:2, 2])
-    R = math.asin(R[0][0])
 
-    return R, T
+    try:
+        R = math.degrees(math.acos(R[0][0]))
+    except:
+        R = 0
+
+    return R,T
 
 
 def update_homogeneous_matrix(Hin, R, T):
@@ -231,7 +235,7 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
         projection_origin = (0, 0, 2 + 1e-3)
 
     rx, ry = project_sphere_on_xy_plane(grid, projection_origin)
-    
+
     sample = sample_bilinear(signal, rx, ry)
 
 
@@ -283,15 +287,15 @@ def project_sphere_on_xy_plane(grid, projection_origin):
     return rx, ry
 
 def mask_anchor(anchor,H):
-    img_x = 1000
-    img_y = 1000
+    img_x = 1000#画像の幅
+    img_y = 1000#画像の高さ
 
     step_x=0
     step_y=0
     S = H
     #anchor = np.reshape(anchor,(5,2))
     anchor_size = anchor.shape[0]
-    step_size = int(img_x/S)
+    step_size = int(img_x/S)#グリッドに分割した際のグリッド1つ当たりのピクセル数
 
 
     mask = np.array([])
@@ -300,10 +304,10 @@ def mask_anchor(anchor,H):
         for t in range(S):
             if t==0:
                 step_x = 0
-            center_x = int((step_x + (step_x + step_size))/2)
-            center_y = int((step_y + (step_y + step_size))/2)
+            center_x = int((step_x + (step_x + step_size))/2)#gridの中心座標x
+            center_y = int((step_y + (step_y + step_size))/2)#gridの中心座標y
             for l in range(anchor_size):
-                #pdb.set_trace()
+                pdb.set_trace()
                 w_ = float(x[l].split(",")[0])
                 h_ = float(x[l].split(",")[1])
 
@@ -329,20 +333,18 @@ def mask_anchor(anchor,H):
                     ver_max = img_y
 
 
-                mask_base[ver_min:ver_max,side_min:side_max] = 255
+                mask_base[int(ver_min):int(ver_max),int(side_min):int(side_max)] = 255#mask anchor(歪みなし)の作成
                 #mask_base = np.resize(mask_base,(500,500))
-                #mask_base[:] = 255
                 #-------------------------------------------------
                 #アンカーの球面写像
                 grid = get_projection_grid(b=500)
                 rot = rand_rotation_matrix(deflection=1.0)
                 grid = rotate_grid(rot,grid)
-                #pdb.set_trace()
-                mask_base = project_2d_on_sphere(mask_base,grid)
+                mask_base = project_2d_on_sphere(mask_base,grid)#mask anchorに歪みを持たせる
                 #-------------------------------------------------
-                #cv2.imwrite('../../GoogleDrive/sample_{0}.png'.format(l),mask_base)
 
-                resize_mask = mask_base
+
+                resize_mask = mask_base.T
                 if l == 0:
                     mask = resize_mask[np.newaxis]
                 else:
@@ -355,7 +357,6 @@ def mask_anchor(anchor,H):
             else:
                 mask_ = np.append(mask_,mask[np.newaxis],axis=0)
         print(i)
-        #pdb.set_trace()
         step_y += step_size
         if i == 0:
             mask_fi = mask_[np.newaxis]
@@ -387,7 +388,6 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
         bar_arg += [file]
         sys.stdout.write('[{}>{}]{:.0f}%  {}'.format(*bar_arg))
         sys.stdout.flush()
-
         # actual parsing
         in_file = open(file)
         tree=ET.parse(in_file)
@@ -417,46 +417,33 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             grid = get_projection_grid(b=500)
             rot = rand_rotation_matrix(deflection=1.0)
             grid = rotate_grid(rot,grid)
-            mask_parts = project_2d_on_sphere(mask_prepare.T,grid)
+            mask_parts = project_2d_on_sphere(mask_prepare,grid)
             #mask_parts = cv2.resize(mask_parts,(19,19))
-            #pdb.set_trace()
-            mask_parts = np.reshape(mask_parts,(1000,1000))
-            #mask_parts = cv2
-            #pdb.set_trace()
-            ################################################################
-            ################################################################
-            #pdb.set_trace()
-            #mask_parts = np.reshape(mask_parts,[1000,1000])
-            #pdb.set_trace()
+            mask_parts = np.reshape(mask_parts,(1000,1000)).T
+
             mask_ = mask_parts[np.newaxis]
-            #pdb.set_trace()
             current = [name,mask_]
             all += [current]
-
+            t = t + 1
         add = [[jpg,all]]
-        #pdb.set_trace()
+
         dumps += add
         in_file.close()
-        
         ###################################################################
 
-
-        ###################################################################
     os.chdir(cur_dir)
     all = list()
     current = list()
     add = list()
-    #pdb.set_trace()
     return dumps
 
 def make_coords_from_mask(data,flag):
-    #pdb.set_tarce()
-    if flag == 0:
+
+    if flag == 0:#anchorを座標系に変換する場合
         anchor = data
         anchor = np.reshape(anchor,[anchor.shape[0]*anchor.shape[1],anchor.shape[2],anchor.shape[3],anchor.shape[4]])
         anchor_coords = list()
 
-        #pdb.set_trace()
         for i in range(anchor.shape[0]):
             anc_parts = []
             for j in range(anchor.shape[1]):
@@ -465,30 +452,25 @@ def make_coords_from_mask(data,flag):
             anchor_coords.append(anc_parts)
         return anchor_coords
 
-    if flag == 1:
+    if flag == 1:#annotationsを座標系に変換する場合
         ann_coords = []
         annotations = data
 
-        #pdb.set_trace()
+
         for i in range(len(annotations)):
-            #pdb.set_trace()
             jpg = annotations[i][0]
             all = []
+
             for j in range(len(annotations[i][1])):
-                #pdb.set_trace()
-                #print(j)
                 name = annotations[i][1][j][0]
                 current = list()
                 ann_coords_parts = np.where(np.reshape(annotations[i][1][j][1],[1000,1000])>0)
-                ann_coords_parts = (ann_coords_parts[1],ann_coords_parts[0])
+                ann_coords_parts = (ann_coords_parts[0],ann_coords_parts[1])
                 current = [name,ann_coords_parts]
-                #pdb.set_trace()
                 all += [current]
 
             add = [[jpg,all]]
             ann_coords += add
-
-        #pdb.set_trace()
 
         return ann_coords
     return 0
@@ -500,149 +482,131 @@ def detect_R_T(ann,anchor,path_num):
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
-    mask_ = np.reshape(mask_anchor,[1805,1000,1000])
-
+    mask__ = np.reshape(mask_anchor,[1805,1000,1000])
+    mask_ = list()
+    for i in range(1805):
+        mask_parts = cv2.resize(mask__[i],(250,250))
+        mask_parts[mask_parts>0] = 1
+        mask_.append(mask_parts)
+    mask_ = np.array(mask_)
+    iou_list = list()
+    iou_affine_list = list()
+    kernel = [[1,1,1],[1,-8,1],[1,1,1]]
     for ann_len in range(len(ann)):
 
         img_name = ann[ann_len][0]
         all = list()
-
+        print(img_name)
         for ann_0_len in range(len(ann[ann_len][1])):
 
             error = list()
             iou = list()
             name = ann[ann_len][1][ann_0_len][0]
             current = list()
+
             annotations_x = np.array(ann[ann_len][1][ann_0_len][1][0])
             annotations_y = np.array(ann[ann_len][1][ann_0_len][1][1])
+
             x_max = np.max(annotations_x)
             x_min = np.min(annotations_x)
             y_max = np.max(annotations_y)
             y_min = np.min(annotations_y)
-
             mask_annotation = np.zeros([1000,1000])
             mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
-            for anchor_len in range(len(anchor)):
-                error_parts = list()
-                iou_parts = list()
+            mask_annotation = cv2.resize(mask_annotation,(250,250))
+            mask_annotation[mask_annotation>0] = 1
+            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[1805,1,1])
+            or_ = np.logical_or(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
+            and_ = np.logical_and(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
+            or_ = np.sum(np.sum(or_,2),2)
+            and_ = np.sum(np.sum(and_,2),2)
+            iou = and_/or_
 
-                for anchor_0_len in range(len(anchor[anchor_len])):
-                    my_list_ann = []
-                    my_list_anchor = []
-                    
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
+            max_index = np.argmax(iou) #361*5のアンカーの中から最もiouが高いものを選択
 
-                    for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
-                        my_list_ann.append(x)
-                        my_list_anchor.append(y)
-
-                    
-                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints,axis=0)
-                    error_ = sum(d)
-                    #error.append(error_)
-                    #pdb.set_trace()                    
-                    if error_ < 4500:
-                    #pdb.set_trace()
-                        #pdb.set_trace()
-                        intersection = mask_anchor[anchor_len][anchor_0_len] * mask_annotation
-                        union = mask_anchor[anchor_len][anchor_0_len] + mask_annotation
-                        intersection = len(np.where(intersection>0)[0])
-                        union = len(np.where(union>0)[0])
-                        iou_0 = intersection/union
-                    else:
-                        iou_0 = 0
-                    iou_parts.append(iou_0)
-                    #print(iou_0)
-                #print(iou_parts)
-                iou.append(iou_parts)
-                """
-                    
-                                
-                    anchor_len_ = len(anchor[anchor_len][anchor_0_len][0])
-                    ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
-
-                    my_list_ann = []
-                    my_list_anchor = []
-
-                    for k in range(30):
-                        x = random.randint(0,ann_len_-1)
-                        y = random.randint(0,anchor_len_-1)
-                        my_list_ann.append(x)
-                        my_list_anchor.append(y)
-                    ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-
-                    anchor_stack = np.vstack((anchor[anchor_len][anchor_0_len][0][my_list_anchor],anchor[anchor_len][anchor_0_len][1][my_list_anchor]))
-
-                    dcpoints = ann_stack - anchor_stack
-                    d = np.linalg.norm(dcpoints, axis=0)
-                    
-                    error_0 = sum(d)
-                    error_parts.append(error_0)
-
-                error.append(error_parts)
-                """    
-            #pdb.set_trace()
-            iou = np.array(iou)
-
-            max_index = list()
-            """
-            for i in range(iou.shape[0]):
-                max_index.append(np.argmin(iou[i]))
-            """
-            max_index = np.argmax(np.reshape(iou,[-1]))
-            q_,mod = divmod(max_index,361)
-            #pdb.set_trace()
+            iou = iou[0][max_index]
+            print('max index:{0}'.format(max_index))
             R_list = list()
             T_list = list()
-            #pdb.set_trace()
-            anc = np.where(mask_[max_index]>0)
-            anchor_len_ = len(anc[0])
-            #anchor_len_ = len(anchor[mod][q_][0])
-            ann_len_ = len(ann[ann_len][1][ann_0_len][1][0])
 
-            my_list_ann = []
-            my_list_anchor = []
-            
-            for k in range(30):
-                x = random.randint(0,ann_len_-1)
-                y = random.randint(0,anchor_len_-1)
-                my_list_ann.append(x)
-                my_list_anchor.append(y)
-            ann_stack = np.vstack((ann[ann_len][1][ann_0_len][1][0][my_list_ann],ann[ann_len][1][ann_0_len][1][1][my_list_ann]))
-            anchor_stack = np.vstack((anc[0][y],anc[1][y]))
-            #anchor_stack = np.vstack((anchor[mod][q_][0][my_list_anchor],anchor[mod][q_][1][my_list_anchor]))
-            R, T = ICP_matching(ann_stack,anchor_stack)
-            #pdb.set_trace()     
-                        
-            with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
-                anchor_ = pickle.load(f)
-            anchor_ = np.reshape(anchor_,(1805,1000,1000))
-            img = cv2.imread('../data/VOC2012/sphere_data_another/001163.png')
-            with open('../data/mask_ann/001163_{0}.pickle'.format(ann_0_len),mode = 'rb') as f:
+            ann_now = ann[ann_len][1][ann_0_len][1]
+            A = np.zeros((1000,1000),dtype = 'uint8')
+            A[ann_now] = 255
+            ann_now = A
+            anchor_now = mask__[max_index]
+
+            dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0) #エッジ検出
+            dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
+
+            ann_len_ = len(dst_ann[0])
+            anchor_len_ = len(dst_anchor[0])
+
+            iou_affine = 0
+            count = 0
+            best_iou = 0
+            best_R = 0.0
+            best_T = [0.0,0.0]
+            img = cv2.imread('../data/VOC2012/sphere_data/{0}'.format(img_name))
+            with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
-            #X = np.zeros((1000,1000))
-            #pdb.set_trace()
-            X = cv2.resize(an,(1000,1000))*255
-            #X[ann[0][1][0][1]] = 255
-            #X[ann[0][1][0][1]] = 255
-            #X[np.where(cv2.resize(an,(1000,1000))==1)] = 1
-            an = cv2.resize(an,(1000,1000))*255
-            #pdb.set_trace()
-            
-            an_ = anchor_[max_index]
-            affine = cv2.getRotationMatrix2D((0,0),R,1.0)
-            affine[0][2] = T[0]
-            affine[0][2] = T[1]
-            #pdb.set_trace()
-            pre=cv2.warpAffine(an_, affine, (1000,1000))
+
+            while(iou > iou_affine or iou_affine < 0.4):
+            #条件を満たすまでicpマッチングを行い、最適なR,Tを求める
+                my_list_ann = []
+                my_list_anchor = []
+                if iou_affine > 0.8:
+                    break
+                count += 1
+                print("count:{0}".format(count))
+                if count==200:
+                    if iou>iou_affine:
+                        R = 0.0
+                        T = [0.0,0.0]
+                        iou_affine = iou
+                        break
+                    else:
+                        R = best_R
+                        T = best_T
+                        iou_affine = best_iou
+                        break
+                        #pdb.set_trace()
+                for k in range(30):
+                    x = random.randint(0,ann_len_-1)
+                    y = random.randint(0,anchor_len_-1)
+                    my_list_ann.append(x)
+                    my_list_anchor.append(y)
+
+                ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
+                anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
+
+                R,T  = ICP_matching(ann_stack,anchor_stack)
+
+                X = np.zeros((1000,1000))
+                X[ann[ann_len][1][ann_0_len][1]] = 255
+                an = cv2.resize(an,(1000,1000))*255
+
+                an_ = mask__[max_index]
+                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                affine[0][2] += T[1]
+                affine[1][2] += T[0]
+
+                pre = cv2.warpAffine(an_,affine,(1000,1000))
+
+                pre_resize = cv2.resize(pre,(250,250))
+                pre_resize[pre_resize>0] = 1
+
+                or_ = np.sum(np.logical_or(pre_resize,mask_annotation[0]))
+                and_ = np.sum(np.logical_and(pre_resize,mask_annotation[0]))
+                iou_affine = and_/or_
+                if best_iou>iou_affine:
+                    best_iou = iou_affine
+                    best_R = R
+                    best_T = T
+            print('iou       :{0}'.format(iou))
+            print('affine iou:{0}'.format(iou_affine))
+
+            """
+            #教師データの作成ができているか確認用
             where_ = np.where(pre)
             pre_1 = np.zeros((1000,1000))
             pre_2 = np.zeros((1000,1000))
@@ -653,29 +617,34 @@ def detect_R_T(ann,anchor,path_num):
             pre_2 = pre_2[np.newaxis]
             pre = np.append(pre,pre_1,0)
             pre = np.append(pre,pre_2,0)
-            #pdb.set_trace()
+
             pre = np.transpose(pre,[1,2,0])
             X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
-            #pre = np.tile(pre[newaxis],[])
-            #pdb.set_trace()
+
             prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
             prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
-            cv2.imwrite('../../GoogleDrive/messigray_{0}_dif.png'.format(ann_0_len),prediction)
-
-            #cv2.imwrite('sample_ann.png',X)
-            
-
+            cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+            """
+            """
+            #アフィン変換する前のアンカーを合成した画像を出力する用
+            not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
+            pre_2 = np.zeros((1000,1000))
+            pre_2[np.where(an_>0)]= 200
+            pre_2 = pre_2[np.newaxis]
+            not_affine = np.transpose(np.append(not_affine,pre_2,0),[1,2,0])
+            prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(not_affine,np.float64),0.3,0)
+            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
+            cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
             ###############################
-            #pdb.set_trace()
-            
+            """
             current = [name,R,T,x_min,y_min,x_max,y_min,max_index]
-            #pdb.set_trace()
+
             all.append(current)
-        #pdb.set_trace()
+
         add = [[img_name,[all]]]
         dumps += add
-        pdb.set_trace()
-        print("finish:{0}".format(ann_len))
+        print("finish:{0}_{1}".format(ann_len,path_num))
         if ann_len % 50 == 0:
             with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
@@ -686,12 +655,12 @@ def detect_R_T(ann,anchor,path_num):
 
     return 0
 
+
 def make_area():
-    file = ['ann_coords_1','ann_coords_2','ann_coords_3','ann_coords_4']
+    file = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     for i in file:
         with open('../data/ann_anchor_data/{0}.pickle'.format(i),mode = 'rb') as f:
             ann = pickle.load(f)
-
 
         for ann_len in range(len(ann)):
             for ann_0_len in range(len(ann[ann_len][1])):
@@ -699,145 +668,93 @@ def make_area():
                 X=ann[ann_len][1][ann_0_len][1]
                 mask[X] = 1
                 name = ann[ann_len][0][:6]
-                #pdb.set_trace()
-                mask = cv2.resize(mask,(70,70))
                 with open('../data/mask_ann/{0}_{1}.pickle'.format(name,ann_0_len),mode = 'wb') as f:
                     pickle.dump(mask,f)
             print("finish : {0}".format(name))
 
 if __name__ ==  '__main__':
-    #make_area()
-    if not os.path.exists('../data/ann_anchor_data/mask_anchor.pickle'):
+    #python preprocess_ad.py
+    #mask anchorの作成
+    #mask annotationsの作成
+
+    #python preprocess_ad.py 0
+    #引数として0,1,2,3を指定
+    #教師データが作成される
+
+    #教師データ作成後
+    #python preprocess_ad.py final
+    #Tの正規化を行う
+    path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
+    num_list = ['0','1','2','3']
+    pdb.set_trace()
+    if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
         anchors = mask_anchor(np.array(x),19)
+        pdb.set_trace()
 
         #anchors = mask_anchor(anchors,19)
 
-        with open('../data/ann_anchor_data/mask_anchor_dif.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'wb') as f:
             pickle.dump(anchors,f)
-        #pdb.set_trace()
-    #----------------------------------------
-    #マスクアンカーが存在しなければ作成し、pickleファイルで保存
-    #ファイルがあれば読み込み
-    if not os.path.exists('../data/ann_anchor_data/anchor_coords.pickle'):
-        print("make mask anchor")
-        with open("anchor.txt") as f:
-            x = f.read().split()
+        #----------------------------------------
+        #mask anchorを座標系に変換:(1000,1000)→[x座標][y座標]
 
-        with open('../data/ann_anchor_data/mask_anchor_dif.pickle',mode = 'rb') as f:
+        print("make mask anchor")
+
+        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
 
+        anchor_coords = make_coords_from_mask(anchor,0)#mask anchorを座標系に変換
 
-        #pdb.set_trace()
-        anchor_coords=make_coords_from_mask(anchor,0)
-        #pdb.set_trace()
-        with open('../data/ann_anchor_data/anchor_coords_dif.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'wb') as f:
             pickle.dump(anchor_coords,f)
-        #pdb.set_trace()
         print("finish making mask anchor")
 
-    #----------------------------------------
-
-    #----------------------------------------
-    #マスクアノテーションが存在しなければ作成し、pickleファイルで保存
-    #ファイルがあれば読み込み
-    #
-    if not os.path.exists('../data/ann_anchor_data/ann_coords_1.pickle'):
-        print("make mask annotations_1")
-        path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
+        #----------------------------------------
+        path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3','AnnotationsTrain_4']
         pick = ['car','Truck'] #見つけたい物体
+        #----------------------------------------
+        #マスクアノテーションを作成し、pickleファイルで保存
+        for i in range(len(path_coords)):
+            print("make mask annotations_1")
+            path = '../data/VOC2012/' + path[i] #残差を計算したい対象
+            annotations = pascal_voc_clean_xml(path,pick)#データの読み込み、mask annotationsの作成
+            print("make mask annotations coords_1")
 
-        annotations = pascal_voc_clean_xml(path,pick)
-        #annotations = np.array(annotations).astype('int')
+            ann_coords=make_coords_from_mask(annotations,1)#mask annotationsを座標系に変換
+            path = '../data/ann_anchor_data/' + path_coords[i] + '.pickle'
+            with open(path,mode = 'wb') as f:
+                pickle.dump(ann_coords,f)
+            print("finish making mask annotations coords")
 
-        print("make mask annotations coords_1")
+            del annotations,ann_coords
 
-        ann_coords=make_coords_from_mask(annotations,1)
-
-        with open('../data/ann_anchor_data/ann_coords_1_dif.pickle',mode = 'wb') as f:
-            pickle.dump(ann_coords,f)
-        print("finish making mask annotations coords")
-
-        del annotations,ann_coords
-
-    #elif not os.path.exists('mask_annotations_2.pickle'):
-        print("make mask annotations_2")
-        path = '../data/VOC2012/AnnotationsTrain_2' #残差を計算したい対象
-        pick = ['car','Truck'] #見つけたい物体
-        annotations = pascal_voc_clean_xml(path,pick)
-
-        ann_coords=make_coords_from_mask(annotations,1)
-
-        with open('../data/ann_anchor_data/ann_coords_2_dif.pickle',mode = 'wb') as f:
-            pickle.dump(ann_coords,f)
-        print("finish making mask annotations coords")
-
-        del annotations,ann_coords
-
-    #elif not os.path.exists('mask_annotations_3.pickle'):
-        print("make mask annotations_3")
-        path = '../data/VOC2012/AnnotationsTrain_3/AnnotationsTrain_1' #残差を計算したい対象
-        pick = ['car','Truck'] #見つけたい物体
-        annotations = pascal_voc_clean_xml(path,pick)
-
-        ann_coords=make_coords_from_mask(annotations,1)
-
-        with open('../data/ann_anchor_data/ann_coords_3_dif.pickle',mode = 'wb') as f:
-            pickle.dump(ann_coords,f)
-        print("finish making mask annotations coords")
-
-        del annotations,ann_coords
-
-    #elif not os.path.exists('mask_annotations_4.pickle'):
-        print("make mask annotations_4")
-        path = '../data/VOC2012/AnnotationsTrain_4/AnnotationsTrain_2' #残差を計算したい対象
-        pick = ['car','Truck'] #見つけたい物体
-        annotations = pascal_voc_clean_xml(path,pick)
-
-        ann_coords=make_coords_from_mask(annotations,1)
-
-        with open('../data/ann_anchor_data/ann_coords_4_dif.pickle',mode = 'wb') as f:
-            pickle.dump(ann_coords,f)
-        print("finish making mask annotations coords")
-
-        del annotations,ann_coords
+        make_area()
 
 
+    elif sys.argv[1] in num_list:
 
-    if not os.path.exists('../data/redidual_1/redidual_parts_1_.pickle'):
-        with open('../data/ann_anchor_data/anchor_coords_dif.pickle',mode = 'rb') as f:
+        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
             anchor = pickle.load(f)
-
-        with open('../data/ann_anchor_data/ann_coords_1_dif.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
+        #教師データの作成
+        #anchor coordsとannotation coordsを用いてICPマッチング
+        #実行に1日くらいかかるのでプログラム分割して実行可能。
+        index = int(sys.argv[1])
         #pdb.set_trace()
+        file_path = '../data/ann_anchor_data/'+ path_coords[index] + '.pickle'
+        with open(file_path,mode = 'rb') as f:
+            ann_1 = pickle.load(f)
         print("start detect the redidual between anchors and annotations")
-        ann_1 = detect_R_T(ann_1,anchor,0)
+        ann_1 = detect_R_T(ann_1,anchor,index)#最もIoUが高いアンカーを選択し、ICPマッチングを行う
 
-        print("finish 1")
+        print("finish {0}".format(index))
 
-        with open('../data/ann_anchor_data/ann_coords_2_dif.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,1)
 
-        print("finish 2")
-
-        with open('../data/ann_anchor_data/ann_coords_3_dif.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,2)
-
-        print("finish 3")
-
-        with open('../data/ann_anchor_data/ann_coords_4_dif.pickle',mode = 'rb') as f:
-            ann_1 = pickle.load(f)
-        ann_1 = detect_R_T(ann_1,anchor,3)
-
-        print("finish 4")
-
-    if not os.path.exists('../data/ann_anchor_data/annotations_nor_dif_.pickle'):
-
+    elif sys.argv[1] == 'final':
+    #Tの正規化
+    #正規化しなければ、Rの学習が進みません
         dumps = list()
         dumps_1,cur_dir = load_data('../data/redidual_1')
         os.chdir(cur_dir)
@@ -848,7 +765,7 @@ if __name__ ==  '__main__':
         dumps += dumps_1
         dumps += dumps_2
         dumps += dumps_3
-
+        #pdb.set_trace()
         t_0_max = -100000
         t_0_min = 100000
         t_1_max = -100000
@@ -858,87 +775,105 @@ if __name__ ==  '__main__':
 
         T_0 = []
         T_1 = []
+        R = []
         #pdb.set_trace()
         for i in range(len(dumps)):
             for j in range(len(dumps[i][1][0])):
-                #pdb.set_trace()
                 T_0.append(dumps[i][1][0][j][2][0])
                 T_1.append(dumps[i][1][0][j][2][1])
-            print(i)
-        pdb.set_trace()
-        #sns.set_style("whitegrid")
-        #sns.distplot(np.array(T_0))
-        #plt.plot(np.array(T_0))
-        #plt.savefig('../data/out_test/T_0_not_nor_dif.png')
-        #plt.clf()
-        #sns.distplot(np.array(T_1))
-        #plt.plot(np.array(T_1))
-        #plt.savefig('../data/out_test/T_1_not_nor_dif.png')
-        #plt.clf()
+                R.append(dumps[i][1][0][j][1])
 
+        T_0 = np.array(T_0)
+        T_1 = np.array(T_1)
+        R = np.array(R)
         """
-        s = pd.Series()
-        pdb.set_trace()
-        sns.pairplot(s, hue="species", size=2.5)
-        plt.savefig('../data/out_test/T_sample.png')
+        #Tの正規化前の分布確認用
+        plt.hist(T_0)
+        #plt.plot(np.array(T_0))
+        plt.savefig('../../GoogleDrive/T_0_not_nor_k.png')
+        plt.clf()
+        plt.hist(T_1)
+        #plt.plot(np.array(T_1))
+        plt.savefig('../../GoogleDrive/T_1_not_nor_k.png')
+        plt.clf()
+        #plt.hist(R)
+        #plt.savefig('../../GoogleDrive/R_.png')
+        #plt.clf()
         """
-        """
-        pdb.set_trace()
-        """
-        #pdb.set_trace()
-        
-        print("start detectiong normalization!!")
-        """
-        for i in range(len(annotations)):
-            for j in range(len(annotations[i][1][0])):
-                #pdb.set_trace()
-                if t_0_max < np.max(np.array(annotations[i][1][0][j][2]).T[0]):
-                    t_0_max = np.max(np.array(annotations[i][1][0][j][2]).T[0])
-                if t_0_min > np.min(np.array(annotations[i][1][0][j][2]).T[0]):
-                    t_0_min = np.min(np.array(annotations[i][1][0][j][2]).T[0])
-                if t_1_max < np.max(np.array(annotations[i][1][0][j][2]).T[1]):
-                    t_1_max = np.max(np.array(annotations[i][1][0][j][2]).T[1])
-                if t_1_min > np.min(np.array(annotations[i][1][0][j][2]).T[1]):
-                    t_1_min = np.min(np.array(annotations[i][1][0][j][2]).T[1])
-        #pdb.set_trace()
-        """
+        T_0_mean = np.mean(T_0)
+        T_0_var = np.var(T_0)
+
+        T_1_mean = np.mean(T_1)
+        T_1_var = np.var(T_1)
+
+        R_mean = np.mean(R)
+        R_var = np.var(R)
+
+        print('T_0   mean:{0}  var:{1}'.format(T_0_mean,T_0_var))
+        print('T_1   mean:{0}  var:{1}'.format(T_1_mean,T_1_var))
+        print('R     mean:{0}  var:{1}'.format(R_mean,R_var))
+
         t_0_max = np.max(np.array(T_0))
         t_0_min = np.min(np.array(T_0))
         t_1_max = np.max(np.array(T_1))
         t_1_min = np.min(np.array(T_1))
+        max_index = list()
+        idx = list()
         for i in range(len(annotations)):
             for j in range(len(annotations[i][1][0])):
-                #pdb.set_trace()
                 X_0 = np.array(annotations[i][1][0][j][2][0])
                 X_1 = np.array(annotations[i][1][0][j][2][1])
-                #pdb.set_trace()
-                X_0 = ((X_0-t_0_min)/(t_0_max-t_0_min))*2 - 1
+                X_0 = ((X_0-t_0_min)/(t_0_max-t_0_min))*2 - 1#最大値を1,最小値-1に設定
                 X_1 = ((X_1-t_1_min)/(t_1_max-t_1_min))*2 - 1
+                R = math.radians(annotations[i][1][0][j][1])
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
+                annotations[i][1][0][j][1] = np.array(R)
+                max_index.append(annotations[i][1][0][j][7])
+                idx.append(annotations[i][1][0][j][8])
 
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
-        with open('../data/ann_anchor_data/annotations_nor_iou_dif.pickle',mode = 'wb') as f:
+        plt.hist(max_index)
+        plt.savefig('../../GoogleDrive/max_index.png')
+        plt.clf()
+
+        plt.hist(idx)
+        plt.savefig('../../GoogleDrive/idx.png')
+        plt.clf()
+
+        #pdb.set_trace()
+        with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
             pickle.dump(annotations,f)
-        with open('../data/ann_anchor_data/max_min_dif.pickle',mode = 'wb') as f:
+        with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
             pickle.dump(max_min,f)
-        with open('../cfg/tiny-dif.cfg','a') as f:
+        #------------------------------------------------------------------------------------
+        #------------------------------------------------------------------------------------
+        #------------------------------------------------------------------------------------
+        #cfgにmin,maxの値が書き込まれます。以前のものと混同してしまうので、trainに入る前に以前のものは消去する
+        #------------------------------------------------------------------------------------
+        #------------------------------------------------------------------------------------
+        #------------------------------------------------------------------------------------
+        with open('../cfg/tiny-without-iou.cfg','a') as f:
             print("t_0_max = {0}".format(t_0_max),file = f)
             print("t_0_min = {0}".format(t_0_min),file = f)
             print("t_1_max = {0}".format(t_1_max),file = f)
             print("t_1_min = {0}".format(t_1_min),file = f)
-        #make_area()
-        """
+
+
+        """#test_dataの分割
         annotations = glob.glob('../data/redidual_4/*.pickle')
         for i,file in enumerate(annotations):
 
-
             with open(file,mode = 'rb') as f:
                 annotations_parts = pickle.load(f)
-
-            name = annotations_parts[0][0]
-            new = '../data/VOC2012/sphere_data/'+ name
-            new_path = shutil.move(new, '../data/VOC2012/sphere_test/')
-            print(name)
+            for j in range(len(annotations_parts)):
+            #pdb.set_trace()
+                name = annotations_parts[j][0]
+                new = '../data/VOC2012/sphere_data/'+ name
+                try:
+                    new_path = shutil.move(new, '../data/VOC2012/sphere_test/')
+                except:
+                    pass
+                print(name)
 
         """

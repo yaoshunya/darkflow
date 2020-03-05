@@ -287,16 +287,16 @@ def project_sphere_on_xy_plane(grid, projection_origin):
     return rx, ry
 
 def mask_anchor(anchor,H):
-    img_x = 1000#画像の幅
-    img_y = 1000#画像の高さ
+    img_x = 1242#画像の幅
+    img_y = 375#画像の高さ
 
     step_x=0
     step_y=0
     S = H
     #anchor = np.reshape(anchor,(5,2))
     anchor_size = anchor.shape[0]
-    step_size = int(img_x/S)#グリッドに分割した際のグリッド1つ当たりのピクセル数
-
+    step_size_x = int(img_x/S)#グリッドに分割した際のグリッド1つ当たりのピクセル数
+    step_size_y = int(img_y/S)
 
     mask = np.array([])
 
@@ -304,8 +304,8 @@ def mask_anchor(anchor,H):
         for t in range(S):
             if t==0:
                 step_x = 0
-            center_x = int((step_x + (step_x + step_size))/2)#gridの中心座標x
-            center_y = int((step_y + (step_y + step_size))/2)#gridの中心座標y
+            center_x = int((step_x + (step_x + step_size_x))/2)#gridの中心座標x
+            center_y = int((step_y + (step_y + step_size_y))/2)#gridの中心座標y
             for l in range(anchor_size):
                 #pdb.set_trace()
                 w_ = float(x[l].split(",")[0])
@@ -313,8 +313,6 @@ def mask_anchor(anchor,H):
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
-                #side = int(w_*1224/488)
-                #ver = int(h_*370/488)
                 side = int(h_)/2
                 ver = int(w_)/2
 
@@ -351,13 +349,13 @@ def mask_anchor(anchor,H):
                     mask = np.append(mask,resize_mask[np.newaxis],axis=0)
 
 
-            step_x += step_size
+            step_x += step_size_x
             if t == 0:
                 mask_ = mask[np.newaxis]
             else:
                 mask_ = np.append(mask_,mask[np.newaxis],axis=0)
         print(i)
-        step_y += step_size
+        step_y += step_size_y
         if i == 0:
             mask_fi = mask_[np.newaxis]
             #mask_fi_row = mask__row[np.newaxis]
@@ -365,7 +363,7 @@ def mask_anchor(anchor,H):
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
             #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
 
-    return mask_fi
+    return mask_fi    
 
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     print('Parsing for {} {}'.format(
@@ -378,7 +376,8 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     annotations = glob.glob(str(annotations)+'*.xml')
     size = len(annotations)
     mask = np.array([])
-
+    H = 19
+    W = 19
     for i, file in enumerate(annotations):
         # progress bar
         sys.stdout.write('\r')
@@ -408,11 +407,24 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             xx = int(float(xmlbox.find('xmax').text))
             yn = int(float(xmlbox.find('ymin').text))
             yx = int(float(xmlbox.find('ymax').text))
+            
+            centerx = .5*(xx+xn)
+            centery = .5*(yn+yx)
+            
+            cellx = 1242/W
+            celly = 375/H
 
+            cx = centerx/cellx
+            cy = centery/celly
+
+            if cx>=W or cy>=H:index = None
+
+            index = int(np.floor(cy)*W + np.floor(cx))
             #make mask annotation from coordinates
             ###############################################################
             mask_prepare = np.zeros((375,1242),dtype=int)
             mask_prepare[yn:yx,xn:xx]=255
+            pdb.set_trace()
             mask_parts = np.array([])
             grid = get_projection_grid(b=500)
             rot = rand_rotation_matrix(deflection=1.0)
@@ -422,7 +434,7 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             mask_parts = np.reshape(mask_parts,(1000,1000)).T
 
             mask_ = mask_parts[np.newaxis]
-            current = [name,mask_]
+            current = [name,mask_,index]
             all += [current]
             t = t + 1
         add = [[jpg,all]]
@@ -466,7 +478,7 @@ def make_coords_from_mask(data,flag):
                 current = list()
                 ann_coords_parts = np.where(np.reshape(annotations[i][1][j][1],[1000,1000])>0)
                 ann_coords_parts = (ann_coords_parts[0],ann_coords_parts[1])
-                current = [name,ann_coords_parts]
+                current = [name,ann_coords_parts,annotation[i][1][j][2]]
                 all += [current]
 
             add = [[jpg,all]]
@@ -481,8 +493,8 @@ def detect_R_T(ann,anchor,path_num):
     path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
         mask_anchor = pickle.load(f)
-    mask_anchor = np.reshape(mask_anchor,[361,5,1000,1000])
-    mask__ = np.reshape(mask_anchor,[1805,1000,1000])
+    mask_anchor = np.reshape(mask_anchor,[361,10,1000,1000])
+    mask__ = np.reshape(mask_anchor,[3610,1000,1000])
     mask_ = list()
     for i in range(1805):
         mask_parts = cv2.resize(mask__[i],(250,250))
@@ -515,10 +527,10 @@ def detect_R_T(ann,anchor,path_num):
             mask_annotation[ann[ann_len][1][ann_0_len][1]] = 1
             mask_annotation = cv2.resize(mask_annotation,(250,250))
             mask_annotation[mask_annotation>0] = 1
-            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[1805,1,1])
+            mask_annotation = np.tile(mask_annotation[np.newaxis][np.newaxis],[3610,1,1])
             or_ = np.logical_or(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
             and_ = np.logical_and(np.reshape(mask_,[1805,250,250]),mask_annotation).astype(np.int)
-            pdb.set_trace()
+            #pdb.set_trace()
             or_ = np.sum(np.sum(or_,2),2)
             and_ = np.sum(np.sum(and_,2),2)
             iou = and_/or_
@@ -688,6 +700,7 @@ if __name__ ==  '__main__':
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     num_list = ['0','1','2','3']
     if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
+        
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
@@ -712,7 +725,8 @@ if __name__ ==  '__main__':
         print("finish making mask anchor")
 
         #----------------------------------------
-        path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3','AnnotationsTrain_4']
+        
+        path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3/AnnotattionTrains_1','AnnotationsTrain_4/AnnotationsTrain_2']
         pick = ['car','Truck'] #見つけたい物体
         #----------------------------------------
         #マスクアノテーションを作成し、pickleファイルで保存
