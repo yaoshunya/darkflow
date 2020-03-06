@@ -65,6 +65,8 @@ def make_result(out,this_batch,threshold):
         X = pickle.load(f)
     with open('data/ann_anchor_data/ann_coords_4_T.pickle','rb') as f:
         annotations = pickle.load(f)
+    with open('data/ann_anchor_data/upleft_coord.pickle','rb') as f:
+        upleft_coord = pickle.load(f)
     
     t_0_max = np.array(X[0])
     t_0_min = np.array(X[1])
@@ -80,11 +82,11 @@ def make_result(out,this_batch,threshold):
     T_0_list = list()
     T_1_list = list()
     R_list = list()
-    max_index = list()
-    idx = list()
+    #max_index = list()
+    #idx = list()
     for i in range(batch_size):
         #pdb.set_trace()
-        out_now = np.transpose(np.reshape(out[i],[361,5,6]),[2,0,1]) #networkの出力をreshape
+        out_now = np.transpose(np.reshape(out[i],[361,10,6]),[2,0,1]) #networkの出力をreshape
         #pdb.set_trace()
         image_name = this_batch[i]#画像の名前
 
@@ -110,9 +112,6 @@ def make_result(out,this_batch,threshold):
                 #annotationsから入力された画像と同じ名前のものを選択
                 ann_num = ann
                 break
-        max_index.extend(trast_conf//361)
-        idx.extend(trast_conf%361)
-
         """
         #疑似的なnms
         #現在、予測がそもそもできていないためコメントアウト
@@ -153,15 +152,18 @@ def make_result(out,this_batch,threshold):
         
         #trast_confの数だけ予測とする
         for j in range(len(trast_conf)):
+            
+            max_index = trast_conf[j]%361
+            idx = trast_conf[j]//361
             #print(confidence[trast_conf[j]])
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
 
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min #T_0の正規化をもとの値に戻す
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min #T_1の正規化をもとの値に戻す
 
-            anchor_now = np.reshape(anchor,[1805,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
-
-            affine = cv2.getRotationMatrix2D((0,0),math.degrees(R),1.0)#回転Rの行列
+            anchor_now = np.reshape(anchor,[3610,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
+            upleft_now = upleft_coord[max_index]
+            affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),math.degrees(R),1.0)#回転Rの行列
             affine[0][2] += T_1#並進ベクトルの追加
             affine[1][2] += T_0#
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
@@ -180,8 +182,6 @@ def make_result(out,this_batch,threshold):
 
             pre = np.transpose(pre,[1,2,0])
 
-            #x_ = mean(where_[0])
-            #y_ = mean(where_[1])
             #label = where_pre_label(x_,y_,where_)
             ann,iou_parts,delete_index = detect_most_near(pre,ann_num)#ann:予測に最も近い真値 iou_parts:最も大きいiou delete_index:選択された真値
             predict.append(1)#予測配列に1をappend
@@ -201,12 +201,12 @@ def make_result(out,this_batch,threshold):
 
             iou_return.append(iou_parts)
             #iou_label[label-1].append(iou_parts)
-            """
-            imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
-            prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
-            prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
-            cv2.imwrite('../GoogleDrive/sphereLite/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)#予測を画像として保存
-            """
+            if True:
+                imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
+                prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
+                prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
+                cv2.imwrite('git_image/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)#予測を画像として保存
+            
         #pdb.set_trace()
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
@@ -225,7 +225,7 @@ def make_result(out,this_batch,threshold):
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
         #pdb.set_trace()
         if np.sum(np.array(true)) == 0:
-            recall = 2
+            recall = 1
         else:
             recall = recall_score(np.array(true),np.array(predict))#recallの計算
         precision_return.append(precision)
@@ -278,10 +278,10 @@ def predict(self):
 
 
     #threshold = [0.3,0.4,0.5,0.6,0.7]
-    threshold = [0.1,0.2]
-    iou_label_ = ['iou_label_conf_01','iou_label_conf_02']
-    precision_label = ['precision_conf_01','precision_conf_02']
-    recall_label = ['recall_conf_01','recall_conf_02']
+    threshold = [0.5]
+    iou_label_ = ['iou_label_conf_02']
+    precision_label = ['precision_conf_02']
+    recall_label = ['recall_conf_02']
     #iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
     #precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
     #recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
@@ -335,21 +335,22 @@ def predict(self):
             T_0_.extend(T_0)
             T_1_.extend(T_1)
             R_.extend(R)
-            max_.extend(max__)
-            id_.extend(id__)
+            #max_.extend(max__)
+            #id_.extend(id__)
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
             if X == 10:
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
         recall_index = 'data/out_data'+recall_label[k]+'.pickle'
-        #pdb.set_trace()
+        """
         plt.hist(max_)
         plt.savefig('../GoogleDrive/max_.png')
         plt.clf()
         plt.hist(id_,range=(0,350))
         plt.savefig('../GoogleDrive/id_.png')
         plt.clf()
+        """
         #pdb.set_trace()
 
         with open(iou_index,mode = 'wb') as f:
