@@ -449,6 +449,32 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
     add = list()
     return dumps
 
+def make_up_left_coord(H):
+    step = 19//H
+    coord_list = list()
+    print('make spherical up left coord')
+    for i in range(H):
+        for j in range(H):
+            base = np.zeros((19,19))
+            base[step*i,step*j] = 255
+            grid = get_projection_grid(b=500)
+            rot = rand_rotation_matrix(deflection=1.0)
+            grid = rotate_grid(rot,grid)
+            rotate_base = project_2d_on_sphere(base,grid).T
+            x_min = np.min(np.where(rotate_base>0)[0])
+            y_min = np.min(np.where(rotate_base>0)[1])
+            coord = [x_min,y_min]
+            coord_list.append(coord)
+            """
+            base = np.zeros((1000,1000))
+            base[coord[0],coord[1]] = 255
+            cv2.imwrite('../../GoogleDrive/base{0}.png'.format(i*19+j),base)
+            """
+            print('finish:{0}'.format(i*19+j))
+    with open('../data/ann_anchor_data/upleft_coord.pickle',mode = 'wb') as f:
+        pickle.dump(coord_list,f)
+
+
 def make_coords_from_mask(data,flag):
 
     if flag == 0:#anchorを座標系に変換する場合
@@ -505,7 +531,8 @@ def detect_R_T(ann,anchor,path_num):
         mask_.append(mask_parts)
     #pdb.set_trace()
     mask_ = np.reshape(np.array(mask_),[H*W,B,250,250])
-
+    with open('../data/ann_anchor_data/upleft_coord.pickle',mode='rb') as f:
+        upleft_coord = pickle.load(f)
     iou_list = list()
     iou_affine_list = list()
     kernel = [[1,1,1],[1,-8,1],[1,1,1]]
@@ -538,12 +565,12 @@ def detect_R_T(ann,anchor,path_num):
                 T = None
                 idx = None
                 break
+            upleft_now = upleft_coord[index]
             mask_anchor_now = mask_[index]
             or_ = np.sum(np.sum(np.logical_or(X,mask_anchor_now),2),1)
             and_ = np.sum(np.sum(np.logical_and(X,mask_anchor_now),2),1)
             iou = and_/or_
-            if np.max(iou) == 0:
-                pdb.set_trace()
+            
             idx = np.argmax(iou)
             #pdb.set_trace()
             #mask_size = list()
@@ -566,6 +593,9 @@ def detect_R_T(ann,anchor,path_num):
 
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0) #エッジ検出
             dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
+
+            dst_ann = [dst_ann[0]-upleft_now[0],dst_ann[1]-upleft_now[1]]
+            dst_anchor = [dst_anchor[0]-upleft_now[0],dst_anchor[1]-upleft_now[1]]
 
             ann_len_ = len(dst_ann[0])
             anchor_len_ = len(dst_anchor[0])
@@ -616,7 +646,7 @@ def detect_R_T(ann,anchor,path_num):
                 an = cv2.resize(an,(1000,1000))*255
 
                 an_ = mask_anchor[index][idx]
-                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),R,1.0)
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
 
@@ -634,9 +664,9 @@ def detect_R_T(ann,anchor,path_num):
                     best_T = T
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
-            #print('T:        {0}'.format(T))
-            #T_0_list.append(T[0])
-            #T_1_list.append(T[1])
+            print('T:        {0}'.format(T))
+            T_0_list.append(T[0])
+            T_1_list.append(T[1])
             if False:           
                 #教師データの作成ができているか確認用
                 where_ = np.where(pre)
@@ -662,6 +692,7 @@ def detect_R_T(ann,anchor,path_num):
                 #col = index%19
                 #an_ = np.reshape(mask_anchor,[H,W,B,1000,1000])[row][col][idx]
                 #アフィン変換する前のアンカーを合成した画像を出力する用
+                """
                 not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
                 pre_2 = np.zeros((1000,1000))
                 pre_2[np.where(an_>0)]= 200
@@ -671,9 +702,18 @@ def detect_R_T(ann,anchor,path_num):
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
                 cv2.imwrite('../../GoogleDrive/not_affine_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
                 ###############################
-                #pdb.set_trace()         
+                #pdb.set_trace()
+                """
             current = [name,R,T,index,idx]
-
+            """
+            if ann_len == 10:
+                plt.hist(T_0_list)
+                plt.savefig('../../GoogleDrive/T_0.png')
+                plt.clf()
+                plt.hist(T_1_list)
+                plt.savefig('../../GoogleDrive/T_1.png')
+                pdb.set_trace()
+            """
             all.append(current)
 
         add = [[img_name,[all]]]
@@ -745,9 +785,9 @@ if __name__ ==  '__main__':
         with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'wb') as f:
             pickle.dump(anchor_coords,f)
         print("finish making mask anchor")
-        """
-        #----------------------------------------
         
+        #----------------------------------------
+                
         path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3/AnnotationsTrain_1','AnnotationsTrain_4/AnnotationsTrain_2']
         pick = ['car','Truck'] #見つけたい物体
         #----------------------------------------
@@ -767,7 +807,8 @@ if __name__ ==  '__main__':
             del annotations,ann_coords
 
         make_area()
-        """
+        make_up_left_coord(19)
+
 
     elif sys.argv[1] in num_list:
 

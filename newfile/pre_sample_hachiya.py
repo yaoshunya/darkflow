@@ -69,7 +69,6 @@ def ICP_matching(ppoints, cpoints):
             plt.savefig("../../GoogleDrive/icp_test_{0}.png".format(count))
 
         inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
-        pdb.set_trace()
         Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
 
         # update current points
@@ -565,12 +564,12 @@ def detect_R_T(ann,anchor,path_num):
             ann_now = A
             anchor_now = mask_anchor[index][idx]
 
-            # hachiya
-            center = np.array([int(index/19),index%19])
-            center = center*1000/19
 
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0) #エッジ検出
             dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
+
+            # hachiya
+            center = np.min(dst_ann,axis=1)[np.newaxis].T
 
             ann_len_ = len(dst_ann[0])
             anchor_len_ = len(dst_anchor[0])
@@ -613,7 +612,10 @@ def detect_R_T(ann,anchor,path_num):
 
                 ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
                 anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
-                pdb.set_trace()
+
+                # hachiya
+                ann_stack -= center
+                anchor_stack -= center
 
                 R,T  = ICP_matching(ann_stack,anchor_stack)
 
@@ -622,7 +624,8 @@ def detect_R_T(ann,anchor,path_num):
                 an = cv2.resize(an,(1000,1000))*255
 
                 an_ = mask_anchor[index][idx]
-                affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                #affine = cv2.getRotationMatrix2D((0,0),R,1.0)
+                affine = cv2.getRotationMatrix2D(tuple(center.T[0]),R,1.0)
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
 
@@ -640,6 +643,15 @@ def detect_R_T(ann,anchor,path_num):
                     best_T = T
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
+            fig = plt.figure()
+            ax = fig.add_subplot(1,2,1)
+            ax.imshow(ann_now)
+            ax.set_title(f"{round(iou,2)}")
+            ax = fig.add_subplot(1,2,2)
+            ax.imshow(pre)
+            ax.set_title(f"{round(R,1)}_{round(T[0],1)}_{round(T[1],1)}_{round(iou_affine,2)}")
+            plt.savefig(f"/tmp/{img_name}_{ann_0_len}.png")
+
             #print('T:        {0}'.format(T))
             #T_0_list.append(T[0])
             #T_1_list.append(T[1])
