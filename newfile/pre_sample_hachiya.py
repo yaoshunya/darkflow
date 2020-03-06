@@ -641,6 +641,7 @@ def detect_R_T(ann,anchor,path_num):
                     best_iou = iou_affine
                     best_R = R
                     best_T = T
+            pdb.set_trace()
             print('iou       :{0}'.format(iou))
             print('affine iou:{0}'.format(iou_affine))
             fig = plt.figure()

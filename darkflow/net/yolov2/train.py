@@ -69,7 +69,6 @@ def loss(self, net_out):
 
     # Extract the coordinate prediction from net.out
     net_out_reshape = tf.reshape(net_out, [-1, H, W, B, (1 + 2 + 1 + C)])
-
     R = tf.reshape(net_out_reshape[:, :, :, :, 0],[-1,H*W,B,1]) #出力から回転角度Rを抽出
     T = tf.reshape(net_out_reshape[:, :, :, :, 1:3],[-1,H*W,B,2]) #出力から回転角度Tを抽出
 
@@ -123,20 +122,20 @@ def loss(self, net_out):
 
     self.fetch += [_probs, confs, conid, cooid, proid]
 
-    R = tf.reshape(R,[batch_size,361,5,1])
-    _R = tf.reshape(_R,[batch_size,361,5,1]) #Rの真値
+    R = tf.reshape(R,[batch_size,H*W,B,1])
+    _R = tf.reshape(_R,[batch_size,H*W,B,1]) #Rの真値
 
     true = tf.concat([_T,tf.expand_dims(confs, 3), _probs ], 3) #T,confidence,クラス確率の真値
     wght = tf.concat([cooid,tf.expand_dims(conid, 3), proid ], 3) #T,confidence,クラス確率の予測データ
     pre_angle = tf.concat([tf.math.sin(R),tf.math.cos(R)],3) #Rの予測データ
     true_angle = tf.concat([tf.math.sin(_R),tf.math.cos(_R)],3)#Rの教師データ
 
-    pre_norm = tf.reshape(tf.norm(pre_angle,axis=3),(batch_size,H*W,5,1))
-    true_norm = tf.reshape(tf.norm(true_angle,axis=3),(batch_size,H*W,5,1))
+    pre_norm = tf.reshape(tf.norm(pre_angle,axis=3),(batch_size,H*W,B,1))
+    true_norm = tf.reshape(tf.norm(true_angle,axis=3),(batch_size,H*W,B,1))
 
     vec_dot = tf.matmul(pre_angle,true_angle,transpose_b=True)
     vec_dot = vec_dot * np.reshape(np.eye(B,B), [1, 1, B, B])
-    vec_dot = tf.reshape(tf.reduce_sum(vec_dot,axis=3),(batch_size,H*W,5,1))
+    vec_dot = tf.reshape(tf.reduce_sum(vec_dot,axis=3),(batch_size,H*W,B,1))
     vec_abs_fin = tf.add(tf.multiply(pre_norm,true_norm),0.00001)#biternion loss
 
     difal = tf.subtract(1., tf.divide(vec_dot, vec_abs_fin))
