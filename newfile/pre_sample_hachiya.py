@@ -69,6 +69,7 @@ def ICP_matching(ppoints, cpoints):
             plt.savefig("../../GoogleDrive/icp_test_{0}.png".format(count))
 
         inds, error = nearest_neighbor_assosiation(ppoints, cpoints)
+        pdb.set_trace()
         Rt, Tt = SVD_motion_estimation(ppoints[:, inds], cpoints)
 
         # update current points
@@ -564,6 +565,10 @@ def detect_R_T(ann,anchor,path_num):
             ann_now = A
             anchor_now = mask_anchor[index][idx]
 
+            # hachiya
+            center = np.array([int(index/19),index%19])
+            center = center*1000/19
+
             dst_ann = np.where(cv2.Laplacian(ann_now,cv2.CV_32F,ksize=3)>0) #エッジ検出
             dst_anchor = np.where(cv2.Laplacian(anchor_now,cv2.CV_32F,ksize=3)>0)
 
@@ -608,6 +613,7 @@ def detect_R_T(ann,anchor,path_num):
 
                 ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
                 anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
+                pdb.set_trace()
 
                 R,T  = ICP_matching(ann_stack,anchor_stack)
 
@@ -657,10 +663,7 @@ def detect_R_T(ann,anchor,path_num):
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
                 cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
                 cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-                #pdb.set_trace()
-                #row = index//19
-                #col = index%19
-                #an_ = np.reshape(mask_anchor,[H,W,B,1000,1000])[row][col][idx]
+            
                 #アフィン変換する前のアンカーを合成した画像を出力する用
                 not_affine = np.append(an_[np.newaxis],np.zeros((1,1000,1000)),0)
                 pre_2 = np.zeros((1000,1000))
@@ -863,9 +866,9 @@ if __name__ ==  '__main__':
                 R = math.radians(annotations[i][1][0][j][1])
                 annotations[i][1][0][j][2] = np.array((X_0,X_1)).T.tolist()
                 annotations[i][1][0][j][1] = np.array(R)
-                #pdb.set_trace()
-                max_index.append(annotations[i][1][0][j][3])
-                idx.append(annotations[i][1][0][j][4])
+                max_index.append(annotations[i][1][0][j][7])
+                idx.append(annotations[i][1][0][j][8])
+
         max_min = [t_0_max,t_0_min,t_1_max,t_1_min]
 
         plt.hist(max_index)
