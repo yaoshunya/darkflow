@@ -29,15 +29,17 @@ pool = ThreadPool()
 
 def detect_most_near(pre,ann):
 #予測と真値を比較し、最もIoUが高いものを真値として採用する
+img_x = 1000
+img_y = 1000
         if len(ann[1]) == 0:
             #予測しているにも関わらず、その画像に物体が存在しない場合は、iou_list=1000とする
-            return np.zeros((1000,1000,3)),1000,ann[0]
+            return np.zeros((img_x,img_y,3)),1000,ann[0]
         iou_list = list()
         for i in range(len(ann[1])):
-            pre_ = np.zeros((1000,1000))
+            pre_ = np.zeros((img_x,img_y))
             pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
             pre_ = np.reshape(pre_,[-1])
-            X = np.zeros((1000,1000))
+            X = np.zeros((img_x,img_y))
             X[ann[1][i][1]] = 1#真値をマスクにする
             cm = confusion_matrix(np.reshape(X,[-1]),pre_)
 
@@ -48,10 +50,9 @@ def detect_most_near(pre,ann):
             iou = TP/(TP+FP+FN)
             iou_list.append(iou)
         max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
-        X = np.zeros((1000,1000))
+        X = np.zeros((img_x,img_y))
         X[ann[1][max_index][1]] = 255
         X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
-        #pdb.set_trace()
         return X,iou_list[max_index],max_index
 
 
@@ -67,12 +68,12 @@ def make_result(out,this_batch,threshold):
         annotations = pickle.load(f)
     with open('data/ann_anchor_data/upleft_coord.pickle','rb') as f:
         upleft_coord = pickle.load(f)
-    
+
     t_0_max = np.array(X[0])
     t_0_min = np.array(X[1])
     t_1_max = np.array(X[2])
     t_1_min = np.array(X[3])
-    #pdb.set_trace()
+
     iou_return = list()
     precision_return = list()
     recall_return = list()
@@ -82,24 +83,26 @@ def make_result(out,this_batch,threshold):
     T_0_list = list()
     T_1_list = list()
     R_list = list()
-    #max_index = list()
-    #idx = list()
+    img_x = 1000
+    img_y = 1000
+    H = 19
+    W = 19
+    B = 10
     for i in range(batch_size):
-        #pdb.set_trace()
-        out_now = np.transpose(np.reshape(out[i],[361,10,6]),[2,0,1]) #networkの出力をreshape
-        #pdb.set_trace()
+
+        out_now = np.transpose(np.reshape(out[i],[H*W,B,6]),[2,0,1]) #networkの出力をreshape
         image_name = this_batch[i]#画像の名前
 
         out_conf = np.reshape(out_now[3],[-1])#confidenceの抽出
 
         confidence = (1/(1+np.exp(-out_conf)))#confidenceを0~1で表現
-        #pdb.set_trace()
+
         trast_conf = np.where(confidence>threshold)[0]#一定数以上のものを予測とすし、trast_confとする
 
         print('size trast conf:{0}'.format(len(trast_conf)))
         print('trast conf:{0}'.format(trast_conf))
         #pdb.set_trace()
-        pre = np.zeros((1000,1000))
+        pre = np.zeros((img_x,img_y))
         if len(trast_conf) == 0:
             continue
         predict = list()
@@ -149,29 +152,28 @@ def make_result(out,this_batch,threshold):
                 mask_anchor_all.append(ma[j])
                 trast_conf.append(trast_conf_new[j])
         """
-        
+
         #trast_confの数だけ予測とする
         for j in range(len(trast_conf)):
-            
-            max_index = trast_conf[j]%361
-            idx = trast_conf[j]//361
-            #print(confidence[trast_conf[j]])
+
+            max_index = trast_conf[j]%(H*W)
+            idx = trast_conf[j]//(H*W)
             R = np.reshape(out_now[0],[-1])[trast_conf[j]]
 
             T_0 = np.dot(np.divide(np.reshape(out_now[1],[-1])[trast_conf[j]]+1,2),t_0_max-t_0_min)+t_0_min #T_0の正規化をもとの値に戻す
             T_1 = np.dot(np.divide(np.reshape(out_now[2],[-1])[trast_conf[j]]+1,2),t_1_max-t_1_min)+t_1_min #T_1の正規化をもとの値に戻す
 
-            anchor_now = np.reshape(anchor,[3610,1000,1000])[trast_conf[j]]#trast_confのindexにあるanchorを取得
+            anchor_now = np.reshape(anchor,[H*W*B,img_x,img_y])[trast_conf[j]]#trast_confのindexにあるanchorを取得
             upleft_now = upleft_coord[max_index]
             affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),math.degrees(R),1.0)#回転Rの行列
             affine[0][2] += T_1#並進ベクトルの追加
             affine[1][2] += T_0#
             print('T0:{0}   T1:{1}'.format(T_0,T_1))
-            pre = cv2.warpAffine(anchor_now,affine,(1000,1000))#アンカーをアフィン変換
+            pre = cv2.warpAffine(anchor_now,affine,(img_x,img_y))#アンカーをアフィン変換
             #予測はピンクにするので(1000,1000)から(1000,1000,3)にする
             where_ = np.where(pre)
-            pre_1 = np.zeros((1000,1000))
-            pre_2 = np.zeros((1000,1000))
+            pre_1 = np.zeros((img_x,img_y))
+            pre_2 = np.zeros((img_x,img_y))
             pre_1[where_] = 0
             pre_2[where_] = 200
             pre = pre[np.newaxis]
@@ -202,19 +204,18 @@ def make_result(out,this_batch,threshold):
             iou_return.append(iou_parts)
             #iou_label[label-1].append(iou_parts)
             if False:
+                #画像を保存する場合
                 imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
                 prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
                 cv2.imwrite('git_image/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)#予測を画像として保存
-            
-        #pdb.set_trace()
+
         count_list = list()
         for i in true_list:#同じ真値が選択されていた場合true_listの重複を消去
             if count_list.count(i)>0:
                 pass
             else:
                 count_list.append(i)
-        #pdb.set_trace()
         count_list.sort(reverse=True)
 
         for i in count_list:#ann_numから既に選択された真値を消去
@@ -223,15 +224,15 @@ def make_result(out,this_batch,threshold):
         [predict.append(0) for i in range(len(ann_num[1]))]#残った真値の数だけ、predictに0をappend
         [true.append(1) for i in range(len(ann_num[1]))]#残った真値の数だけ、trueに1をappend
         precision = precision_score(np.array(true),np.array(predict))#precisionの計算
-        #pdb.set_trace()
+
         if np.sum(np.array(true)) == 0:
             recall = 1
         else:
             recall = recall_score(np.array(true),np.array(predict))#recallの計算
         precision_return.append(precision)
         recall_return.append(recall)
-        #pdb.set_trace()
-        
+
+
     return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
 
 
@@ -277,7 +278,7 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    threshold = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    threshold = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]#confidence閾値の設定
     #threshold = [0.1]
     #iou_label_ = ['iou_label_conf_01']
     #precision_label = ['precision_conf_01']
@@ -301,12 +302,11 @@ def predict(self):
         recall_label_all = [[] for i in range(6)]
         X=0
         print(threshold[k])
-        #pdb.set_trace()
         the = threshold[k]
         for j in range(n_batch):
             from_idx = j * batch
             to_idx = min(from_idx + batch, len(all_inps))
-            #print(X)
+
             X = X+1
             # collect images input in the batch
             this_batch = all_inps[from_idx:to_idx]
@@ -335,23 +335,14 @@ def predict(self):
             T_0_.extend(T_0)
             T_1_.extend(T_1)
             R_.extend(R)
-            #max_.extend(max__)
-            #id_.extend(id__)
+
             #[iou_label_all[i].extend(iou_label[i]) for i in range(6)]
             if X == 10:
+                #test dataの数
                 break
         iou_index = 'data/out_data/'+iou_label_[k]+'.pickle'
         precision_index = 'data/out_data/'+precision_label[k]+'.pickle'
         recall_index = 'data/out_data'+recall_label[k]+'.pickle'
-        """
-        plt.hist(max_)
-        plt.savefig('../GoogleDrive/max_.png')
-        plt.clf()
-        plt.hist(id_,range=(0,350))
-        plt.savefig('../GoogleDrive/id_.png')
-        plt.clf()
-        """
-        #pdb.set_trace()
 
         with open(iou_index,mode = 'wb') as f:
                 pickle.dump(iou_label_all,f)
@@ -363,9 +354,7 @@ def predict(self):
         print("iou:{0}".format(np.nanmean(iou_)))
         print("precision:{0}".format(np.nanmean(precision_)))
         print("recall:{0}".format(np.nanmean(recall_)))
-        #pdb.set_trace()
 
-    #pdb.set_trace()
 def _save_ckpt(self, step, loss_profile):
     file = '{}-{}{}'
     model = self.meta['name']

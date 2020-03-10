@@ -29,10 +29,8 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
 	if randnums is None:
 		randnums = np.random.uniform(size=(3,))
 
-	#theta,phi,z=(np.pi/2,np.pi,0.1)
 	theta,phi,z=(np.pi/2,np.pi,1)
 
-	#theta,phi,z=(np.pi,2*np.pi/2.0,0.9)
 
 	r_=np.sqrt(z)
 	V=(
@@ -40,7 +38,7 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
 		np.cos(phi)*r_,
 		np.sqrt(z)
 	)
-	#pdb.set_trace()
+
 
 	st=np.sin(theta)
 	ct=np.cos(theta)
@@ -49,14 +47,6 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
 
 	M=(np.outer(V,V)-np.eye(3)).dot(R)
 
-	#pdb.set_trace()
-	#with open('sample.txt',mode='w') as f:
-	#	f.write(str(theta))
-	#	f.write(str(phi))
-	#	f.write(str(z))
-	#	f.write('\n')
-
-	#pdb.set_trace()
 
 	return M
 
@@ -71,23 +61,14 @@ def get_projection_grid(b, grid_type="Driscoll-Healy"):
 	x_ = np.sin(theta) * np.cos(phi)
 	y_ = np.sin(theta) * np.sin(phi)
 	z_ = np.cos(theta)
-	#pdb.set_trace()
+
 	return x_, y_, z_
 
 def project_sphere_on_xy_plane(grid, projection_origin):
 	sx, sy, sz = projection_origin
 	x, y, z = grid
-	#x = np.append(x[np.newaxis],y[np.newaxis],axis=0)
-	#x = np.append(x,z[np.newaxis],axis=0)
-	#cv2.imshow('sample',x.T)
-	#cv2.waitKey(0)
-	#if(np.all(z < 0)):
-	#	print("z<0")
+
 	z = z.copy() + 1
-	#x = x.copy() + 1
-	#if(np.all(z < 0)):
-	#	print("z_<0")
-	#x = x.copy() + 1#
 
 	t = -z / (z - sz)
 	qx = t * (x - sx) + x
@@ -98,10 +79,6 @@ def project_sphere_on_xy_plane(grid, projection_origin):
 
 	rx = (qx - xmin) / (2 * np.abs(xmin))
 	ry = (qy - ymin) / (2 * np.abs(ymin))
-	#rx = qx
-	#ry = qy
-	#pdb.set_trace()
-
 	return rx, ry
 
 def sample_within_bounds(signal, x, y, bounds):
@@ -117,7 +94,6 @@ def sample_within_bounds(signal, x, y, bounds):
 	return sample
 
 def sample_bilinear(signal, rx, ry):
-	#pdb.set_trace()
 	if len(signal.shape) > 2:
 		signal_dim_x = signal.shape[1]
 		signal_dim_y = signal.shape[2]
@@ -146,12 +122,6 @@ def sample_bilinear(signal, rx, ry):
 
 	fx1 = (ix1-rx) * signal_00 + (rx-ix0) * signal_10
 	fx2 = (ix1-rx) * signal_01 + (rx-ix0) * signal_11
-	#cv2.imshow('smaple',((iy1 - ry) * fx1 + (ry - iy0) * fx2)[0])
-	#cv2.waitKey()
-
-	#fig = plt.figure(figsize=plt.figaspect(1.))
-	#ax = fig.add_subplot(111, projection='3d')
-	#pdb.set_trace()
 
 	return (iy1 - ry) * fx1 + (ry - iy0) * fx2
 
@@ -160,16 +130,12 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 
 	if projection_origin is None:
 		projection_origin = (0, 0, 2 + 1e-3)
-	#pdb.set_trace()
-	#projection=np.array(projection_origin)[:,np.newaxis]
-	#plot_sphere(projection)
 	rx, ry = project_sphere_on_xy_plane(grid, projection_origin)
 
 	sample = sample_bilinear(signal, rx, ry)
-	#pdb.set_trace()
 
 	sample *= (grid[2] <= 1).astype(np.float64)
-	#pdb.set_trace()
+
 	if len(sample.shape) > 2:
 		sample_min = sample.min(axis=(1, 2)).reshape(-1, 1, 1)
 		sample_max = sample.max(axis=(1, 2)).reshape(-1, 1, 1)
@@ -178,7 +144,7 @@ def project_2d_on_sphere(signal, grid , projection_origin=None):
 		sample_min = sample.min(axis=(0,1))
 		sample_max = sample.max(axis=(0,1))
 		sample = (sample - sample_min) / (sample_max - sample_min)
-	#pdb.set_trace()
+
 	sample *= 255
 	sample = sample.astype(np.uint8)
 
@@ -199,18 +165,15 @@ def divide_color(image):
 			image_g = np.append(image_g,image[i].T[1].T[np.newaxis],axis=0)
 			image_r = np.append(image_r,image[i].T[2].T[np.newaxis],axis=0)
 		print(i)
-		#pdb.set_trace()
 	return np.transpose(image_b,[0,1,2]),np.transpose(image_g,[0,1,2]),np.transpose(image_r,[0,1,2])
 
 def create_sphere(data,grid):
-	#pdb.set_trace()
 	signals = data.reshape(-1,data.shape[1],data.shape[2]).astype(np.float64)
 	n_signals = signals.shape[0]
 	projections = np.ndarray(
 		(signals.shape[0],2*500,2*500),dtype=np.uint8
 	)
 	current = 0
-	#pdb.set_trace()
 	while current < n_signals:
 		idxs = np.arange(current,min(n_signals,current+5))
 		chunk = signals[idxs]
@@ -228,8 +191,6 @@ def plot_sphere(grid):
 	ax.set_zlabel("Z")
 	ax.set_aspect('equal')
 	ax.plot_surface(grid[0], grid[1], grid[2])
-	#ax.scatter(grid[0],grid[1],grid[2])
-	#ax.set_axis_off()
 	plt.savefig('sphere2.png')
 	plt.show()
 
@@ -246,9 +207,6 @@ def linspace(b, grid_type='Driscoll-Healy'):
         beta = np.pi * (2 * np.arange(2 * b) + 1) / (4. * b)
         alpha = np.arange(2 * b) * np.pi / b
     elif grid_type == 'Clenshaw-Curtis':
-        # beta = np.arange(2 * b + 1) * np.pi / (2 * b)
-        # alpha = np.arange(2 * b + 2) * np.pi / (b + 1)
-        # Must use np.linspace to prevent numerical errors that cause beta > pi
         beta = np.linspace(0, np.pi, 2 * b + 1)
         alpha = np.linspace(0, 2 * np.pi, 2 * b + 2, endpoint=False)
     elif grid_type == 'Gauss-Legendre':
@@ -277,7 +235,6 @@ def main():
 	image_name = np.array([])
 	t=0
 	size = (1242,375)
-	size_ = (500,500)
 	for i in files:
 		img = cv2.imread(i)
 
@@ -292,9 +249,7 @@ def main():
 
 		print(i)
 		image_name = np.append(image_name,i[15:])
-		#pdb.set_trace()
 		t += 1
-		#print(t)
 		if t==5:
 
 			img_b,img_g,img_r = divide_color(images)
@@ -304,54 +259,22 @@ def main():
 			rot = rand_rotation_matrix(deflection=1.0)
 
 			rotated_grid = rotate_grid(rot,grid)
-			#pdb.set_trace()
 			img_b = create_sphere(np.transpose(img_b,[0,2,1]),rotated_grid)
 			img_g = create_sphere(np.transpose(img_g,[0,2,1]),rotated_grid)
 			img_r = create_sphere(np.transpose(img_r,[0,2,1]),rotated_grid)
-			os.chdir('sphere_data_another')
 
 			for i in range(images.shape[0]):
-				#print(i)
+
 				image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
 				image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
-                                #ipdb.set_trace()
 
-				#pdb.set_trace()
-				cv2.imwrite(image_name[i],np.transpose(image_sample,[1,2,0]))
-				cv2.imwrite('../../../../GoogleDrive/sample_data.png',np.transpose(image_sample,[1,2,0]))
-				pdb.set_trace()
-				#cv2.imwrite(image_name[i][1:],image_sample.T)
-				#cv2.waitKey(0)
-			#pdb.set_trace()
-			os.chdir('../')
+				cv2.imwrite('sphere_data/{0}'.format(image_name[i]),np.transpose(image_sample,[1,2,0]))
+
 			image_sample = []
 			images=np.array([])
 			image_name=np.array([])
 			t=0
 
-	"""
-	img_b,img_g,img_r=divide_color(images)
-	grid = get_projection_grid(b=500)
-	rot = rand_rotation_matrix(deflection=1.0)
-	rotated_grid=rotate_grid(rot,grid)
-
-	img_b = create_sphere(img_b,rotated_grid)
-	img_g = create_sphere(img_g,rotated_grid)
-	img_r = create_sphere(img_r,rotated_grid)
-
-
-	for i in range(images.shape[0]):
-		print(i)
-		image_sample = np.append(img_b[i][np.newaxis],img_g[i][np.newaxis],axis=0)
-		image_sample = np.append(image_sample,img_r[i][np.newaxis],axis=0)
-		cv2.imwrite(os.path.join('sphere_sample',image_name[i]),image_sample.T)
-	pdb.set_trace()
-	"""
 
 if __name__ == '__main__':
 	main()
-"""
-cv2.imshow('image_sample',images[0])
-cv2.waitKey(0)
-"""
-#pdb.set_trace()
