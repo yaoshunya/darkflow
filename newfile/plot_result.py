@@ -14,6 +14,10 @@ if __name__ == "__main__":
         T_0 = pickle.load(f)
     with open("../data/out_data/T_1_conf_05.pickle","rb") as f:
         T_1 = pickle.load(f)
+    with open('../data/out_data/precision_conf_0.pickle','rb') as f:
+        precision_0 = pickle.load(f)
+    with open('../data/out_data/recall_conf_0.pickle','rb') as f:
+        recall_0 = pickle.load(f)
     with open('../data/out_data/precision_conf_01.pickle','rb') as f:
         precision_01 = pickle.load(f)
     with open('../data/out_data/recall_conf_01.pickle','rb') as f:
@@ -30,13 +34,10 @@ if __name__ == "__main__":
         precision_04 = pickle.load(f)
     with open('../data/out_data/recall_conf_04.pickle','rb') as f:
         recall_04 = pickle.load(f)
-    #pdb.set_trace()
-
     with open('../data/out_data/precision_conf_05.pickle','rb') as f:
         precision_05 = pickle.load(f)
     with open('../data/out_data/recall_conf_05.pickle','rb') as f:
         recall_05 = pickle.load(f)
-    
     with open('../data/out_data/precision_conf_06.pickle','rb') as f:
         precision_06 = pickle.load(f)
     with open('../data/out_data/recall_conf_06.pickle','rb') as f:
@@ -45,7 +46,6 @@ if __name__ == "__main__":
         precision_07 = pickle.load(f)
     with open('../data/out_data/recall_conf_07.pickle','rb') as f:
         recall_07 = pickle.load(f)
-    """
     with open('../data/out_data/precision_conf_08.pickle','rb') as f:
         precision_08 = pickle.load(f)
     with open('../data/out_data/recall_conf_08.pickle','rb') as f:
@@ -54,7 +54,11 @@ if __name__ == "__main__":
         precision_09 = pickle.load(f)
     with open('../data/out_data/recall_conf_09.pickle','rb') as f:
         recall_09 = pickle.load(f)
-    """
+    with open('../data/out_data/precision_conf_1.pickle','rb') as f:
+        precision_1 = pickle.load(f)
+    with open('../data/out_data/recall_conf_1.pickle','rb') as f:
+        recall_1 = pickle.load(f)
+    
     iou_mean = list()
     """
     plt.xlabel('label')
@@ -67,8 +71,10 @@ if __name__ == "__main__":
     plt.savefig('../data/iou_label.png')
     plt.clf()
     """
-    X = [0.1,0.2,0.3,0.4,0.5,0.6,0.7]
+    X = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     #pdb.set_trace()
+    p_0 = np.mean(np.array(precision_0))
+    r_0 = np.mean(np.array(recall_0))
     p_01 = np.mean(np.array(precision_01))
     r_01 = np.mean(np.array(recall_01))
     p_02 = np.mean(np.array(precision_02))
@@ -83,11 +89,13 @@ if __name__ == "__main__":
     r_06 = np.mean(np.array(recall_06))
     p_07 = np.mean(np.array(precision_07))
     r_07 = np.mean(np.array(recall_07))
-    #p_08 = np.mean(np.array(precision_08))
-    #r_08 = np.mean(np.array(recall_08))
-    #p_09 = np.mean(np.array(precision_09))
-    #r_09 = np.mean(np.array(recall_09))
-    plt.plot([r_01,r_02,r_03,r_04,r_05,r_06,r_07],[p_01,p_02,p_03,p_04,p_05,p_06,p_07])
+    p_08 = np.mean(np.array(precision_08))
+    r_08 = np.mean(np.array(recall_08))
+    p_09 = np.mean(np.array(precision_09))
+    r_09 = np.mean(np.array(recall_09))
+    p_1 = np.mean(np.array(precision_1))
+    r_1 = np.mean(np.array(recall_1))
+    plt.plot([r_0,r_01,r_02,r_03,r_04,r_05,r_06,r_07,r_08,r_09,r_1],[p_0,p_01,p_02,p_03,p_04,p_05,p_06,p_07,p_08,p_09,p_1])
     plt.xlabel('recall')
     plt.ylabel('precision')
     plt.savefig('../../GoogleDrive/precision_recall.png')
@@ -96,13 +104,13 @@ if __name__ == "__main__":
 
     #pdb.set_trace()
     
-    plt.plot(X,[p_01,p_02,p_03,p_04,p_05,p_06,p_07])
+    plt.plot(X,[p_0,p_01,p_02,p_03,p_04,p_05,p_06,p_07,p_08,p_09,p_1])
     plt.xlabel('confidence')
     plt.ylabel('precision')
     plt.savefig('../../GoogleDrive/precision.png')
     plt.clf()
 
-    plt.plot(X,[r_01,r_02,r_03,r_04,r_05,r_06,r_07])
+    plt.plot(X,[r_0,r_01,r_02,r_03,r_04,r_05,r_06,r_07,r_08,r_09,r_1])
     plt.xlabel('confidence')
     plt.ylabel('recall')
     plt.savefig('../../GoogleDrive/recall.png')

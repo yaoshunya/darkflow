@@ -201,7 +201,7 @@ def make_result(out,this_batch,threshold):
 
             iou_return.append(iou_parts)
             #iou_label[label-1].append(iou_parts)
-            if True:
+            if False:
                 imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
                 prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
@@ -232,7 +232,7 @@ def make_result(out,this_batch,threshold):
         recall_return.append(recall)
         #pdb.set_trace()
         
-    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list,max_index,idx
+    return iou_return,precision_return,recall_return,T_0_list,T_1_list,R_list
 
 
 import math
@@ -277,14 +277,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    #threshold = [0.3,0.4,0.5,0.6,0.7]
-    threshold = [0.5]
-    iou_label_ = ['iou_label_conf_02']
-    precision_label = ['precision_conf_02']
-    recall_label = ['recall_conf_02']
-    #iou_label_ = ['iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_07']
-    #precision_label = ['precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_07']
-    #recall_label = ['recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_07']
+    threshold = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    #threshold = [0.1]
+    #iou_label_ = ['iou_label_conf_01']
+    #precision_label = ['precision_conf_01']
+    #recall_label = ['recall_conf_01']
+    iou_label_ = ['iou_label_conf_0''iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09','iou_label_conf_1']
+    precision_label = ['precision_conf_0','precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_08','precision_conf_09','precision_conf_1']
+    recall_label = ['recall_conf_0','recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_08','recall_conf_09','recall_conf_1']
 
     for k in range(len(threshold)):
 
@@ -328,7 +328,7 @@ def predict(self):
             self.say('Post processing {} inputs ...'.format(len(inp_feed)))
             start = time.time()
 
-            iou,precision,recall,T_0,T_1,R,max__,id__ = make_result(out,this_batch,the)
+            iou,precision,recall,T_0,T_1,R= make_result(out,this_batch,the)
             iou_.extend(iou)
             precision_.extend(precision)
             recall_.extend(recall)
