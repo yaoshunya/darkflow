@@ -606,7 +606,7 @@ def detect_R_T(ann,anchor,path_num):
             best_iou = iou
             best_R = 0.0
             best_T = [0.0,0.0]
-            img = cv2.imread('../data/VOC2012/sphere_data/{0}'.format(img_name))
+            img = cv2.imread('../data/kitti/sphere_data/{0}'.format(img_name))
             with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             mask_an = cv2.resize(an,(img_x_resize,img_y_resize))
@@ -776,13 +776,13 @@ if __name__ ==  '__main__':
 
         #----------------------------------------
 
-        path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3/AnnotationsTrain_1','AnnotationsTrain_4/AnnotationsTrain_2']
+        path = ['AnnotationsTrain_1','AnnotationsTrain_2','AnnotationsTrain_3','AnnotationsTrain_4']
         pick = ['car','Truck'] #見つけたい物体
         #----------------------------------------
         #マスクアノテーションを作成し、pickleファイルで保存
         for i in range(len(path_coords)):
             print("make mask annotations_1")
-            path_ = '../data/VOC2012/' + path[i] #残差を計算したい対象
+            path_ = '../data/kitti/' + path[i] #残差を計算したい対象
             annotations = pascal_voc_clean_xml(path_,pick)#データの読み込み、mask annotationsの作成
             print("make mask annotations {0}".format(i))
 
@@ -919,9 +919,9 @@ if __name__ ==  '__main__':
             for j in range(len(annotations_parts)):
             #pdb.set_trace()
                 name = annotations_parts[j][0]
-                new = '../data/VOC2012/sphere_data/'+ name
+                new = '../data/kitti/sphere_data/'+ name
                 try:
-                    new_path = shutil.move(new, '../data/VOC2012/sphere_test/')
+                    new_path = shutil.move(new, '../data/kitti/sphere_test/')
                 except:
                     pass
                 print(name)

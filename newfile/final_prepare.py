@@ -13,17 +13,6 @@ import matplotlib.pylab as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import sph_harm
 
-"""
-os.chdir('../data/train/images')
-dir = os.getcwd()
-files = os.listdir(dir)
-
-len_images = len(files) #フォルダ内の画像の数
-os.chdir('../../../code')
-"""
-
-
-
 
 def rand_rotation_matrix(deflection=1.0,randnums=None):
 	#接平面の回転、ｚ軸の方向設定
@@ -221,8 +210,8 @@ def linspace(b, grid_type='Driscoll-Healy'):
 
 def main():
 
-	os.chdir('../data/VOC2012')
-	files = glob.glob("PNGImagesTrain/*")
+	os.chdir('../data/kitti/')
+	files = glob.glob("image/*")
 
 	#images = []
 	images = np.array([])
@@ -244,7 +233,7 @@ def main():
 		print(i)
 		image_name = np.append(image_name,i[15:])
 		t += 1
-		if t==1:
+		if t==5:
 
 			img_b,img_g,img_r = divide_color(images)
 
@@ -268,7 +257,7 @@ def main():
 			images=np.array([])
 			image_name=np.array([])
 			t=0
-			pdb.set_trace()
+			#pdb.set_trace()
 
 
 if __name__ == '__main__':
