@@ -40,6 +40,7 @@ def load_data(path):
 
 def ICP_matching(ppoints, cpoints):
     """
+    icpマッチングを行うことでマスクアンカー、アノテーションとの残差を計算
     Iterative Closest Point matching
     - input
     ppoints: 2D points in the previous frame
@@ -97,7 +98,7 @@ def ICP_matching(ppoints, cpoints):
 
 
 def update_homogeneous_matrix(Hin, R, T):
-
+    #icpマッチングでのアフィン行列の更新
     H = np.zeros((3, 3))
 
     H[0, 0] = R[0, 0]
@@ -116,7 +117,7 @@ def update_homogeneous_matrix(Hin, R, T):
 
 
 def nearest_neighbor_assosiation(ppoints, cpoints):
-
+    #ppointsとcpointsの点どうしを対応付ける
     # calc the sum of residual errors
     dcpoints = ppoints - cpoints
     d = np.linalg.norm(dcpoints, axis=0)
@@ -140,7 +141,7 @@ def nearest_neighbor_assosiation(ppoints, cpoints):
 
 
 def SVD_motion_estimation(ppoints, cpoints):
-
+    #特異値分解を用いたicpマッチングを行う
     pm = np.mean(ppoints, axis=1)
     cm = np.mean(cpoints, axis=1)
 
@@ -159,6 +160,7 @@ def SVD_motion_estimation(ppoints, cpoints):
 
 
 def get_projection_grid(b, grid_type="Driscoll-Healy"):
+    #半径ｂの球面の作成
     theta, phi = np.meshgrid(np.arange(2 * b) * np.pi / (2. * b),np.arange(2 * b) * np.pi / b, indexing='ij')
     x_ = np.sin(theta) * np.cos(phi)
     y_ = np.sin(theta) * np.sin(phi)
@@ -167,6 +169,7 @@ def get_projection_grid(b, grid_type="Driscoll-Healy"):
 
 
 def rand_rotation_matrix(deflection=1.0,randnums=None):
+    #接平面の回転、ｚ軸の方向設定
     if randnums is None:
         randnums = np.random.uniform(size=(3,))
 
@@ -189,13 +192,14 @@ def rand_rotation_matrix(deflection=1.0,randnums=None):
     return M
 
 def rotate_grid(rot,grid):
+    #gridを回転させる
     x,y,z=grid
     xyz=np.array((x,y,z))
     x_r,y_r,z_r=np.einsum('ij,jab->iab',rot,xyz)
     return x_r,y_r,z_r
 
 def sample_bilinear(signal, rx, ry):
-    #pdb.set_trace()
+    #線形補完によって拡大される個所の補間
     if len(signal.shape) > 2:
         signal_dim_x = signal.shape[1]
         signal_dim_y = signal.shape[2]
@@ -227,7 +231,7 @@ def sample_bilinear(signal, rx, ry):
     return (iy1 - ry) * fx1 + (ry - iy0) * fx2
 
 def project_2d_on_sphere(signal, grid , projection_origin=None):
-
+    #2次元画像を球面に写像
 
     if projection_origin is None:
         projection_origin = (0, 0, 2 + 1e-3)
@@ -266,6 +270,7 @@ def sample_within_bounds(signal, x, y, bounds):
     return sample
 
 def project_sphere_on_xy_plane(grid, projection_origin):
+    #xy平面に球面を写像
     sx, sy, sz = projection_origin
     x, y, z = grid
 

@@ -57,7 +57,7 @@ def get_projection_grid(b, grid_type="Driscoll-Healy"):
 	return x_, y_, z_
 
 def project_sphere_on_xy_plane(grid, projection_origin):
-	#xy平面に球面ウを写像
+	#xy平面に球面を写像
 	sx, sy, sz = projection_origin
 	x, y, z = grid
 
