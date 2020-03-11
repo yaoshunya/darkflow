@@ -31,7 +31,6 @@ def loss(self, net_out):
     HW = H * W # number of grid cells
     anchors = m['anchors']
 
-
     print('{} loss hyper-parameters:'.format(m['model']))
     print('\tH       = {}'.format(H))
     print('\tW       = {}'.format(W))
@@ -41,7 +40,6 @@ def loss(self, net_out):
 
     size1 = [None, HW, B, C]
     size2 = [None, HW, B]
-    size3 = [None, HW, B, size, size]
     size4 = [None, HW, B, 1]
 
     # return the below placeholders
@@ -50,7 +48,6 @@ def loss(self, net_out):
     # weights term for L2 loss
     _proid    =    tf.placeholder(tf.float32, size1)
     # material calculating IOU
-    _areas    =    tf.placeholder(tf.float32, size3)
     _R        =    tf.placeholder(tf.float32, size4 )
     _T        =    tf.placeholder(tf.float32, size2 + [2])
 

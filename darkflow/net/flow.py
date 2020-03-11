@@ -28,32 +28,32 @@ train_stats = (
 pool = ThreadPool()
 
 def detect_most_near(pre,ann):
-#予測と真値を比較し、最もIoUが高いものを真値として採用する
-img_x = 1000
-img_y = 1000
-        if len(ann[1]) == 0:
-            #予測しているにも関わらず、その画像に物体が存在しない場合は、iou_list=1000とする
-            return np.zeros((img_x,img_y,3)),1000,ann[0]
-        iou_list = list()
-        for i in range(len(ann[1])):
-            pre_ = np.zeros((img_x,img_y))
-            pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
-            pre_ = np.reshape(pre_,[-1])
-            X = np.zeros((img_x,img_y))
-            X[ann[1][i][1]] = 1#真値をマスクにする
-            cm = confusion_matrix(np.reshape(X,[-1]),pre_)
-
-            TP = cm[0][0]
-            FP = cm[0][1]
-            FN = cm[1][0]
-            TP = cm[1][1]
-            iou = TP/(TP+FP+FN)
-            iou_list.append(iou)
-        max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
+    #予測と真値を比較し、最もIoUが高いものを真値として採用する
+    img_x = 1000
+    img_y = 1000
+    if len(ann[1]) == 0:
+        #予測しているにも関わらず、その画像に物体が存在しない場合は、iou_list=1000とする
+        return np.zeros((img_x,img_y,3)),1000,ann[0]
+    iou_list = list()
+    for i in range(len(ann[1])):
+        pre_ = np.zeros((img_x,img_y))
+        pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
+        pre_ = np.reshape(pre_,[-1])
         X = np.zeros((img_x,img_y))
-        X[ann[1][max_index][1]] = 255
-        X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
-        return X,iou_list[max_index],max_index
+        X[ann[1][i][1]] = 1#真値をマスクにする
+        cm = confusion_matrix(np.reshape(X,[-1]),pre_)
+
+        TP = cm[0][0]
+        FP = cm[0][1]
+        FN = cm[1][0]
+        TP = cm[1][1]
+        iou = TP/(TP+FP+FN)
+        iou_list.append(iou)
+    max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
+    X = np.zeros((img_x,img_y))
+    X[ann[1][max_index][1]] = 255
+    X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
+    return X,iou_list[max_index],max_index
 
 
 def make_result(out,this_batch,threshold):
