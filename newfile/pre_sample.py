@@ -15,10 +15,11 @@ import random
 import shutil
 import pandas as pd
 from sklearn.metrics import confusion_matrix
+import final_prepare as fp
 #  ICP parameters
 EPS = 0.00001
 MAXITER = 100
-
+dataPath='../data'
 show_animation = False
 def load_data(path):
 
@@ -156,139 +157,6 @@ def SVD_motion_estimation(ppoints, cpoints):
 
     return R, t
 
-
-
-
-def get_projection_grid(b, grid_type="Driscoll-Healy"):
-    #半径ｂの球面の作成
-    theta, phi = np.meshgrid(np.arange(2 * b) * np.pi / (2. * b),np.arange(2 * b) * np.pi / b, indexing='ij')
-    x_ = np.sin(theta) * np.cos(phi)
-    y_ = np.sin(theta) * np.sin(phi)
-    z_ = np.cos(theta)
-    return x_, y_, z_
-
-
-def rand_rotation_matrix(deflection=1.0,randnums=None):
-    #接平面の回転、ｚ軸の方向設定
-    if randnums is None:
-        randnums = np.random.uniform(size=(3,))
-
-    theta,phi,z=(np.pi/2,np.pi,1)
-
-    r_=np.sqrt(z)
-    V=(
-    np.sin(phi)*r_,
-    np.cos(phi)*r_,
-    np.sqrt(2.0-z)
-    )
-
-    st=np.sin(theta)
-    ct=np.cos(theta)
-
-    R=np.array(((ct,st,0),(-st,ct,0),(0,0,1)))
-
-    M=(np.outer(V,V)-np.eye(3)).dot(R)
-
-    return M
-
-def rotate_grid(rot,grid):
-    #gridを回転させる
-    x,y,z=grid
-    xyz=np.array((x,y,z))
-    x_r,y_r,z_r=np.einsum('ij,jab->iab',rot,xyz)
-    return x_r,y_r,z_r
-
-def sample_bilinear(signal, rx, ry):
-    #線形補完によって拡大される個所の補間
-    if len(signal.shape) > 2:
-        signal_dim_x = signal.shape[1]
-        signal_dim_y = signal.shape[2]
-    else:
-        signal_dim_x = signal.shape[0]
-        signal_dim_y = signal.shape[1]
-    rx *= signal_dim_x
-    ry *= signal_dim_y
-
-
-    ix = rx.astype(int)
-    iy = ry.astype(int)
-
-    ix0 = ix - 1
-    iy0 = iy - 1
-    ix1 = ix + 1
-    iy1 = iy + 1
-
-    bounds = (0, signal_dim_x, 0, signal_dim_y)
-
-    signal_00 = sample_within_bounds(signal, ix0, iy0, bounds)
-    signal_10 = sample_within_bounds(signal, ix1, iy0, bounds)
-    signal_01 = sample_within_bounds(signal, ix0, iy1, bounds)
-    signal_11 = sample_within_bounds(signal, ix1, iy1, bounds)
-
-    fx1 = (ix1-rx) * signal_00 + (rx-ix0) * signal_10
-    fx2 = (ix1-rx) * signal_01 + (rx-ix0) * signal_11
-
-    return (iy1 - ry) * fx1 + (ry - iy0) * fx2
-
-def project_2d_on_sphere(signal, grid , projection_origin=None):
-    #2次元画像を球面に写像
-
-    if projection_origin is None:
-        projection_origin = (0, 0, 2 + 1e-3)
-
-    rx, ry = project_sphere_on_xy_plane(grid, projection_origin)
-
-    sample = sample_bilinear(signal, rx, ry)
-
-
-    sample *= (grid[2] <= 1).astype(np.float64)
-
-    if len(sample.shape) > 2:
-        sample_min = sample.min(axis=(1, 2)).reshape(-1, 1, 1)
-        sample_max = sample.max(axis=(1, 2)).reshape(-1, 1, 1)
-        sample = (sample - sample_min) / (sample_max - sample_min)
-    else:
-        sample_min = sample.min(axis=(0,1))
-        sample_max = sample.max(axis=(0,1))
-        sample = (sample - sample_min) / (sample_max - sample_min)
-
-    sample *= 255
-    sample = sample.astype(np.uint8)
-
-    return sample
-
-def sample_within_bounds(signal, x, y, bounds):
-    xmin, xmax, ymin, ymax = bounds
-    idxs = (xmin <= x) & (x < xmax) & (ymin <= y) & (y < ymax)
-
-    if len(signal.shape) > 2:
-        sample = np.zeros((signal.shape[0], x.shape[0], x.shape[1]))
-        sample[:, idxs] = signal[:, x[idxs], y[idxs]]
-    else:
-        sample = np.zeros((x.shape[0], x.shape[1]))
-        sample[idxs] = signal[x[idxs], y[idxs]]
-    return sample
-
-def project_sphere_on_xy_plane(grid, projection_origin):
-    #xy平面に球面を写像
-    sx, sy, sz = projection_origin
-    x, y, z = grid
-
-    z = z.copy() + 1
-
-
-    t = -z / (z - sz)
-    qx = t * (x - sx) + x
-    qy = t * (y - sy) + y
-
-    xmin = 1/2 * (-1 - sx) + -1
-    ymin = 1/2 * (-1 - sy) + -1
-
-    rx = (qx - xmin) / (2 * np.abs(xmin))
-    ry = (qy - ymin) / (2 * np.abs(ymin))
-
-    return rx, ry
-
 def mask_anchor(anchor,H):
     img_x = 1000#画像の幅
     img_y = 1000#画像の高さ
@@ -316,8 +184,8 @@ def mask_anchor(anchor,H):
 
                 mask_base = np.zeros((img_x,img_y),dtype=int)
 
-                side = int(h_)/2
-                ver = int(w_)/2
+                side = int(w_)/2
+                ver = int(h_)/2
 
                 side_min = center_x - side
                 side_max = center_x + side
@@ -338,20 +206,17 @@ def mask_anchor(anchor,H):
                 #mask_base = np.resize(mask_base,(500,500))
                 #-------------------------------------------------
                 #アンカーの球面写像
-                grid = get_projection_grid(b=500)
-                rot = rand_rotation_matrix(deflection=1.0)
-                grid = rotate_grid(rot,grid)
-                mask_base = project_2d_on_sphere(mask_base,grid)#mask anchorに歪みを持たせる
+                grid = fp.get_projection_grid(b=500)
+                rot = fp.rand_rotation_matrix(deflection=1.0)
+                grid = fp.rotate_grid(rot,grid)
+                mask_base = fp.project_2d_on_sphere(mask_base,grid)#mask anchorに歪みを持たせる
                 #-------------------------------------------------
-
 
                 resize_mask = mask_base.T
                 if l == 0:
                     mask = resize_mask[np.newaxis]
                 else:
                     mask = np.append(mask,resize_mask[np.newaxis],axis=0)
-
-
             step_x += step_size_x
             if t == 0:
                 mask_ = mask[np.newaxis]
@@ -364,8 +229,6 @@ def mask_anchor(anchor,H):
             #mask_fi_row = mask__row[np.newaxis]
         else:
             mask_fi = np.append(mask_fi,mask_[np.newaxis],axis=0)
-            #mask_fi_row = np.append(mask_fi_row,mask__row[np.newaxis],axis=0)
-
     return mask_fi
 
 def pascal_voc_clean_xml(ANN, pick, exclusive = False):
@@ -430,10 +293,10 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
             mask_prepare[yn:yx,xn:xx]=255
             #pdb.set_trace()
             mask_parts = np.array([])
-            grid = get_projection_grid(b=500)
-            rot = rand_rotation_matrix(deflection=1.0)
-            grid = rotate_grid(rot,grid)
-            mask_parts = project_2d_on_sphere(mask_prepare,grid)
+            grid = fp.get_projection_grid(b=500)
+            rot = fp.rand_rotation_matrix(deflection=1.0)
+            grid = fp.rotate_grid(rot,grid)
+            mask_parts = fp.project_2d_on_sphere(mask_prepare,grid)
             #mask_parts = cv2.resize(mask_parts,(19,19))
             mask_parts = np.reshape(mask_parts,(1000,1000)).T
 
@@ -462,16 +325,16 @@ def make_up_left_coord(H):
         for j in range(H):
             base = np.zeros((19,19))
             base[step*i,step*j] = 255#グリッドの該当箇所を白塗り
-            grid = get_projection_grid(b=500)
-            rot = rand_rotation_matrix(deflection=1.0)#球面写像
-            grid = rotate_grid(rot,grid)
-            rotate_base = project_2d_on_sphere(base,grid).T
+            grid = fp.get_projection_grid(b=500)
+            rot = fp.rand_rotation_matrix(deflection=1.0)#球面写像
+            grid = fp.rotate_grid(rot,grid)
+            rotate_base = fp.project_2d_on_sphere(base,grid).T
             x_min = np.min(np.where(rotate_base>0)[0])#白塗りの左上の座標を取得
             y_min = np.min(np.where(rotate_base>0)[1])
             coord = [x_min,y_min]
             coord_list.append(coord)
             print('finish:{0}'.format(i*19+j))
-    with open('../data/ann_anchor_data/upleft_coord.pickle',mode = 'wb') as f:
+    with open('{0}/ann_anchor_data/upleft_coord.pickle'.format(dataPath),mode = 'wb') as f:
         pickle.dump(coord_list,f)
 
 
@@ -526,7 +389,7 @@ def detect_R_T(ann,anchor,path_num):
     dumps = list()
     path = ['redidual_1','redidual_2','redidual_3','redidual_4']
     #mask anchorの読み込み
-    with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
+    with open('{0}/ann_anchor_data/mask_anchor_k.pickle'.format(dataPath),mode = 'rb') as f:
         mask_anchor = pickle.load(f)
     mask_anchor = np.reshape(mask_anchor,[H*W,B,img_x,img_y])
     mask__ = np.reshape(mask_anchor,[H*W*B,img_x,img_y])
@@ -541,7 +404,7 @@ def detect_R_T(ann,anchor,path_num):
     mask_ = np.reshape(np.array(mask_),[H*W,B,img_x_resize,img_y_resize])
 
     #グリッドを球面に写像した際の左上の座標
-    with open('../data/ann_anchor_data/upleft_coord.pickle',mode='rb') as f:
+    with open('{0}/ann_anchor_data/upleft_coord.pickle'.format(dataPath),mode='rb') as f:
         upleft_coord = pickle.load(f)
 
     iou_list = list()
@@ -611,8 +474,8 @@ def detect_R_T(ann,anchor,path_num):
             best_iou = iou
             best_R = 0.0
             best_T = [0.0,0.0]
-            img = cv2.imread('../data/kitti/sphere_data/{0}'.format(img_name))
-            with open('../data/mask_ann/{0}_{1}.pickle'.format(img_name[:6],ann_0_len),mode = 'rb') as f:
+            img = cv2.imread('{0}/kitti/sphere_data/{1}'.format(dataPath,img_name))
+            with open('{0}/mask_ann/{1}_{2}.pickle'.format(dataPath,img_name[:6],ann_0_len),mode = 'rb') as f:
                 an = pickle.load(f)
             mask_an = cv2.resize(an,(img_x_resize,img_y_resize))
             mask_an[np.where(mask_an>0)] = 1
@@ -712,11 +575,11 @@ def detect_R_T(ann,anchor,path_num):
         add = [[img_name,[all]]]
         dumps += add
         if ann_len % 50 == 0:
-            with open('../data/{0}/redidual_parts_{1}.pickle'.format(path[path_num],ann_len//50),mode = 'wb') as f:
+            with open('{0}/{1}/redidual_parts_{2}.pickle'.format(dataPath,path[path_num],ann_len//50),mode = 'wb') as f:
                 pickle.dump(dumps,f)
             dumps = list()
 
-    with open('../data/{0}/redidual_1.pickle'.format(path[path_num]),mode = 'wb') as f:
+    with open('{0}/{1}/redidual_1.pickle'.format(dataPath,path[path_num]),mode = 'wb') as f:
             pickle.dump(dumps,f)
 
     return 0
@@ -727,7 +590,7 @@ def make_area():
     img_y = 1000
     file = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     for i in file:
-        with open('../data/ann_anchor_data/{0}.pickle'.format(i),mode = 'rb') as f:
+        with open('{0}/ann_anchor_data/{0}.pickle'.format(dataPath,i),mode = 'rb') as f:
             ann = pickle.load(f)
 
         for ann_len in range(len(ann)):
@@ -736,7 +599,7 @@ def make_area():
                 X=ann[ann_len][1][ann_0_len][1]
                 mask[X] = 1
                 name = ann[ann_len][0][:6]
-                with open('../data/mask_ann/{0}_{1}.pickle'.format(name,ann_0_len),mode = 'wb') as f:
+                with open('{0}/mask_ann/{1}_{2}.pickle'.format(dataPath,name,ann_0_len),mode = 'wb') as f:
                     pickle.dump(mask,f)
             print("finish : {0}".format(name))
 
@@ -763,19 +626,19 @@ if __name__ ==  '__main__':
 
         #anchors = mask_anchor(anchors,19)
 
-        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'wb') as f:
+        with open('{0}/ann_anchor_data/mask_anchor_k.pickle'.format(dataPath),mode = 'wb') as f:
             pickle.dump(anchors,f)
         #----------------------------------------
         #mask anchorを座標系に変換:(1000,1000)→[x座標][y座標]
 
         print("make mask anchor")
 
-        with open('../data/ann_anchor_data/mask_anchor_k.pickle',mode = 'rb') as f:
+        with open('{0}/ann_anchor_data/mask_anchor_k.pickle'.format(dataPath),mode = 'rb') as f:
             anchor = pickle.load(f)
 
         anchor_coords = make_coords_from_mask(anchor,0)#mask anchorを座標系に変換
 
-        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'wb') as f:
+        with open('{0}/ann_anchor_data/anchor_coords_k.pickle'.format(dataPath),mode = 'wb') as f:
             pickle.dump(anchor_coords,f)
         print("finish making mask anchor")
 
@@ -787,12 +650,12 @@ if __name__ ==  '__main__':
         #マスクアノテーションを作成し、pickleファイルで保存
         for i in range(len(path_coords)):
             print("make mask annotations_1")
-            path_ = '../data/kitti/' + path[i] #残差を計算したい対象
+            path_ = dataPath +'/kitti/' + path[i] #残差を計算したい対象
             annotations = pascal_voc_clean_xml(path_,pick)#データの読み込み、mask annotationsの作成
             print("make mask annotations {0}".format(i))
 
             ann_coords=make_coords_from_mask(annotations,1)#mask annotationsを座標系に変換
-            path_ = '../data/ann_anchor_data/' + path_coords[i] + '.pickle'
+            path_ = dataPath + '/ann_anchor_data/' + path_coords[i] + '.pickle'
             with open(path_,mode = 'wb') as f:
                 pickle.dump(ann_coords,f)
             print("finish making mask annotations coords")
@@ -805,14 +668,14 @@ if __name__ ==  '__main__':
 
     elif sys.argv[1] in num_list:
 
-        with open('../data/ann_anchor_data/anchor_coords_k.pickle',mode = 'rb') as f:
+        with open('{0}/ann_anchor_data/anchor_coords_k.pickle'.format(dataPath),mode = 'rb') as f:
             anchor = pickle.load(f)
         #教師データの作成
         #anchor coordsとannotation coordsを用いてICPマッチング
         #実行に1日くらいかかるのでプログラム分割して実行可能。
         index = int(sys.argv[1])
         #pdb.set_trace()
-        file_path = '../data/ann_anchor_data/'+ path_coords[index] + '.pickle'
+        file_path = dataPath +'/ann_anchor_data/'+ path_coords[index] + '.pickle'
         with open(file_path,mode = 'rb') as f:
             ann_1 = pickle.load(f)
         print("start detect the redidual between anchors and annotations")
@@ -825,11 +688,11 @@ if __name__ ==  '__main__':
     #Tの正規化
     #正規化しなければ、Rの学習が進みません
         dumps = list()
-        dumps_1,cur_dir = load_data('../data/redidual_1')
+        dumps_1,cur_dir = load_data('{0}/redidual_1'.format(dataPath))
         os.chdir(cur_dir)
-        dumps_2,cur_dir = load_data('../data/redidual_2')
+        dumps_2,cur_dir = load_data('{0}/redidual_2'.format(dataPath))
         os.chdir(cur_dir)
-        dumps_3,cur_dir = load_data('../data/redidual_3')
+        dumps_3,cur_dir = load_data('{0}/redidual_3'.format(dataPath))
         os.chdir(cur_dir)
         dumps += dumps_1
         dumps += dumps_2
@@ -896,9 +759,9 @@ if __name__ ==  '__main__':
         plt.clf()
 
         #pdb.set_trace()
-        with open('../data/ann_anchor_data/annotations_only_iou.pickle',mode = 'wb') as f:
+        with open('{0}/ann_anchor_data/annotations_only_iou.pickle'.format(dataPath),mode = 'wb') as f:
             pickle.dump(annotations,f)
-        with open('../data/ann_anchor_data/max_min_k.pickle',mode = 'wb') as f:
+        with open('{0}/ann_anchor_data/max_min_k.pickle'.format(dataPath),mode = 'wb') as f:
             pickle.dump(max_min,f)
         """
         #------------------------------------------------------------------------------------
