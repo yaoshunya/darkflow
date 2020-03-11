@@ -117,4 +117,18 @@ if __name__ == '__main__':
     pred = cls.fit_predict(all)
     centers = cls.cluster_centers_
     print(centers)
-    pdb.set_trace()
+    X = np.reshape(np.array(centers),[-1])
+    two_list = list()
+    all_list = list()
+    if os.path.exists('anchor_kmeans.txt'):
+        os.remove('anchor_kmeans.txt')
+    for i in range(X.shape[0]):
+        two_list.append(str(int(X[i])))
+        if i % 2 == 1:
+            #pdb.set_trace()
+            two_list_moji = ','.join(two_list)
+            two_list = list()
+            all_list.append(two_list_moji)
+    all_list_moji = ' '.join(all_list)
+    with open('anchor_kmeans.txt',mode = 'w') as f:
+        f.write(all_list_moji)
