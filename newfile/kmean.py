@@ -86,19 +86,19 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
 if __name__ == '__main__':
     print('start k-means')
     dump = list()
-    path = '../data/VOC2012/AnnotationsTrain_1' #残差を計算したい対象
+    path = '../data/kitti/AnnotationsTrain_1' #残差を計算したい対象
     pick = ['car','Truck']
     annotations = pascal_voc_clean_xml(path,pick)
     dump += annotations
-    path = '../data/VOC2012/AnnotationsTrain_2' #残差を計算したい対象
+    path = '../data/kitti/AnnotationsTrain_2' #残差を計算したい対象
     pick = ['car','Truck']
     annotations = pascal_voc_clean_xml(path,pick)
     dump += annotations
-    path = '../data/VOC2012/AnnotationsTrain_3/AnnotationsTrain_1' #残差を計算したい対象
+    path = '../data/kitti/AnnotationsTrain_3' #残差を計算したい対象
     pick = ['car','Truck']
     annotations = pascal_voc_clean_xml(path,pick)
     dump += annotations
-    path = '../data/VOC2012/AnnotationsTrain_4/AnnotationsTrain_2' #残差を計算したい対象
+    path = '../data/kitti/AnnotationsTrain_4' #残差を計算したい対象
     pick = ['car','Truck']
     annotations = pascal_voc_clean_xml(path,pick)
     dump += annotations
@@ -118,4 +118,3 @@ if __name__ == '__main__':
     centers = cls.cluster_centers_
     print(centers)
     pdb.set_trace()
-    
