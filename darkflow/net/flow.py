@@ -40,7 +40,7 @@ def detect_most_near(pre,ann):
         pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
         pre_ = np.reshape(pre_,[-1])
         X = np.zeros((img_x,img_y))
-        X[ann[1][i][1]] = 1#真値をマスクにする
+        X[ann[1][i][1][1],ann[1][i][1][0]] = 1#真値をマスクにする
         cm = confusion_matrix(np.reshape(X,[-1]),pre_)
 
         TP = cm[0][0]
@@ -51,7 +51,7 @@ def detect_most_near(pre,ann):
         iou_list.append(iou)
     max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
     X = np.zeros((img_x,img_y))
-    X[ann[1][max_index][1]] = 255
+    X[ann[1][max_index][1][1],ann[1][max_index][1][0]] = 255
     X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
     return X,iou_list[max_index],max_index
 
@@ -200,10 +200,10 @@ def make_result(out,this_batch,threshold):
             T_0_list.append(T_0)
             T_1_list.append(T_1)
             R_list.append(R)
-
+            print(iou_parts)
             iou_return.append(iou_parts)
             #iou_label[label-1].append(iou_parts)
-            if False:
+            if True:
                 #画像を保存する場合
                 imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
                 prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
@@ -278,14 +278,14 @@ def predict(self):
     n_batch = int(math.ceil(len(all_inps) / batch))
 
 
-    threshold = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]#confidence閾値の設定
-    #threshold = [0.1]
-    #iou_label_ = ['iou_label_conf_01']
-    #precision_label = ['precision_conf_01']
-    #recall_label = ['recall_conf_01']
-    iou_label_ = ['iou_label_conf_0''iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09','iou_label_conf_1']
-    precision_label = ['precision_conf_0','precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_08','precision_conf_09','precision_conf_1']
-    recall_label = ['recall_conf_0','recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_08','recall_conf_09','recall_conf_1']
+    #threshold = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]#confidence閾値の設定
+    threshold = [0.5]
+    iou_label_ = ['iou_label_conf_01']
+    precision_label = ['precision_conf_01']
+    recall_label = ['recall_conf_01']
+    #iou_label_ = ['iou_label_conf_0''iou_label_conf_01','iou_label_conf_02','iou_label_conf_03','iou_label_conf_04','iou_label_conf_05','iou_label_conf_06','iou_label_conf_07','iou_label_conf_08','iou_label_conf_09','iou_label_conf_1']
+    #precision_label = ['precision_conf_0','precision_conf_01','precision_conf_02','precision_conf_03','precision_conf_04','precision_conf_05','precision_conf_06','precision_conf_07','precision_conf_08','precision_conf_09','precision_conf_1']
+    #recall_label = ['recall_conf_0','recall_conf_01','recall_conf_02','recall_conf_03','recall_conf_04','recall_conf_05','recall_conf_06','recall_conf_07','recall_conf_08','recall_conf_09','recall_conf_1']
 
     for k in range(len(threshold)):
 
