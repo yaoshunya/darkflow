@@ -40,7 +40,7 @@ def detect_most_near(pre,ann):
         pre_[pre[:,:,0]>0] = 1#predictで0以上のindexだけ1にする
         pre_ = np.reshape(pre_,[-1])
         X = np.zeros((img_x,img_y))
-        X[ann[1][i][1][1],ann[1][i][1][0]] = 1#真値をマスクにする
+        X[ann[1][i][1]] = 1#真値をマスクにする
         cm = confusion_matrix(np.reshape(X,[-1]),pre_)
 
         TP = cm[0][0]
@@ -51,7 +51,7 @@ def detect_most_near(pre,ann):
         iou_list.append(iou)
     max_index = np.argmax(np.array(iou_list))#最もiouが高いindexの取得
     X = np.zeros((img_x,img_y))
-    X[ann[1][max_index][1][1],ann[1][max_index][1][0]] = 255
+    X[ann[1][max_index][1]] = 255
     X = np.tile(np.transpose(X[np.newaxis],[1,2,0]),[1,1,3])
     return X,iou_list[max_index],max_index
 
