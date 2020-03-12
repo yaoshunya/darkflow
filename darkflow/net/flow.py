@@ -205,7 +205,7 @@ def make_result(out,this_batch,threshold):
             #iou_label[label-1].append(iou_parts)
             if True:
                 #画像を保存する場合
-                imgcv = cv2.imread(os.path.join('data/VOC2012/sphere_test',this_batch[i]))
+                imgcv = cv2.imread(os.path.join('data/kitti/sphere_test',this_batch[i]))
                 prediction = cv2.addWeighted(np.asarray(imgcv,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(ann,np.float64),0.4,0)
                 cv2.imwrite('git_image/test_image_{0}_{1}.png'.format(this_batch[i][:6],j),prediction)#予測を画像として保存
