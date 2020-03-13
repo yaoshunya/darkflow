@@ -318,21 +318,22 @@ def pascal_voc_clean_xml(ANN, pick, exclusive = False):
 
 def make_up_left_coord(H):
     #球面グリッドの左上の座標を取得
-    step = 19//H
+    step = 1000//H
     coord_list = list()
     print('make spherical up left coord')
     for i in range(H):
         for j in range(H):
-            base = np.zeros((19,19))
-            base[step*i,step*j] = 255#グリッドの該当箇所を白塗り
+            base = np.zeros((1000,1000))
+            base[step*i:step*i+4,step*j:step*j+4] = 255#グリッドの該当箇所を白塗り
             grid = fp.get_projection_grid(b=500)
             rot = fp.rand_rotation_matrix(deflection=1.0)#球面写像
             grid = fp.rotate_grid(rot,grid)
             rotate_base = fp.project_2d_on_sphere(base,grid).T
             x_min = np.min(np.where(rotate_base>0)[0])#白塗りの左上の座標を取得
             y_min = np.min(np.where(rotate_base>0)[1])
-            coord = [x_min,y_min]
+            coord = [y_min,x_min]
             coord_list.append(coord)
+            #pdb.set_trace()
             print('finish:{0}'.format(i*19+j))
     with open('{0}/ann_anchor_data/upleft_coord.pickle'.format(dataPath),mode = 'wb') as f:
         pickle.dump(coord_list,f)
@@ -469,17 +470,23 @@ def detect_R_T(ann,anchor,path_num):
             ann_len_ = len(dst_ann[0])
             anchor_len_ = len(dst_anchor[0])
 
+            if ann_len_ < anchor_len_:
+                sample_len = ann_len_//10
+            else:
+                sample_len = anchor_len_//10
+            if sample_len > 50:
+                sample_len = 50
+            print(sample_len)
             iou_affine = 0
             count = 0
             best_iou = iou
             best_R = 0.0
             best_T = [0.0,0.0]
             img = cv2.imread('{0}/kitti/sphere_data/{1}'.format(dataPath,img_name))
-            with open('{0}/mask_ann/{1}_{2}.pickle'.format(dataPath,img_name[:6],ann_0_len),mode = 'rb') as f:
-                an = pickle.load(f)
-            mask_an = cv2.resize(an,(img_x_resize,img_y_resize))
+            
+            mask_an = cv2.resize(ann_now,(img_x_resize,img_y_resize))
             mask_an[np.where(mask_an>0)] = 1
-            while(iou > iou_affine or iou_affine < 0.4):
+            while(iou_affine < 0.6):
             #条件を満たすまでicpマッチングを行い、最適なR,Tを求める
                 my_list_ann = []
                 my_list_anchor = []
@@ -498,28 +505,21 @@ def detect_R_T(ann,anchor,path_num):
                         T = best_T
                         iou_affine = best_iou
                         break
-                for k in range(30):#エッジ上からランダムに30点選択
-                    x = random.randint(0,ann_len_-1)
-                    y = random.randint(0,anchor_len_-1)
-                    my_list_ann.append(x)
-                    my_list_anchor.append(y)
-
-                ann_stack = np.vstack((dst_ann[0][my_list_ann],dst_ann[1][my_list_ann]))
-                anchor_stack = np.vstack((dst_anchor[0][my_list_anchor],dst_anchor[1][my_list_anchor]))
+                x = np.random.permutation(np.arange(ann_len_-1))[:sample_len]
+                y = np.random.permutation(np.arange(anchor_len_-1))[:sample_len]
+                
+                ann_stack = np.vstack((dst_ann[0][x],dst_ann[1][x]))
+                anchor_stack = np.vstack((dst_anchor[0][y],dst_anchor[1][y]))
 
                 R,T  = ICP_matching(ann_stack,anchor_stack)
 
                 X = np.zeros((img_x,img_y))
                 X[ann[ann_len][1][ann_0_len][1]] = 255
-                an = cv2.resize(an,(img_x,img_y))*255
-
-                an_ = mask_anchor[index][idx]
                 affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),R,1.0)#球面グリッドの左上の座標を中心として回転
                 affine[0][2] += T[1]
                 affine[1][2] += T[0]
 
-                pre = cv2.warpAffine(an_,affine,(img_x,img_y))
-
+                pre = cv2.warpAffine(anchor_now,affine,(img_x,img_y))
                 pre_resize = cv2.resize(pre,(img_x_resize,img_y_resize))
                 pre_resize[pre_resize>0] = 1
 
@@ -584,25 +584,6 @@ def detect_R_T(ann,anchor,path_num):
 
     return 0
 
-def make_area():
-    #mask annotationの作成
-    img_x = 1000
-    img_y = 1000
-    file = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
-    for i in file:
-        with open('{0}/ann_anchor_data/{0}.pickle'.format(dataPath,i),mode = 'rb') as f:
-            ann = pickle.load(f)
-
-        for ann_len in range(len(ann)):
-            for ann_0_len in range(len(ann[ann_len][1])):
-                mask = np.zeros((img_x,img_y))
-                X=ann[ann_len][1][ann_0_len][1]
-                mask[X] = 1
-                name = ann[ann_len][0][:6]
-                with open('{0}/mask_ann/{1}_{2}.pickle'.format(dataPath,name,ann_0_len),mode = 'wb') as f:
-                    pickle.dump(mask,f)
-            print("finish : {0}".format(name))
-
 if __name__ ==  '__main__':
     #python preprocess_ad.py
     #mask anchorの作成
@@ -618,7 +599,7 @@ if __name__ ==  '__main__':
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     num_list = ['0','1','2','3']
     if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
-
+        """
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
@@ -661,8 +642,7 @@ if __name__ ==  '__main__':
             print("finish making mask annotations coords")
 
             del annotations,ann_coords
-
-        make_area()
+        """
         make_up_left_coord(19)
 
 
