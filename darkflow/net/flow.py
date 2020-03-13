@@ -165,7 +165,7 @@ def make_result(out,this_batch,threshold):
 
             anchor_now = np.reshape(anchor,[H*W*B,img_x,img_y])[trast_conf[j]]#trast_confのindexにあるanchorを取得
             upleft_now = upleft_coord[max_index]
-            affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),math.degrees(R),1.0)#回転Rの行列
+            affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),-math.degrees(R),1.0)#回転Rの行列
             affine[0][2] += T_1#並進ベクトルの追加
             affine[1][2] += T_0#
             print('T0:{0}   T1:{1}'.format(T_0,T_1))

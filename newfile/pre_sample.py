@@ -511,13 +511,13 @@ def detect_R_T(ann,anchor,path_num):
                 ann_stack = np.vstack((dst_ann[0][x],dst_ann[1][x]))
                 anchor_stack = np.vstack((dst_anchor[0][y],dst_anchor[1][y]))
 
-                R,T  = ICP_matching(ann_stack,anchor_stack)
+                R,T  = ICP_matching(anchor_stack,ann_stack)
 
                 X = np.zeros((img_x,img_y))
                 X[ann[ann_len][1][ann_0_len][1]] = 255
-                affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),R,1.0)#球面グリッドの左上の座標を中心として回転
+                affine = cv2.getRotationMatrix2D((upleft_now[0],upleft_now[1]),-R,1.0)#球面グリッドの左上の座標を中心として回転
                 affine[0][2] += T[1]
-                affine[1][2] += T[0]
+                affine[1][2] -= T[0]
 
                 pre = cv2.warpAffine(anchor_now,affine,(img_x,img_y))
                 pre_resize = cv2.resize(pre,(img_x_resize,img_y_resize))
@@ -553,8 +553,11 @@ def detect_R_T(ann,anchor,path_num):
 
                 prediction = cv2.addWeighted(np.asarray(img,np.float64),0.7,np.asarray(pre,np.float64),0.3,0)
                 prediction = cv2.addWeighted(np.asarray(prediction,np.float64),0.6,np.asarray(X,np.float64),0.4,0)
+                cv2.putText(prediction,'R:{0}'.format(-R),(0,50),cv2.FONT_HERSHEY_PLAIN,4,(255,255,255),5,cv2.LINE_AA)
+                cv2.putText(prediction, 'T[0]:{0}'.format(T[0]), (0, 100), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 5, cv2.LINE_AA)
+                cv2.putText(prediction, 'T[1]:{0}'.format(T[1]), (0, 150), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 5, cv2.LINE_AA)
                 cv2.imwrite('../../GoogleDrive/messigray_n_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
-                cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
+                #cv2.imwrite('messigray_{0}_{1}.png'.format(ann_len,ann_0_len),prediction)
 
                 #アフィン変換する前のアンカーを合成した画像を出力する用
                 """
@@ -569,7 +572,7 @@ def detect_R_T(ann,anchor,path_num):
                 ###############################
                 #pdb.set_trace()
                 """
-            current = [name,R,T,index,idx]
+            current = [name,-R,T,index,idx]
             all.append(current)
 
         add = [[img_name,[all]]]
