@@ -257,13 +257,6 @@ def where_pre_label(x,y,where_pre):
     return label
 
 
-
-def min_max(x, axis=None):
-    min = x.min(axis=axis, keepdims=True)
-    max = x.max(axis=axis, keepdims=True)
-    result = (x-min)/(max-min)
-    return result
-
 def predict(self):
     inp_path = self.FLAGS.imgdir
     all_inps = os.listdir(inp_path)

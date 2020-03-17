@@ -483,7 +483,7 @@ def detect_R_T(ann,anchor,path_num):
             best_R = 0.0
             best_T = [0.0,0.0]
             img = cv2.imread('{0}/kitti/sphere_data/{1}'.format(dataPath,img_name))
-            
+
             mask_an = cv2.resize(ann_now,(img_x_resize,img_y_resize))
             mask_an[np.where(mask_an>0)] = 1
             while(iou_affine < 0.6):
@@ -507,7 +507,7 @@ def detect_R_T(ann,anchor,path_num):
                         break
                 x = np.random.permutation(np.arange(ann_len_-1))[:sample_len]
                 y = np.random.permutation(np.arange(anchor_len_-1))[:sample_len]
-                
+
                 ann_stack = np.vstack((dst_ann[0][x],dst_ann[1][x]))
                 anchor_stack = np.vstack((dst_anchor[0][y],dst_anchor[1][y]))
 
@@ -602,7 +602,7 @@ if __name__ ==  '__main__':
     path_coords = ['ann_coords_1_T','ann_coords_2_T','ann_coords_3_T','ann_coords_4_T']
     num_list = ['0','1','2','3']
     if len(sys.argv) == 1:#mask anchorが存在しない場合、mask anchorの作成
-        """
+
         with open("anchor_kmeans.txt") as f:
             x = f.read().split()
 
@@ -645,7 +645,7 @@ if __name__ ==  '__main__':
             print("finish making mask annotations coords")
 
             del annotations,ann_coords
-        """
+
         make_up_left_coord(19)
 
 
@@ -746,35 +746,3 @@ if __name__ ==  '__main__':
             pickle.dump(annotations,f)
         with open('{0}/ann_anchor_data/max_min_k.pickle'.format(dataPath),mode = 'wb') as f:
             pickle.dump(max_min,f)
-        """
-        #------------------------------------------------------------------------------------
-        #------------------------------------------------------------------------------------
-        #------------------------------------------------------------------------------------
-        #cfgにmin,maxの値が書き込まれます。以前のものと混同してしまうので、trainに入る前に以前のものは消去する
-        #------------------------------------------------------------------------------------
-        #------------------------------------------------------------------------------------
-        #------------------------------------------------------------------------------------
-        with open('../cfg/tiny-without-iou.cfg','a') as f:
-            print("t_0_max = {0}".format(t_0_max),file = f)
-            print("t_0_min = {0}".format(t_0_min),file = f)
-            print("t_1_max = {0}".format(t_1_max),file = f)
-            print("t_1_min = {0}".format(t_1_min),file = f)
-        """
-
-        """#test_dataの分割
-        annotations = glob.glob('../data/redidual_4/*.pickle')
-        for i,file in enumerate(annotations):
-
-            with open(file,mode = 'rb') as f:
-                annotations_parts = pickle.load(f)
-            for j in range(len(annotations_parts)):
-            #pdb.set_trace()
-                name = annotations_parts[j][0]
-                new = '../data/kitti/sphere_data/'+ name
-                try:
-                    new_path = shutil.move(new, '../data/kitti/sphere_test/')
-                except:
-                    pass
-                print(name)
-
-        """
